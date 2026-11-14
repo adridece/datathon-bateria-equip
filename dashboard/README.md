@@ -1,7 +1,7 @@
 # Dashboard
 
-Tauler de decisions per a UPC Sostenible (side challenge de la Tukey Commission). És una app d'una sola pantalla,
-feta a mida: tema clar, targetes rodones, barra lateral amb 5 vistes i el Campus Nord real en 3D.
+Tauler de decisions per a UPC Sostenible (side challenge de la Tukey Commission). És una web feta a mida, d'una sola
+pantalla: barra lateral amb 6 vistes i el Campus Nord real en 3D com a peça central.
 
 ```
 python scripts/serve_dashboard.py
@@ -14,22 +14,27 @@ python scripts/build_dashboard_data.py
 ```
 
 ## Què hi ha
-- **Visió general:** xifres clau (CO₂ i € per any, puntuació oficial, infraccions), el campus en 3D, l'estat de la bateria
-  i el "per què" de cada decisió, i dos gràfics resum.
-- **Campus en directe:** el 3D a pantalla gran, franja de la setmana (clic per moure's) i **presentació guiada**
-  (botó o tecla P; fletxes per avançar, Esc per sortir).
-- **Estratègia:** comparació d'estratègies, què fa a cada hora i mapa de calor de tots els dies.
-- **Mida de la bateria:** controls de capacitat, potència i cost, corba de CO₂ i taula de retorn de la inversió.
-- **Fiabilitat:** robustesa a errors de previsió, estalvi per setmana i supòsits.
+- **Campus en directe** (s'obre primer): el 3D amb els fluxos d'energia hora a hora, el panell "Ara mateix" (bateria,
+  rellotge del dia, semàfor per al campus, xifres i el motiu de cada decisió), el pla de 24 h amb com de segura és cada
+  decisió i els avisos de la setmana.
+- **Conclusions:** les decisions per a UPC Sostenible amb la xifra que les justifica, què guanya el campus amb la bateria
+  i el calendari d'estalvi.
+- **Estratègia:** estratègies comparades, què fa a cada hora, diagrames de caixa de Tukey del CO₂, quan compensa més i
+  polit de medianes.
+- **Planificador:** "què passaria si" canvien el preu, el CO₂, la reserva, la potència o la prioritat.
+- **Mida de la bateria:** capacitat, potència i cost, corba de CO₂ i retorn de la inversió.
+- **Rendiment:** taula setmana a setmana (descarregable), robustesa a errors de previsió, historial i supòsits.
+- **Informe PDF** (botó de dalt): 2 pàgines A4 amb el resum, les decisions i el rendiment.
 
 Les normes de disseny que seguim són a `docs/REGLES_DASHBOARD.md`.
 
 ## Fitxers
 - `index.html`, `css/style.css`: estructura i estil (tema clar, targetes rodones, IBM Plex).
 - `js/scene.js`: escena 3D (three.js 0.170.0, a `vendor/`).
-- `js/main.js`: navegació entre vistes, reproducció, panell de la bateria i presentació guiada.
+- `js/main.js`: navegació, reproducció, panell "Ara mateix", pla de 24 h i selector de setmanes.
+- `js/planner.js`: planificador (programació dinàmica al navegador).
+- `report.html`: informe de 2 pàgines per desar en PDF.
 - `js/charts.js`: gràfics de les decisions (D3 7.9, a `vendor/`).
-- `data/`: dades generades per `scripts/build_dashboard_data.py` (no editar a mà).
+- `data/`: dades generades per `scripts/build_dashboard_data.py` (no editar a mà); `history.json` guarda l'historial de rendiment.
 - `analysis.py`: càlculs amb el simulador oficial (els fa servir el script de dades).
 - `static/campus_nord.json`: edificis reals (© OpenStreetMap contributors, ODbL), de `scripts/build_campus_json.py`.
-- `app.py`, `views.py`, `style.py`, `live2d.html`, `scene3d.html`: versió antiga amb Streamlit, ja no es fa servir (es pot esborrar).
