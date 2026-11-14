@@ -8,6 +8,7 @@
 | `agents/mpc_robust` | 6,08 | 5,67 | 0 | mpc_lp + límit de descàrrega + neteja d'obs + regla de reserva |
 | `agents/mpc_test_weights` | 6,08 | 5,67 | 0 | mpc_robust amb la proporció CO₂/€ del test públic |
 | oracle (cota superior) | 6,08 | 5,68 | – | sap el futur sencer |
+| `mpc_robust`, cada setmana a part des del 50 % (dashboard) | 6,41 | – | 0 | igual que l'oracle setmana a setmana (6,41); més a prop del test públic (6,43) |
 
 ## Enviaments a la web
 | Data/hora | Fitxer | Score públic | Qui | Notes |

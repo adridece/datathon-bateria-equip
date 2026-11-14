@@ -17,12 +17,13 @@ from src.data import contiguous_blocks  # noqa: E402
 OUT = ROOT / "dashboard" / "data" / "data.js"
 
 
-def why_text(d):
+def why_text(d, ends):
+    # ends[k]: on acaba la setmana de l'hora k (les previsions no passen d'una setmana a l'altra)
     # frase curta que explica la decisio de cada hora
     w = (0.7 * d.co2_kg_per_kwh / 0.0921 + 0.3 * d.precio_eur_per_kwh / 0.1568).values
     out = []
     for k in range(len(d)):
-        ahead = w[k:k + 24]
+        ahead = w[k:min(k + 24, ends[k])]
         rank = int((ahead < w[k]).sum()) + 1
         b, soc = d.bat_kw.iloc[k], d.soc_pct.iloc[k]
         if b > 1:
@@ -48,6 +49,7 @@ def main():
         weeks.append({"start": pos, "end": pos + len(b), "label": b.index[0].strftime("%d/%m/%Y")})
         pos += len(b)
 
+    ends = [w["end"] for w in weeks for _ in range(w["end"] - w["start"])]
     hours = {
         "t": [t.strftime("%Y-%m-%d %H:00") for t in d.index],
         "load": d.load_kw.round(1).tolist(), "pv": d.pv_kw.round(1).tolist(),
@@ -55,7 +57,7 @@ def main():
         "bat": d.bat_kw.round(1).tolist(), "soc": d.soc_pct.round(4).tolist(),
         "grid": d.grid_kw.round(1).tolist(), "base": d.base_grid_kw.round(1).tolist(),
         "rules_soc": rules.soc_pct.round(4).tolist(),
-        "why": why_text(d),
+        "why": why_text(d, ends),
     }
     data = {
         "hours": hours,
