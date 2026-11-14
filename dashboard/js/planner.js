@@ -1,6 +1,6 @@
 // Planificador "què passaria si": recalcula el millor pla de 24 h al navegador amb programació dinàmica.
 (function () {
-  const CAP = 2000, ETA = Math.sqrt(0.9), STEP = 20;   // nivells de càrrega de 20 kWh
+  const CAP = 2000, ETA = Math.sqrt(0.9), STEP = 10;   // nivells de càrrega de 10 kWh
   const LEVELS = CAP / STEP + 1;
   const f = (x, d = 0) => x.toLocaleString("ca-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
   const $ = id => document.getElementById(id);
@@ -16,7 +16,7 @@
     for (let t = H - 1; t >= 0; t--) {
       const next = new Float64Array(LEVELS).fill(Infinity), best = new Int16Array(LEVELS);
       for (let s = 0; s < LEVELS; s++) {
-        for (let s2 = Math.max(0, s - 30); s2 <= Math.min(LEVELS - 1, s + 30); s2++) {
+        for (let s2 = Math.max(0, s - 60); s2 <= Math.min(LEVELS - 1, s + 60); s2++) {
           if (s2 < minLevel && s2 < s) continue;           // no baixem per sota de la reserva
           const de = (s2 - s) * STEP;
           const p = de >= 0 ? de / ETA : de * ETA;           // potència vista des de la xarxa
@@ -59,8 +59,15 @@
     const w = idx.map((_, j) => a * co2[j] / 0.0921 + (1 - a) * price[j] / 0.1568);
     const net = idx.map(i => Math.max(0, H.load[i] - H.pv[i]));
     const soc0 = k > 0 ? H.soc[k - 1] * CAP : 1000;
-    const res = solve(w, net, soc0, state.power, state.reserve / 100);
     const agentPlan = idx.map(i => H.bat[i]);
+    const agentSocs = idx.map(i => H.soc[i]);
+    let res = solve(w, net, soc0, state.power, state.reserve / 100);
+    // si el pla de l'agent també compleix l'escenari i és igual o millor, és el que proposem
+    // (el càlcul del navegador va en salts de 10 kWh i l'agent és exacte)
+    const cost = plan => plan.reduce((s, p, j) => s + w[j] * p, 0);
+    const agentOk = agentPlan.every(p => Math.abs(p) <= state.power + 1e-6) &&
+                    agentSocs.every((s, j) => s * 100 >= state.reserve - 1e-6 || agentPlan[j] >= 0);
+    if (agentOk && cost(agentPlan) <= cost(res.plan)) res = { plan: agentPlan, socs: agentSocs };
     const mine = evaluate(idx, res.plan, co2, price, H), agent = evaluate(idx, agentPlan, co2, price, H);
 
     const changed = JSON.stringify(state) !== JSON.stringify(DEFAULTS);

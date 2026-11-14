@@ -39,7 +39,7 @@
       { cls: "hero", label: "CO₂ evitat per any (estimació)", v: y.co2_t_year, fmt: v => f(v) + " t", delta: `−${f(y.co2_pct, 1)} % d'emissions` },
       { cls: "", label: "Estalvi a la factura per any (estimació)", v: y.eur_year, fmt: v => eur(v), delta: `−${f(y.cost_pct, 1)} % de cost` },
       { cls: "", label: "Puntuació oficial (test ocult)", v: o.score, fmt: v => f(v, 2), delta: `al màxim teòric (validació: ${f(st[2].score, 2)} de ${f(st[3].score, 2)})`, n: true },
-      { cls: "", label: "Infraccions físiques", v: o.violations, fmt: v => f(v), delta: "en 2.016 h de test", n: true },
+      { cls: "", label: "Infraccions físiques", v: o.violations, fmt: v => f(v), delta: "al test públic", n: true },
     ];
     $("kpis").innerHTML = cards.map((c, i) => `<div class="card kpi s3 ${c.cls}"><div class="label">${c.label}</div>` +
       `<div class="value" id="kv${i}">0</div><span class="delta ${c.n ? "neutral" : ""}">${c.delta}</span>${i < 2 ? `<svg id="ks${i}" width="96" height="34"></svg>` : ""}</div>`).join("");
@@ -140,6 +140,11 @@
     seg("b-pow", pows, "pow");
     $("cost").oninput = e => { size.cost = +e.target.value; sizing(true); };
   }
+  // cost net per tona en 15 anys: (inversió − estalvi acumulat) / tones evitades. Negatiu = es paga sola i encara en sobra
+  function netPerTon(r) {
+    const v = (r.invest - r.eur_year * 15) / (r.co2_t_year * 15);
+    return v < 0 ? `es paga sola (+${f(-v)} €/t)` : `${f(v)} €/t`;
+  }
   function sizing(quick) {
     ["b-cap", "b-pow"].forEach((id, j) => $(id).querySelectorAll("button").forEach(b => b.classList.toggle("on", +b.dataset.v === (j ? size.pow : size.cap))));
     $("cost-v").textContent = f(size.cost);
@@ -183,10 +188,10 @@
     g.append("circle").attr("cx", x(cur.capacity_kwh)).attr("cy", y(cur.co2_t_year)).attr("r", 11).attr("fill", "none")
       .attr("stroke", C.text).attr("stroke-width", 1.5);
 
-    $("t-size").innerHTML = "<tr><th>Capacitat</th><th>CO₂ evitat</th><th>Estalvi</th><th>Inversió</th><th>Retorn</th><th>€ per t CO₂ (15 anys)</th></tr>" +
+    $("t-size").innerHTML = "<tr><th>Capacitat</th><th>CO₂ evitat</th><th>Estalvi</th><th>Inversió</th><th>Retorn</th><th>Cost net per t CO₂ (15 anys)</th></tr>" +
       rows.filter(r => r.power_kw === size.pow).map(r => `<tr class="${r.capacity_kwh === size.cap ? "sel" : ""}"><td>${f(r.capacity_kwh)} kWh</td>` +
         `<td>${f(r.co2_t_year)} t/any</td><td>${eur(r.eur_year)}/any</td><td>${eur(r.invest)}</td><td>${f(r.payback, 1)} anys</td>` +
-        `<td>${f(r.invest / (r.co2_t_year * 15))} €</td></tr>`).join("");
+        `<td>${netPerTon(r)}</td></tr>`).join("");
   }
 
   // ---------------------------------------------------------------- fiabilitat

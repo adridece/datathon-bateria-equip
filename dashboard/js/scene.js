@@ -183,17 +183,18 @@ export function createScene(container, campus, colors) {
     roof.position.y = 0.95;
     kiosk.add(box, roof);
     kiosk.position.copy(p);
+    kiosk.scale.setScalar(1.7);   // més gran que la realitat perquè es vegi
     kiosk.traverse(o => { o.castShadow = true; });
     box.userData = { kind: "ct", info: c };
     scene.add(kiosk);
     pickables.push(box);
   });
-  const cableMat = new THREE.LineDashedMaterial({ color: "#8C7A63", dashSize: 0.5, gapSize: 0.35 });
+  // anell soterrat de mitja tensió: un cable fi arran de terra
+  const cableMat = new THREE.MeshBasicMaterial({ color: "#A08C70", transparent: true, opacity: 0.75 });
   (A.mv_links || []).forEach(([a1, b1]) => {
     if (!connPos[a1] || !connPos[b1]) return;
-    const l = new THREE.Line(new THREE.BufferGeometry().setFromPoints([connPos[a1].clone().setY(0.06), connPos[b1].clone().setY(0.06)]), cableMat);
-    l.computeLineDistances();
-    scene.add(l);
+    const path = new THREE.LineCurve3(connPos[a1].clone().setY(0.08), connPos[b1].clone().setY(0.08));
+    scene.add(new THREE.Mesh(new THREE.TubeGeometry(path, 40, 0.06, 6), cableMat));
   });
 
   function highlight(names) {
@@ -217,10 +218,12 @@ export function createScene(container, campus, colors) {
   })();
 
   const curve = pts => new THREE.CatmullRomCurve3(pts, false, "centripetal");
+  let slot = 0;
+  const around = () => { const a = (slot++) * 2.4; return node.clone().add(new THREE.Vector3(Math.cos(a) * 0.9, 0, Math.sin(a) * 0.9)); };
   const lift = (v, y) => v.clone().setY(y);
   const flows = {
-    grid: curve([lift(gridPos, 3.2), lift(gridPos.clone().lerp(node, 0.5), 1.3), node]),
-    bat: curve([node, lift(node.clone().lerp(batPos, 0.5), 0.7), lift(batPos, 0.9)]),
+    grid: curve([lift(gridPos, 3.2), lift(gridPos.clone().lerp(node, 0.5), 1.3), around()]),
+    bat: curve([around(), lift(node.clone().lerp(batPos, 0.5), 0.7), lift(batPos, 0.9)]),
   };
   const area = id => { const b = campus.buildings.find(x => x.id === id || x.name === id); return b ? b.area_m2 * b.height_m : 0; };
   const shares = {};
@@ -228,21 +231,22 @@ export function createScene(container, campus, colors) {
   const totalShare = Object.values(shares).reduce((a, b) => a + b, 0) || 1;
   conns.filter(c => c.upc_meter !== false).forEach(c => {
     const end = connPos[c.id].clone().setY(c.main ? 2.6 : 1.0);
-    flows["load_" + c.id] = curve([node, lift(node.clone().lerp(end, 0.5), 0.5), end]);
+    const start = around();
+    flows["load_" + c.id] = curve([start, lift(start.clone().lerp(end, 0.5), 0.5), end]);
   });
   A.pv_inverters.forEach((inv, i) => {
     const p = at(inv.pos).setY(17.5 * S * VX + 0.25);
-    flows["pv" + i] = curve([p, lift(p.clone().lerp(node, 0.3), 2.0), lift(p.clone().lerp(node, 0.7), 0.9), node]);
+    flows["pv" + i] = curve([p, lift(p.clone().lerp(node, 0.3), 2.0), lift(p.clone().lerp(node, 0.7), 0.9), around()]);
   });
 
-  const MAX_P = 48;
+  const MAX_P = 28;
   const streams = {};
   for (const [name, c] of Object.entries(flows)) {
-    const guide = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 0.05, 8), new THREE.MeshBasicMaterial({ color: "#CFC9BD" }));
+    const guide = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 0.028, 6), new THREE.MeshBasicMaterial({ color: "#D6D0C4" }));
     scene.add(guide);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MAX_P * 3), 3));
-    const mat = new THREE.PointsMaterial({ size: 11 * renderer.getPixelRatio(), map: sprite, transparent: true, alphaTest: 0.3,
+    const mat = new THREE.PointsMaterial({ size: 8 * renderer.getPixelRatio(), map: sprite, transparent: true, alphaTest: 0.3,
       depthWrite: false, sizeAttenuation: false });
     const pts = new THREE.Points(geo, mat);
     pts.frustumCulled = false;
@@ -253,8 +257,8 @@ export function createScene(container, campus, colors) {
   function stepStreams(dt) {
     for (const s of Object.values(streams)) {
       const share = Math.min(1, s.kw / 1400);
-      const n = s.kw < 1 ? 0 : Math.max(5, Math.round(MAX_P * share * 0.8));
-      s.phase += dt * (0.05 + 0.25 * share) * s.dir;
+      const n = s.kw < 1 ? 0 : Math.max(3, Math.round(MAX_P * share));
+      s.phase += dt * (0.04 + 0.16 * share) * s.dir;
       const arr = s.geo.attributes.position.array;
       for (let i = 0; i < n; i++) {
         let u = (s.seed[i] + s.phase) % 1;
@@ -329,7 +333,7 @@ export function createScene(container, campus, colors) {
     streams.bat.dir = h.bat >= 0 ? -1 : 1;
     streams.bat.mat.color.set(h.bat >= 0 ? colors.charge : colors.discharge);
     A.pv_inverters.forEach((_, i) => {
-      streams["pv" + i].kw = h.pv * 2;   // la solar és petita: l'ampliem perquè es vegi el moviment
+      streams["pv" + i].kw = h.pv;
       streams["pv" + i].mat.color.set(colors.solar);
     });
     socTarget = h.soc;

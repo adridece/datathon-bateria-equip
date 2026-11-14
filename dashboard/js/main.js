@@ -117,7 +117,7 @@ function setWeek(i) {
   week = D.weeks[i];
   drawStrip();
   events();
-  show(week.start + 12);
+  show(week.start);
 }
 $("week").onchange = e => { stop(); setWeek(+e.target.value); };
 

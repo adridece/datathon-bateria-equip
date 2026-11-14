@@ -1,0 +1,155 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<title>Informe La Datoneta | Bateria del Campus Nord</title>
+<link rel="icon" href="static/icon.svg">
+<style>
+  @font-face { font-family: "Plex Sans"; src: url(fonts/IBMPlexSans-Regular.woff2) format("woff2"); font-weight: 400; }
+  @font-face { font-family: "Plex Sans"; src: url(fonts/IBMPlexSans-SemiBold.woff2) format("woff2"); font-weight: 600; }
+  @font-face { font-family: "Plex Mono"; src: url(fonts/IBMPlexMono-Medium.woff2) format("woff2"); font-weight: 500; }
+  :root { --ink: #1F2326; --muted: #6E6A63; --line: #E6E2DA; --soft: #F7F5F1; --accent: #2F7A74; --accent-soft: #E4F1EF;
+          --charge: #0072B2; --discharge: #D55E00; --co2: #A9824F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #E9E6E0; font: 10.5px/1.5 "Plex Sans", system-ui, sans-serif; color: var(--ink); }
+  .bar { position: sticky; top: 0; display: flex; gap: 10px; justify-content: center; padding: 12px; background: #E9E6E0; }
+  .bar button { font: 13px "Plex Sans", sans-serif; border-radius: 999px; padding: 8px 18px; border: 1px solid #CFC9BD; background: #fff; cursor: pointer; }
+  .bar button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+  .sheet { width: 210mm; height: 297mm; margin: 0 auto 30px; background: #fff; padding: 14mm 15mm 12mm; position: relative;
+           box-shadow: 0 10px 40px rgba(0,0,0,.12); overflow: hidden; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 14px; padding-bottom: 10px; border-bottom: 2px solid var(--accent); }
+  header img { width: 68px; }
+  header .team { font-weight: 600; letter-spacing: .18em; color: var(--accent); font-size: 10px; }
+  header .meta { margin-left: auto; text-align: right; color: var(--muted); }
+  h1 { font-size: 21px; line-height: 1.2; margin: 14px 0 6px; font-weight: 600; }
+  .lead { font-size: 12.5px; color: #3B3F42; margin: 0 0 12px; max-width: 165mm; }
+  .lead b { color: var(--accent); }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 12px; }
+  .kpi { background: var(--soft); border-radius: 10px; padding: 9px 11px; color: var(--muted); }
+  .kpi b { display: block; font: 500 19px "Plex Mono", monospace; color: var(--ink); }
+  .kpi.main { background: var(--accent-soft); } .kpi.main b { color: var(--accent); }
+  h2 { font-size: 11.5px; margin: 0 0 6px; text-transform: none; }
+  .recs { display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px; margin-bottom: 12px; }
+  .rec { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px; }
+  .rec .n { font: 500 10px "Plex Mono", monospace; color: var(--accent); }
+  .rec b { display: block; font-size: 11.5px; margin: 2px 0 3px; }
+  .rec p { margin: 0; color: #3B3F42; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chart { border: 1px solid var(--line); border-radius: 10px; padding: 9px 11px 6px; }
+  .chart .s { color: var(--muted); margin: -3px 0 4px; }
+  .chart text { font: 8.5px "Plex Sans", sans-serif; fill: var(--muted); }
+  .chart .lab { fill: var(--ink); font-family: "Plex Mono", monospace; }
+  .foot { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--line); color: var(--muted); font-size: 9px; display: flex; gap: 12px; }
+  .foot p { margin: 0; flex: 1; }
+  @page { size: A4; margin: 0; }
+  @media print { body { background: #fff; } .bar { display: none; } .sheet { margin: 0; box-shadow: none; } }
+</style>
+<script src="vendor/d3.min.js"></script>
+<script src="data/data.js"></script>
+</head>
+<body>
+<div class="bar"><button onclick="window.close()">Tancar</button><button class="primary" onclick="window.print()">Desar en PDF</button></div>
+<div class="sheet" id="sheet"></div>
+<script>
+  // l'informe es genera amb les mateixes dades que el dashboard
+  const D = window.DATA, y = D.yearly, st = D.strategies, r = D.robustness, m = D.monthly;
+  const f = (x, d = 0) => x.toLocaleString("ca-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const eur = x => (Math.abs(x) >= 10000 ? f(x / 1000) + " k€" : f(x) + " €");
+  const sz = D.sizing.filter(s => s.power_kw === 500).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
+  const best = sz.filter(s => s.payback < 10).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
+  const cur = sz.find(s => s.capacity_kwh === 2000);
+  const today = new Date().toLocaleDateString("ca-ES", { day: "numeric", month: "long", year: "numeric" });
+
+  document.getElementById("sheet").innerHTML = `
+    <header><img src="static/logo-datathon.png" alt=""><div><div class="team">LA DATONETA</div><div>Datathon FME 2026</div></div>
+      <div class="meta">Informe per a UPC Sostenible<br>${today}</div></header>
+    <h1>Operar la bateria del Campus Nord amb control predictiu</h1>
+    <p class="lead">Cada hora, l'agent planifica les 24 hores següents amb el preu i el CO₂ de la xarxa, que ja es coneixen, i
+      decideix quan carregar i quan descarregar. Així evitaria <b>${f(y.co2_t_year)} tones de CO₂</b> i <b>${eur(y.eur_year)}</b> de
+      factura cada any, el ${f(100 * st[2].score / st[3].score)} % del màxim possible.</p>
+    <div class="kpis">
+      <div class="kpi main"><b>${f(y.co2_t_year)} t</b>CO₂ evitat per any</div>
+      <div class="kpi"><b>−${f(y.cost_pct, 1)} %</b>factura elèctrica</div>
+      <div class="kpi"><b>${f(D.official.score, 2)}</b>punts al test públic</div>
+      <div class="kpi"><b>${f(D.official.violations)}</b>infraccions</div>
+    </div>
+    <h2>Recomanacions</h2>
+    <div class="recs">
+      <div class="rec"><div class="n">01</div><b>Fer servir control predictiu</b><p>Fa ${f(st[2].score, 2)} punts, igual que l'òptim teòric.
+        Les regles fixes per hores en fan ${f(st[1].score, 2)}. Es recalcula cada hora.</p></div>
+      <div class="rec"><div class="n">02</div><b>Ampliar fins a ${f(best.capacity_kwh)} kWh</b><p>Amb l'inversor de 500 kW, passaria de
+        ${f(cur.co2_t_year)} a ${f(best.co2_t_year)} t de CO₂ l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh).</p></div>
+      <div class="rec"><div class="n">03</div><b>Confiar-hi tot l'any</b><p>Estalvia CO₂ cada setmana (${f(d3.min(m, d => d.co2_pct), 1)}–${f(d3.max(m, d => d.co2_pct), 1)} %)
+        i amb un 50 % d'error a les previsions només passa de ${f(r[0].score, 2)} a ${f(r[r.length - 1].score, 2)} punts.</p></div>
+    </div>
+    <div class="charts">
+      <div class="chart"><h2>Quan carrega i quan descarrega</h2><div class="s">Potència mitjana per hora del dia (kW) i CO₂ de la xarxa</div><div id="c1"></div></div>
+      <div class="chart"><h2>Quina mida de bateria</h2><div class="s">CO₂ evitat per any segons la capacitat i la potència</div><div id="c2"></div></div>
+      <div class="chart"><h2>Comparació d'estratègies</h2><div class="s">Puntuació oficial del repte, validació d'11 setmanes</div><div id="c3"></div></div>
+      <div class="chart"><h2>Estalvi per setmana</h2><div class="s">CO₂ evitat (verd) i factura estalviada (gris), %</div><div id="c4"></div></div>
+    </div>
+    <div class="foot"><p><b>Supòsits.</b> Preu i CO₂ de les 24 hores següents coneguts. Xifres anuals a partir d'11 setmanes de validació
+      (8.760 / 1.848 h). Rendiment del 90 %, sense degradació. Cost de la bateria orientatiu.</p>
+      <p><b>Dades.</b> Telemetria real del Campus Nord, REE (PVPC i CO₂), OpenStreetMap. Simulador oficial del repte.</p></div>`;
+
+  const W = 330, H = 200;
+  function svg(id, h = H, mg = { t: 8, r: 34, b: 18, l: 30 }) {
+    const s = d3.select("#" + id).append("svg").attr("viewBox", `0 0 ${W} ${h}`).attr("width", "100%");
+    return { g: s.append("g").attr("transform", `translate(${mg.l},${mg.t})`), iw: W - mg.l - mg.r, ih: h - mg.t - mg.b };
+  }
+  const axis = (g, a, tr) => g.append("g").attr("transform", tr || "").call(a.tickSize(0).tickPadding(4)).call(s => s.select(".domain").remove());
+
+  // 1. perfil horari
+  { const { g, iw, ih } = svg("c1"), p = D.profile;
+    const x = d3.scaleBand().domain(d3.range(24)).range([0, iw]).padding(0.2);
+    const y = d3.scaleLinear().domain([-500, 500]).range([ih, 0]);
+    const yc = d3.scaleLinear().domain(d3.extent(p, d => d.co2_g)).nice().range([ih, 0]);
+    g.selectAll("rect").data(p).join("rect").attr("x", d => x(d.hour)).attr("width", x.bandwidth()).attr("rx", 1.5)
+      .attr("y", d => y(Math.max(0, d.battery_kw))).attr("height", d => Math.abs(y(d.battery_kw) - y(0)))
+      .attr("fill", d => (d.battery_kw > 0 ? "#0072B2" : "#D55E00"));
+    g.append("line").attr("x1", 0).attr("x2", iw).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "#E6E2DA");
+    g.append("path").datum(p).attr("fill", "none").attr("stroke", "#A9824F").attr("stroke-width", 1.4)
+      .attr("d", d3.line().x(d => x(d.hour) + x.bandwidth() / 2).y(d => yc(d.co2_g)).curve(d3.curveMonotoneX));
+    axis(g, d3.axisLeft(y).ticks(4));
+    axis(g, d3.axisRight(yc).ticks(3), `translate(${iw},0)`);
+    axis(g, d3.axisBottom(x).tickValues(d3.range(0, 24, 3)).tickFormat(h => h + " h"), `translate(0,${ih})`); }
+
+  // 2. mida de la bateria
+  { const { g, iw, ih } = svg("c2"), rows = D.sizing;
+    const x = d3.scaleLinear().domain([0, 8000]).range([0, iw]);
+    const y = d3.scaleLinear().domain([0, d3.max(rows, d => d.co2_t_year) * 1.08]).range([ih, 0]);
+    [250, 500, 1000].forEach(p => {
+      const pr = rows.filter(d => d.power_kw === p), on = p === 500;
+      g.append("path").datum(pr).attr("fill", "none").attr("stroke", on ? "#2F7A74" : "#CFC9BD").attr("stroke-width", on ? 2 : 1.4)
+        .attr("d", d3.line().x(d => x(d.capacity_kwh)).y(d => y(d.co2_t_year)).curve(d3.curveMonotoneX));
+      const l = pr[pr.length - 1];
+      g.append("text").attr("x", x(l.capacity_kwh) + 3).attr("y", y(l.co2_t_year) + 3).text(p + " kW");
+    });
+    g.append("circle").attr("cx", x(best.capacity_kwh)).attr("cy", y(best.co2_t_year)).attr("r", 4).attr("fill", "#2F7A74");
+    g.append("text").attr("class", "lab").attr("x", x(best.capacity_kwh) - 4).attr("y", y(best.co2_t_year) - 7).attr("text-anchor", "end")
+      .text(`recomanada: ${f(best.capacity_kwh)} kWh`);
+    axis(g, d3.axisLeft(y).ticks(4));
+    axis(g, d3.axisBottom(x).ticks(4).tickFormat(v => f(v) + " kWh"), `translate(0,${ih})`); }
+
+  // 3. estratègies
+  { const { g, iw, ih } = svg("c3", 150, { t: 10, r: 34, b: 16, l: 110 }), rows = st.slice(0, 3);
+    const x = d3.scaleLinear().domain([0, 7]).range([0, iw]);
+    const y = d3.scaleBand().domain(rows.map(d => d.strategy)).range([0, ih]).padding(0.35);
+    g.selectAll("rect").data(rows).join("rect").attr("y", d => y(d.strategy)).attr("height", y.bandwidth()).attr("rx", y.bandwidth() / 2)
+      .attr("width", d => (d.score < 0.01 ? 0 : Math.max(y.bandwidth(), x(d.score)))).attr("fill", d => (d.strategy.startsWith("MPC") ? "#2F7A74" : "#CFC9BD"));
+    g.selectAll("text.l").data(rows).join("text").attr("x", -6).attr("y", d => y(d.strategy) + y.bandwidth() / 2 + 3).attr("text-anchor", "end").text(d => d.strategy);
+    g.selectAll("text.v").data(rows).join("text").attr("class", "lab").attr("x", d => x(d.score) + 5).attr("y", d => y(d.strategy) + y.bandwidth() / 2 + 3).text(d => f(d.score, 2));
+    g.append("line").attr("x1", x(st[3].score)).attr("x2", x(st[3].score)).attr("y1", 0).attr("y2", ih).attr("stroke", "#1F2326").attr("stroke-dasharray", "2 2"); }
+
+  // 4. per setmana
+  { const { g, iw, ih } = svg("c4", 150, { t: 8, r: 10, b: 16, l: 24 });
+    const x = d3.scaleBand().domain(m.map(d => d.month)).range([0, iw]).padding(0.3);
+    const xi = d3.scaleBand().domain(["co2_pct", "cost_pct"]).range([0, x.bandwidth()]).padding(0.1);
+    const y = d3.scaleLinear().domain([0, d3.max(m, d => Math.max(d.co2_pct, d.cost_pct)) * 1.1]).range([ih, 0]);
+    m.forEach(d => ["co2_pct", "cost_pct"].forEach(k => g.append("rect").attr("x", x(d.month) + xi(k)).attr("width", xi.bandwidth()).attr("rx", 1.5)
+      .attr("y", y(d[k])).attr("height", ih - y(d[k])).attr("fill", k === "co2_pct" ? "#2F7A74" : "#CFC9BD")));
+    axis(g, d3.axisLeft(y).ticks(3).tickFormat(v => v + " %"));
+    axis(g, d3.axisBottom(x).tickFormat(s => s.split(" ")[0]), `translate(0,${ih})`); }
+</script>
+</body>
+</html>
