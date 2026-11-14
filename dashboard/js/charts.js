@@ -21,21 +21,30 @@
   };
   const axisX = (g, x, ih, a) => g.append("g").attr("class", "axis").attr("transform", `translate(0,${ih})`)
     .call(a(x)).call(s => s.select(".domain").attr("stroke", C.line)).call(s => s.selectAll("line").remove());
-  const count = (el, to, fmt) => d3.select(el).transition().duration(900).ease(ease)
-    .tween("text", () => { const i = d3.interpolateNumber(0, to); return t => { el.textContent = fmt(i(t)); }; });
+  let counted = false;
+  function count(el, to, fmt) {
+    el.textContent = fmt(to);   // el valor real sempre hi és, encara que l'animació s'interrompi
+    if (counted || matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    d3.select(el).transition().duration(900).ease(ease)
+      .tween("text", () => { const i = d3.interpolateNumber(0, to); return t => { el.textContent = fmt(i(t)); }; })
+      .on("interrupt end", () => { el.textContent = fmt(to); });
+    // si el navegador frena l'animació (pestanya en segon pla), la xifra queda igualment bé
+    setTimeout(() => { el.textContent = fmt(to); }, 1200);
+  }
 
   // ---------------------------------------------------------------- KPI
   function kpis() {
     const y = D.yearly, o = D.official, st = D.strategies;
     const cards = [
-      { cls: "hero", label: "CO₂ evitat per any", v: y.co2_t_year, fmt: v => f(v) + " t", delta: `−${f(y.co2_pct, 1)} % d'emissions` },
-      { cls: "", label: "Estalvi a la factura per any", v: y.eur_year, fmt: v => eur(v), delta: `−${f(y.cost_pct, 1)} % de cost` },
-      { cls: "", label: "Puntuació oficial (test ocult)", v: o.score, fmt: v => f(v, 2), delta: `validació local ${f(st[2].score, 2)} = òptim`, n: true },
+      { cls: "hero", label: "CO₂ evitat per any (estimació)", v: y.co2_t_year, fmt: v => f(v) + " t", delta: `−${f(y.co2_pct, 1)} % d'emissions` },
+      { cls: "", label: "Estalvi a la factura per any (estimació)", v: y.eur_year, fmt: v => eur(v), delta: `−${f(y.cost_pct, 1)} % de cost` },
+      { cls: "", label: "Puntuació oficial (test ocult)", v: o.score, fmt: v => f(v, 2), delta: `al màxim teòric (validació: ${f(st[2].score, 2)} de ${f(st[3].score, 2)})`, n: true },
       { cls: "", label: "Infraccions físiques", v: o.violations, fmt: v => f(v), delta: "en 2.016 h de test", n: true },
     ];
     $("kpis").innerHTML = cards.map((c, i) => `<div class="card kpi s3 ${c.cls}"><div class="label">${c.label}</div>` +
       `<div class="value" id="kv${i}">0</div><span class="delta ${c.n ? "neutral" : ""}">${c.delta}</span>${i < 2 ? `<svg id="ks${i}" width="96" height="34"></svg>` : ""}</div>`).join("");
     cards.forEach((c, i) => count($("kv" + i), c.v, c.fmt));
+    counted = true;
     // sparkline: estalvi per setmana (CO2 i €)
     const m = D.monthly;
     [["co2_pct"], ["cost_pct"]].forEach(([key], i) => {
@@ -238,7 +247,7 @@
     show(view) {
       current = view;
       // es redibuixen en entrar, perquè l'animació es vegi i la mida sigui la bona
-      requestAnimationFrame(() => draw[view]());
+      setTimeout(() => draw[view](), 30);
       drawn[view] = true;
     },
   };

@@ -47,6 +47,7 @@ export function createScene(container, campus, colors) {
     el.appendChild(credit);
     observer.observe(el);
     resize();
+    controls.enableZoom = el.clientHeight >= 450;
   }
 
   // llums: cel clar i un sol que es mou amb l'hora

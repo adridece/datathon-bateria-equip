@@ -30,8 +30,6 @@
       <button data-view="trust"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Fiabilitat</span></button>
     </nav>
     <div class="foot">
-      <div style="margin-bottom:8px">Període</div>
-      <select id="week" style="width:100%"></select>
       <p><b>La Datoneta</b> · Datathon FME 2026<br>Dades reals del Campus Nord, REE i OpenStreetMap.</p>
     </div>
   </aside>
@@ -40,7 +38,8 @@
     <header class="topbar">
       <div><h1 id="title">Visió general</h1><p id="subtitle"></p></div>
       <div class="right">
-        <span class="chip"><i></i>Leaderboard oficial <b class="num" id="chip-score"></b></span>
+        <select id="week" aria-label="Setmana que es mostra"></select>
+        <span class="chip"><i></i>Leaderboard <b class="num" id="chip-score"></b></span>
         <span class="chip num" id="chip-time"></span>
       </div>
     </header>
