@@ -9,6 +9,7 @@
 | `agents/mpc_test_weights` | 6,08 | 5,67 | 0 | mpc_robust amb la proporció CO₂/€ del test públic |
 | `agents/hard_mpc` (Mode Difícil) | 19,87 | – | 0 | LP amb xarxa i excedent solar + previsions de preu, CO₂, consum i solar. Òptim teòric: 22,34 |
 | `agents/hard_final` (Mode Difícil) | 20,75 (F0) / 17,70 (F1) | – | 0 | versió final: veure registre 14/11 vespre. Òptim: 22,34 / 18,75 |
+| `agents/hard_v3` (Mode Difícil) | banc nou: 18,88 / 17,42 / 17,92 (F0/F1/F2) | – | 0 | `hard_final` al mateix banc: 18,80 / 17,36 / 17,75. Òptim F0/F1: 20,28 / 18,75 |
 | oracle (cota superior) | 6,08 | 5,68 | – | sap el futur sencer |
 | `mpc_robust`, cada setmana a part des del 50 % (dashboard) | 6,41 | – | 0 | igual que l'oracle setmana a setmana (6,41); més a prop del test públic (6,43) |
 
