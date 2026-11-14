@@ -116,6 +116,8 @@ addEventListener("resize", drawStrip);
 
 function setWeek(i) {
   week = D.weeks[i];
+  $("week").value = i;
+  syncWeekPicker();
   clockDay = -1;
   Charts.setWeek(week);
   drawStrip();
@@ -123,6 +125,37 @@ function setWeek(i) {
   show(week.start);
 }
 $("week").onchange = e => { stop(); setWeek(+e.target.value); };
+
+// ---------------------------------------------------------------- selector de setmanes propi
+// el <select> natiu es veu diferent a cada sistema; aquest es veu igual a Mac, Windows i Linux
+const wkBtn = document.querySelector(".wk-btn"), wkList = document.querySelector(".wk-list");
+wkList.innerHTML = [...$("week").options].map((o, i) => `<li role="option" tabindex="-1" data-wk="${i}">
+  <span>${o.text}</span><b class="num">${f(D.weekly[i].co2_kg)} kg</b></li>`).join("");
+function syncWeekPicker() {
+  $("wk-label").textContent = $("week").selectedOptions[0]?.text || "";
+  wkList.querySelectorAll("li").forEach(li => li.setAttribute("aria-selected", li.dataset.wk === $("week").value));
+}
+function openWeeks(open) {
+  wkList.hidden = !open;
+  wkBtn.setAttribute("aria-expanded", open);
+  if (open) (wkList.querySelector('[aria-selected="true"]') || wkList.firstElementChild).focus();
+}
+function pickWeek(i) {
+  $("week").value = i;
+  $("week").dispatchEvent(new Event("change"));
+  openWeeks(false);
+  wkBtn.focus();
+}
+wkBtn.onclick = () => openWeeks(wkList.hidden);
+wkList.onclick = e => { const li = e.target.closest("li"); if (li) pickWeek(li.dataset.wk); };
+wkList.onkeydown = e => {
+  const li = document.activeElement.closest("li");
+  if (e.key === "ArrowDown" || e.key === "ArrowUp") { e.preventDefault(); (e.key === "ArrowDown" ? li?.nextElementSibling : li?.previousElementSibling)?.focus(); }
+  if (e.key === "Enter" && li) pickWeek(li.dataset.wk);
+  if (e.key === "Escape") { openWeeks(false); wkBtn.focus(); }
+  e.stopPropagation();
+};
+document.addEventListener("click", e => { if (!e.target.closest("#wkpick")) openWeeks(false); });
 
 // ---------------------------------------------------------------- mapa ampliat
 // fem servir una capa pròpia (no la pantalla completa del navegador), així funciona igual a tot arreu
@@ -442,6 +475,12 @@ function frame(now) {
   setAll("[data-clock]", e => (e.textContent = $("chip-time").textContent));
   timer = requestAnimationFrame(frame);
 }
+// vista inicial: càmera a lloc i rellotge al començament de la setmana
+function goHome() {
+  stop();
+  show(week.start);
+  scene.flyTo(scene.views.home);
+}
 function stop() { cancelAnimationFrame(timer); timer = null; scene.setPlaying(false); $("chip-time").classList.remove("live"); setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }
 function start() { last = performance.now(); scene.setPlaying(true); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
 const next = test => { for (let i = k + 1; i < week.end; i++) if (test(i)) return i; return k; };
@@ -471,7 +510,7 @@ document.addEventListener("click", e => {
     for (let i = k + 1; i < Math.min(week.end, k + 25); i++) if (H.co2[i] > H.co2[best]) best = i;
     show(best);
   }
-  if (act === "home") scene.flyTo(scene.views.home);
+  if (act === "home") goHome();
   if (act === "zoom-in") scene.zoom(1.25);
   if (act === "zoom-out") scene.zoom(0.8);
   if (act === "full") toggleExpand(b.closest(".stage"));
@@ -548,7 +587,7 @@ addEventListener("keydown", e => {
   // zoom del mapa amb el teclat
   if (e.key === "+" || e.key === "=") scene.zoom(1.2);
   if (e.key === "-" || e.key === "_") scene.zoom(1 / 1.2);
-  if (e.key === "0") scene.flyTo(scene.views.home);
+  if (e.key === "0") goHome();
   if (e.key === "p" || e.key === "P") step >= 0 ? endTour() : runTour();
   if (e.key === "Escape") { endTour(); document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false)); }
   if (step >= 0 && e.key === "ArrowRight") { clearTimeout(tourTimer); showStep(Math.min(tour.length - 1, step + 1)); }

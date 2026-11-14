@@ -363,3 +363,17 @@ table.t tr.now-row td { color: var(--dt-accent); }
 .signal { align-items: center; }
 .signal i { margin-top: 0; }
 .logo .team-sub { font-size: 11.5px; color: var(--dt-muted); margin-top: 2px; text-align: center; }
+
+/* ---------- selector de setmanes ---------- */
+.wkpick { position: relative; }
+.wkpick select { display: none; }
+.wk-btn { display: inline-flex; align-items: center; gap: 10px; width: 260px; justify-content: space-between; padding: 7px 14px; }
+.wk-btn svg { color: var(--dt-muted); transition: transform .2s; }
+.wk-btn[aria-expanded="true"] svg { transform: rotate(180deg); }
+.wk-list { position: absolute; z-index: 50; top: calc(100% + 6px); left: 0; width: 320px; margin: 0; padding: 6px; list-style: none;
+           background: var(--dt-card, #fff); border: 1px solid var(--dt-line); border-radius: 14px; box-shadow: 0 12px 32px rgba(0,0,0,.12); }
+.wk-list li { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding: 8px 10px; border-radius: 9px; cursor: pointer; font-size: 13px; outline: none; }
+.wk-list li b { font-weight: 500; font-size: 12px; color: var(--dt-muted); }
+.wk-list li:hover, .wk-list li:focus { background: var(--dt-soft); }
+.wk-list li[aria-selected="true"] { background: var(--dt-accent-soft, #E4F1EF); color: var(--dt-accent); }
+.wk-list li[aria-selected="true"] b { color: var(--dt-accent); }

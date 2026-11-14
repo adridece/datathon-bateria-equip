@@ -232,3 +232,9 @@ amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, a
   historial, com funciona el control, com seguir-lo i supòsits. S'ha arreglat el gràfic d'estratègies (sortia buit).
 - El nom que surt és el del repte, **UPC Sostenible**, amb "Bateria del Campus Nord" a sota.
 - El semàfor queda centrat a la seva caixa.
+
+### D-029 · 14/11 · Adrià — Vista inicial al començament de la setmana i selector de setmanes propi
+- "Vista inicial" (o la tecla 0) atura la reproducció, torna a la primera hora de la setmana i posa la càmera a lloc.
+- El desplegable natiu de setmanes es veia diferent a cada sistema (Mac, Windows, Linux). Ara és un selector propi amb el
+  mateix aspecte a tot arreu: llista amb les 11 setmanes i el CO₂ que estalvia cadascuna, la triada ressaltada, i es pot fer
+  servir amb el teclat (fletxes, Enter, Esc). El `<select>` queda amagat perquè la resta del codi segueixi igual.

@@ -40,7 +40,12 @@
     <header class="topbar">
       <div><h1 id="title">Campus en directe</h1><p id="subtitle"></p></div>
       <div class="right">
-        <select id="week" aria-label="Setmana que es mostra"></select>
+        <div class="wkpick" id="wkpick">
+          <select id="week" aria-hidden="true" tabindex="-1"></select>
+          <button class="wk-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Setmana que es mostra"><span id="wk-label"></span>
+            <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
+          <ul class="wk-list" role="listbox" hidden></ul>
+        </div>
         <button class="primary" data-act="report">Informe PDF</button>
         <span class="chip num" id="chip-time"></span>
       </div>
