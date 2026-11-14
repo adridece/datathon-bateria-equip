@@ -276,6 +276,12 @@ d'ahir ancorada. Models: 5 llavors (mitjana) per ser més estables. Es reentrena
 Amb excedent solar carreguem pensant en el cas de més sol (l'error de carregar de més és comprar una mica de xarxa a l'hora
 més barata; el de carregar de menys és perdre energia gratis). El model de preu s'aplica a totes les hores. Validació: 19,22.
 
+### D-035 · 14/11 · Adrià — Vista inicial al començament de la setmana i selector de setmanes propi
+- "Vista inicial" (o la tecla 0) atura la reproducció, torna a la primera hora de la setmana i posa la càmera a lloc.
+- El desplegable natiu de setmanes es veia diferent a cada sistema (Mac, Windows, Linux). Ara és un selector propi amb el
+  mateix aspecte a tot arreu: llista amb les 11 setmanes i el CO₂ que estalvia cadascuna, la triada ressaltada, i es pot fer
+  servir amb el teclat (fletxes, Enter, Esc). El `<select>` queda amagat perquè la resta del codi segueixi igual.
+
 ### D-036 · 14/11 · Adrià — `agents/hard_v3`: model directe de CO₂ a +3..+12 h
 Anàlisi a fons del Mode Difícil amb un banc de proves honest (models entrenats sense les setmanes avaluades; F0, F1 i F2
 reservada) i l'òptim teòric calculat igual (F0 20,28 · F1 18,75):
