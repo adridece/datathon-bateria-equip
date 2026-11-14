@@ -1,6 +1,7 @@
 """
 Proves de l'agent robust. Des de l'arrel del projecte:
-    python tests/test_agent.py          (no cal instal·lar res mes)
+    python tests/test_agent.py                    (prova agents/mpc_robust)
+    python tests/test_agent.py mpc_test_weights   (prova una altra carpeta d'agents/)
     python -m pytest tests              (si teniu pytest)
 """
 import math
@@ -16,7 +17,8 @@ sys.path.insert(0, str(ROOT))
 from src.evaluate import load_agent, run, valid_split  # noqa: E402
 from src.data import load_hourly  # noqa: E402
 
-AGENT_DIR = ROOT / "agents" / "mpc_robust"
+AGENT_NAME = sys.argv[1] if __name__ == "__main__" and len(sys.argv) > 1 else "mpc_robust"
+AGENT_DIR = ROOT / "agents" / AGENT_NAME
 ETA = 0.9 ** 0.5
 
 
@@ -107,5 +109,5 @@ if __name__ == "__main__":
         except Exception as e:
             failed += 1
             print("FALLA", t.__name__, "->", type(e).__name__, e)
-    print(f"\n{len(tests) - failed}/{len(tests)} proves superades")
+    print(f"\n{AGENT_NAME}: {len(tests) - failed}/{len(tests)} proves superades")
     sys.exit(1 if failed else 0)
