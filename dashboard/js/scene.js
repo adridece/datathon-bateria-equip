@@ -17,7 +17,7 @@ export function createScene(container, campus, colors) {
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
   const controls = new OrbitControls(camera, renderer.domElement);
-  Object.assign(controls, { enableDamping: true, enablePan: false, minPolarAngle: 0.5, maxPolarAngle: 1.2, minZoom: 0.7, maxZoom: 5 });
+  Object.assign(controls, { enableDamping: true, enablePan: false, minPolarAngle: 0.5, maxPolarAngle: 1.2, minZoom: 1.0, maxZoom: 6 });
   const HOME = { target: new THREE.Vector3(-2, 0, 4), zoom: 1.2, dir: new THREE.Vector3(1, 1.1, 1).normalize() };
 
   function place(view) {
@@ -60,7 +60,7 @@ export function createScene(container, campus, colors) {
   sun.shadow.radius = 4;
   scene.add(hemi, sun, sun.target);
 
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(180, 140), new THREE.MeshStandardMaterial({ color: "#E2DDD3", roughness: 1 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(700, 700), new THREE.MeshStandardMaterial({ color: "#E2DDD3", roughness: 1 }));
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
@@ -335,13 +335,23 @@ export function createScene(container, campus, colors) {
 
   function placeTags() {
     if (!host) return;
-    const w = host.clientWidth, h = host.clientHeight;
-    for (const t of Object.values(tags)) {
+    const w = host.clientWidth, h = host.clientHeight, placed = [];
+    // primer les etiquetes importants; si una altra en trepitja una de ja posada, s'amaga
+    const order = ["battery", "grid", "load", "solar", ...Object.keys(tags).filter(k => k.startsWith("ct_"))];
+    for (const key of order) {
+      const t = tags[key];
       const v = t.pos.clone().project(camera);
-      t.el.style.left = ((v.x + 1) / 2 * w + t.dx) + "px";
-      t.el.style.top = ((1 - v.y) / 2 * h + t.dy) + "px";
+      const x = (v.x + 1) / 2 * w + t.dx, y = (1 - v.y) / 2 * h + t.dy;
+      t.el.style.left = x + "px";
+      t.el.style.top = y + "px";
+      const bw = t.el.offsetWidth || 80, bh = t.el.offsetHeight || 20;
+      const box = { l: x - bw / 2, r: x + bw / 2, t: y - bh, b: y };
+      const hit = placed.some(p => box.l < p.r + 4 && box.r > p.l - 4 && box.t < p.b + 2 && box.b > p.t - 2);
+      t.el.style.opacity = hit ? 0 : 1;
+      if (!hit) placed.push(box);
     }
   }
+
 
   // ---------------------------------------------------------------- vols de càmera
   let flight = null;

@@ -363,6 +363,10 @@ function runTour() {
 addEventListener("keydown", e => {
   if (["INPUT", "SELECT"].includes(e.target.tagName)) return;
   if (e.code === "Space") { e.preventDefault(); timer ? stop() : start(); }
+  // zoom del mapa amb el teclat
+  if (e.key === "+" || e.key === "=") scene.zoom(1.2);
+  if (e.key === "-" || e.key === "_") scene.zoom(1 / 1.2);
+  if (e.key === "0") scene.flyTo(scene.views.home);
   if (e.key === "p" || e.key === "P") step >= 0 ? endTour() : runTour();
   if (e.key === "Escape") { endTour(); document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false)); }
   if (step >= 0 && e.key === "ArrowRight") { clearTimeout(tourTimer); showStep(Math.min(tour.length - 1, step + 1)); }
