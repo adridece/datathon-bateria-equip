@@ -21,6 +21,7 @@ const VIEWS = {
   strategy: ["Estratègia", "Com s'ha de controlar la bateria i per què"],
   sizing: ["Mida de la bateria", "Quina bateria li convé comprar a la UPC"],
   trust: ["Fiabilitat", "Fins a quin punt ens en podem refiar"],
+  planner: ["Planificador", "Prova escenaris i mira com canviaria el pla de la bateria"],
 };
 let scene;
 function go(name) {
@@ -31,6 +32,7 @@ function go(name) {
   if (name === "overview") { scene.mount($("stage-small")); setTimeout(() => { drawPlan(); drawCalendar(); }, 60); }
   if (name === "live") { scene.mount($("stage-big")); drawStrip(); }
   window.Charts.show(name);
+  if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color }), 30);
 }
 all(".nav button").forEach(b => b.onclick = () => go(b.dataset.view));
 
@@ -81,6 +83,7 @@ function show(i) {
   scene.setHour({ hour: +H.t[k].slice(11, 13), load: H.load[k], pv: H.pv[k], busy: (H.load[k] - loadExt[0]) / (loadExt[1] - loadExt[0]),
                   grid: compare ? H.base[k] : H.grid[k], bat: compare ? 0 : b, soc: compare ? 0 : H.soc[k] }, co2Color(H.co2[k]));
   drawPlan();
+  window.Planner.update({ H, k, co2Color });
   if (cursor) cursor.attr("x", sx(k) - 1.5);
 }
 
@@ -117,6 +120,19 @@ function setWeek(i) {
   show(week.start + 12);
 }
 $("week").onchange = e => { stop(); setWeek(+e.target.value); };
+
+// ---------------------------------------------------------------- mapa ampliat
+// fem servir una capa pròpia (no la pantalla completa del navegador), així funciona igual a tot arreu
+const ICON_EXPAND = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg>';
+const ICON_CLOSE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
+function toggleExpand(stage, force) {
+  const on = force ?? !stage.classList.contains("expanded");
+  stage.classList.toggle("expanded", on);
+  document.body.classList.toggle("has-expanded", on);
+  stage.querySelector('[data-act="full"]').innerHTML = on ? ICON_CLOSE : ICON_EXPAND;
+  stage.querySelector('[data-act="full"]').setAttribute("aria-label", on ? "Tancar el mapa ampliat" : "Ampliar el mapa");
+  scene.controls.enableZoom = on || stage.id === "stage-big";
+}
 
 // ---------------------------------------------------------------- cicles de la bateria
 // un cicle = descarregar l'equivalent a tota la capacitat (2.000 kWh); serveix per vigilar el desgast
@@ -232,12 +248,12 @@ function drawCalendar() {
 
 // ---------------------------------------------------------------- reproducció
 let timer = null, speed = 160;
-function stop() { clearInterval(timer); timer = null; setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }
-function start() { timer = setInterval(() => (k < week.end - 1 ? show(k + 1) : stop()), speed); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
+function stop() { clearInterval(timer); timer = null; $("chip-time").classList.remove("live"); setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }
+function start() { timer = setInterval(() => (k < week.end - 1 ? show(k + 1) : stop()), speed); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
 const next = test => { for (let i = k + 1; i < week.end; i++) if (test(i)) return i; return k; };
 document.addEventListener("click", e => {
-  const go = e.target.closest("[data-go]");
-  if (go) { show(+go.dataset.go); return; }
+  const jump = e.target.closest("[data-go]");
+  if (jump) { show(+jump.dataset.go); return; }
   const b = e.target.closest("[data-act],[data-speed]");
   if (!b) return;
   if (b.dataset.speed) {
@@ -257,8 +273,10 @@ document.addEventListener("click", e => {
   if (act === "home") scene.flyTo(scene.views.home);
   if (act === "zoom-in") scene.zoom(1.25);
   if (act === "zoom-out") scene.zoom(0.8);
-  if (act === "full") b.closest(".stage").requestFullscreen?.();
+  if (act === "full") toggleExpand(b.closest(".stage"));
   if (act === "csv") downloadPlan();
+  if (act === "report") window.Report.open(D);
+  if (act === "demo") { stop(); window.Demo.start(D, go, runTour); }
   if (act === "tour") step >= 0 ? endTour() : runTour();
 });
 
@@ -302,9 +320,10 @@ function runTour() {
 }
 addEventListener("keydown", e => {
   if (["INPUT", "SELECT"].includes(e.target.tagName)) return;
+  if (window.Demo.key(e)) return;
   if (e.code === "Space") { e.preventDefault(); timer ? stop() : start(); }
   if (e.key === "p" || e.key === "P") step >= 0 ? endTour() : runTour();
-  if (e.key === "Escape") endTour();
+  if (e.key === "Escape") { endTour(); document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false)); }
   if (step >= 0 && e.key === "ArrowRight") { clearTimeout(tourTimer); showStep(Math.min(tour.length - 1, step + 1)); }
   if (step >= 0 && e.key === "ArrowLeft") { clearTimeout(tourTimer); showStep(Math.max(0, step - 1)); }
 });
@@ -314,14 +333,17 @@ document.addEventListener("pointermove", e => {
   const tip = $("tip");
   if (!e.target.closest(".stage") || e.target.tagName !== "CANVAS") { tip.style.display = "none"; return; }
   const u = scene.pick(e.clientX, e.clientY);
+  scene.highlight(u && u.kind === "ct" ? u.info.feeds : null);
   if (!u) { tip.style.display = "none"; return; }
   let html = "";
   if (u.kind === "building") {
     const b = u.info;
-    html = `<b>${b.name}</b>${b.name_inferred ? " (nom deduït)" : ""}<br>${b.role || ""}<br>${f(b.height_m)} m d'alçada${b.has_pv === true ? ", coberta solar" : ""}`;
+    html = `<b>${b.name}</b><br>${b.role || ""}<br>${f(b.height_m)} m d'alçada${b.has_pv === true ? ", coberta solar" : ""}`;
   } else if (u.kind === "pv") html = `<b>Plaques solars</b><br>${f(u.info.area_m2)} m². Ara el campus en produeix ${f(H.pv[k])} kW ara`;
-  else if (u.kind === "battery") html = `<b>Bateria</b> (ubicació suposada)<br>${f(100 * H.soc[k])} %, ${f(H.bat[k])} kW<br>${H.why[k]}`;
-  else if (u.kind === "grid") html = `<b>Connexió a la xarxa</b> (ubicació suposada)<br>${f(H.grid[k])} kW, ${f(H.co2[k] * 1000)} g CO₂/kWh`;
+  else if (u.kind === "battery") html = `<b>Bateria</b> (ubicació proposada, al costat de l'escomesa principal)<br>${f(100 * H.soc[k])} %, ${f(H.bat[k])} kW<br>${H.why[k]}`;
+  else if (u.kind === "ct") html = `<b>${u.info.name}</b> (${u.info.confidence === "documentada" ? "documentat" : "proposta"})<br>` +
+    (u.info.upc_meter === false ? "Client a part: no forma part del consum de la UPC." : `Alimenta ${u.info.feeds.length} edificis (ressaltats al mapa).`);
+  else if (u.kind === "grid") html = `<b>Escomesa principal</b> (proposta)<br>${f(H.grid[k])} kW, ${f(H.co2[k] * 1000)} g CO₂/kWh`;
   tip.innerHTML = html;
   tip.style.display = "block";
   tip.style.left = Math.min(e.clientX + 14, innerWidth - 300) + "px";
@@ -337,11 +359,12 @@ document.addEventListener("change", e => {
     show(k);
   }
 });
-addEventListener("resize", () => { drawPlan(); drawCalendar(); });
+addEventListener("resize", () => { drawPlan(); drawCalendar(); window.Demo.resize(); });
 $("chip-score").textContent = f(D.official.score, 2);
 
 scene = createScene($("stage-small"), window.CAMPUS, COLORS);
 window.Charts.init(D, { co2Color });
+window.Planner.init();
 setWeek(0);
 go("overview");
 setTimeout(() => { drawPlan(); drawCalendar(); }, 60);
