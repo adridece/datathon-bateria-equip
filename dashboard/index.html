@@ -56,7 +56,20 @@
           <div class="card s8">
             <h2>El campus ara mateix</h2>
             <div class="sub">Edificis reals del Campus Nord. Les partícules són l'energia: com més n'hi ha, més kW.</div>
-            <div class="stage" id="stage-small" style="height:380px"><div class="overlay maptools">
+            <div class="stage" id="stage-small" style="height:380px">
+            <div class="overlay hud-live">
+              <div class="hud-top"><span class="num hud-clock" data-clock>-</span>
+                <button class="primary" data-act="play">Reproduir</button>
+                <span class="seg"><button data-speed="0.4">Lent</button><button data-speed="1.2" class="on">Normal</button><button data-speed="4">Ràpid</button></span></div>
+              <div class="hud-grid">
+                <div><span>Bateria</span><b class="num" data-soc>-</b><em data-mode></em></div>
+                <div><span>Compra a la xarxa</span><b class="num" data-grid>-</b></div>
+                <div><span>CO₂ de la xarxa</span><b class="num" data-co2>-</b></div>
+                <div><span>Preu</span><b class="num" data-price>-</b></div>
+                <div><span>Estalviat aquesta setmana</span><b class="num good" data-saved>-</b></div>
+              </div>
+              <div class="hud-why" data-why>-</div>
+            </div><div class="overlay maptools">
               <button data-act="zoom-in" aria-label="Apropar">+</button><button data-act="zoom-out" aria-label="Allunyar">−</button>
               <button data-act="full" aria-label="Pantalla completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
             </div></div>
@@ -115,6 +128,19 @@
       <section class="view" id="v-live">
         <div class="card" style="height:calc(100% - 4px);display:flex;flex-direction:column">
           <div class="stage" id="stage-big" style="flex:1;min-height:420px">
+            <div class="overlay hud-live">
+              <div class="hud-top"><span class="num hud-clock" data-clock>-</span>
+                <button class="primary" data-act="play">Reproduir</button>
+                <span class="seg"><button data-speed="0.4">Lent</button><button data-speed="1.2" class="on">Normal</button><button data-speed="4">Ràpid</button></span></div>
+              <div class="hud-grid">
+                <div><span>Bateria</span><b class="num" data-soc>-</b><em data-mode></em></div>
+                <div><span>Compra a la xarxa</span><b class="num" data-grid>-</b></div>
+                <div><span>CO₂ de la xarxa</span><b class="num" data-co2>-</b></div>
+                <div><span>Preu</span><b class="num" data-price>-</b></div>
+                <div><span>Estalviat aquesta setmana</span><b class="num good" data-saved>-</b></div>
+              </div>
+              <div class="hud-why" data-why>-</div>
+            </div>
             <div class="overlay maptools">
               <label class="switch"><input type="checkbox" data-compare> Sense bateria</label>
               <button data-act="zoom-in" aria-label="Apropar">+</button><button data-act="zoom-out" aria-label="Allunyar">−</button>

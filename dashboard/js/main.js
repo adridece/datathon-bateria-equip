@@ -81,6 +81,9 @@ function show(i, fromPlayer) {
   setAll("[data-co2]", e => (e.textContent = f(H.co2[k] * 1000) + " g/kWh"));
   setAll("[data-price]", e => (e.textContent = f(H.price[k] * 1000) + " €/MWh"));
   setAll("[data-why]", e => (e.textContent = H.why[k]));
+  const sv = savedUntil(k);
+  setAll("[data-saved]", e => (e.textContent = `${f(sv.co2)} kg CO₂, ${f(sv.eur)} €`));
+  setAll("[data-clock]", e => (e.textContent = $("chip-time").textContent));
   setAll("[data-pos]", e => (e.textContent = `hora ${k - week.start + 1} de ${week.end - week.start}`));
   setAll("[data-cycles]", e => (e.textContent = f(weekCycles(), 1)));
   sceneAt(k);
@@ -290,6 +293,7 @@ function frame(now) {
   sceneAt(clock);
   const min = Math.floor((clock % 1) * 60);
   $("chip-time").textContent = $("chip-time").textContent.replace(/\d\d:\d\d h$/, `${H.t[k].slice(11, 13)}:${String(min).padStart(2, "0")} h`);
+  setAll("[data-clock]", e => (e.textContent = $("chip-time").textContent));
   timer = requestAnimationFrame(frame);
 }
 function stop() { cancelAnimationFrame(timer); timer = null; $("chip-time").classList.remove("live"); setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }

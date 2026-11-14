@@ -257,3 +257,17 @@ body.demo-on .view.on .grid > .card { animation: none; }
 
 .topbar .right > * { white-space: nowrap; }
 .topbar > div:first-child { min-width: 0; }
+
+/* ---------- panell del mapa ampliat: el més important sempre a la vista ---------- */
+.stage .hud-live { display: none; }
+.stage.expanded .hud-live { display: block; left: 16px; bottom: 16px; width: min(560px, calc(100% - 32px)); padding: 14px 16px; }
+.hud-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
+.hud-clock { font-size: 17px; font-weight: 500; margin-right: auto; }
+.hud-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; }
+.hud-grid div { display: flex; flex-direction: column; gap: 2px; }
+.hud-grid span { font-size: 11px; color: var(--muted); }
+.hud-grid b { font-size: 14px; font-weight: 500; }
+.hud-grid b.good { color: var(--accent); }
+.hud-grid em { font-style: normal; font-size: 11px; color: var(--muted); }
+.hud-why { margin-top: 10px; font-size: 13px; color: var(--text); background: var(--soft); border-radius: var(--r-sm); padding: 8px 10px; }
+@media (max-width: 900px) { .hud-grid { grid-template-columns: repeat(2, 1fr); } }
