@@ -63,7 +63,7 @@ def save_history(data):
     path = ROOT / "dashboard" / "data" / "history.json"
     hist = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
     y, wk = data["yearly"], data["weekly"]
-    row = {"date": datetime.now().strftime("%Y-%m-%d %H:%M"), "agent": "mpc_robust",
+    row = {"date": datetime.now().strftime("%Y-%m-%d %H:%M"), "agent": "estandard_robust",
            "co2_t_year": round(y["co2_t_year"], 1), "eur_year": round(y["eur_year"]),
            "co2_pct": y["co2_pct"], "cost_pct": y["cost_pct"],
            "of_best_pct": round(sum(w["of_best_pct"] for w in wk) / len(wk), 1),

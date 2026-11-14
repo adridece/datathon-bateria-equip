@@ -1,7 +1,7 @@
 """
 Proves de l'agent robust. Des de l'arrel del projecte:
-    python tests/test_agent.py                    (prova agents/mpc_robust)
-    python tests/test_agent.py mpc_test_weights   (prova una altra carpeta d'agents/)
+    python tests/test_agent.py                    (prova agents/estandard_robust)
+    python tests/test_agent.py estandard_robust_pesos_test   (prova una altra carpeta d'agents/)
     python -m pytest tests              (si teniu pytest)
 """
 import math
@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 from src.evaluate import load_agent, run, valid_split  # noqa: E402
 from src.data import load_hourly  # noqa: E402
 
-AGENT_NAME = sys.argv[1] if __name__ == "__main__" and len(sys.argv) > 1 else "mpc_robust"
+AGENT_NAME = sys.argv[1] if __name__ == "__main__" and len(sys.argv) > 1 else "estandard_robust"
 AGENT_DIR = ROOT / "agents" / AGENT_NAME
 ETA = 0.9 ** 0.5
 

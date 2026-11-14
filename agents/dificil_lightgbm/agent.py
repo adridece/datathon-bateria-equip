@@ -1,22 +1,17 @@
 """
-BatteryAgent final per al Mode Dificil (6.000 kWh, +-1.500 kW, solar x12, 3 h de mercat).
+BatteryAgent per al Mode Dificil amb models de previsio (LightGBM).
 
-LP de 24 h + MPC amb la xarxa dins del LP (aprofita l'excedent solar i no descarrega mes del que es
-consumeix). Les previsions son senzilles (ultims dies a la mateixa hora + perfils del train) i uns models
-LightGBM (scripts/train_hard_final.py, 5 llavors) les corregeixen:
-  - consum i solar de l'hora actual i les 2 seguents,
-  - CO2 de les hores +3..+8 i preu de totes les hores; a +3/+4 h hi barregem la forma d'ahir ancorada
-    a l'ultima hora coneguda.
-Decisions amb incertesa (errors de previsio mesurats fora de mostra, per hora del dia):
-  - el pla compta amb una mica menys de consum a les hores on la previsio falla mes,
-  - a l'hora actual no descarreguem mes del que el campus segur que consumira,
-  - amb excedent solar carreguem pensant en el cas de mes sol (carregar de menys perd energia gratis).
-El primer dia de cada setmana fem servir els ultims dies del train com a historial.
-Validacio a docs/DIARI.md (D-033 i D-034). Si algun model no es pot carregar, es fa servir la previsio senzilla.
+Mateix esquema que dificil_previsio_simple (LP de 24 h + MPC amb la xarxa dins del LP), pero les previsions
+les corregeixen models entrenats amb el train (scripts/train_dificil_lightgbm.py):
+  - preu i CO2 de les hores +3..+23 (les 3 primeres ja les dona el mercat),
+  - consum i solar de les hores +0..+23, sobretot la de l'hora actual: saber quant consumeix
+    el campus ARA diu quant podem descarregar sense llencar energia.
+Cada model corregeix una previsio senzilla (ultims dies a la mateixa hora + perfils del train).
+Si algun model no es pot carregar, es fa servir la previsio senzilla tal qual.
 """
 import json
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 from pathlib import Path
 
 import numpy as np
@@ -113,39 +108,24 @@ def load_base(load, hour, dow, profile):
     return [profile[(dow + (hour + j) // 24) % 7][(hour + j) % 24] * ratio for j in range(HORIZON)]
 
 
-def pv_base(pv, hour, typical=None):
-    """Solar de les 24 h: ultims dies a la mateixa hora (o el perfil tipic del mes si encara no en tenim);
-    la resta d'avui, segons com de clar esta el dia."""
+def pv_base(pv, hour):
+    """Solar de les 24 h: ultims dies a la mateixa hora; la resta d'avui, segons com de clar esta el dia."""
     n = len(pv)
     sky = 1.0
     last, yesterday = at(pv, n - 1), mean_lags(pv, n - 1)
-    if yesterday != yesterday and typical:
-        yesterday = typical[(hour - 1) % 24]
     if hour > 6 and last == last and yesterday == yesterday and yesterday > 50.0:
         sky = 1.0 + 0.8 * (min(max(last / yesterday, 0.2), 3.0) - 1.0)
     out = []
     for j in range(HORIZON):
         g = mean_lags(pv, n + j)
-        if g != g:
-            g = typical[(hour + j) % 24] if typical else 0.0
+        g = g if g == g else 0.0
         out.append(g * sky if hour + j < 24 else g)
     return out
 
 
 # ---------------------------------------------------------------- variables dels models
-# Les fan servir igual l'agent i scripts/train_hard.py: no canviar l'una sense l'altre.
+# Les fan servir igual l'agent i scripts/train_dificil_lightgbm.py: no canviar l'una sense l'altre.
 # L'ultima columna es la previsio senzilla; el model prediu (valor real - previsio senzilla).
-def anchored(full, n, j):
-    """La forma d'ahir i d'abans d'ahir enganxada a l'ultima hora de mercat coneguda (posicio n+2)."""
-    last = full[n + 2]
-    out = []
-    for k in (24, 48):
-        ref, then = at(full, n + 2 - k), at(full, n + j - k)
-        out.append(last * then / ref if ref == ref and then == then and ref > 1e-6 else NAN)
-        out.append(last + then - ref if ref == ref and then == then else NAN)
-    return out
-
-
 def market_rows(hist, other_hist, known, other_known, hour, dow, month, irr_last, profile):
     """Una fila per hora futura (+3..+23) per predir preu o CO2."""
     full, other_full = hist + known, other_hist + other_known
@@ -157,7 +137,7 @@ def market_rows(hist, other_hist, known, other_known, hour, dow, month, irr_last
         rows.append([j, h, d, int(d >= 5), month, known[0], known[1], known[2],
                      other_known[0], other_known[1], other_known[2],
                      at(full, n + j - 24), at(full, n + j - 48), at(full, n - 24), at(full, n - 23), at(full, n - 22),
-                     mean_last(hist), irr_last, at(other_full, n + j - 24)] + anchored(full, n, j) + [base[j]])
+                     mean_last(hist), irr_last, at(other_full, n + j - 24), base[j]])
     return rows
 
 
@@ -180,11 +160,11 @@ def load_rows(load, temp, hour, dow, month, profile):
     return rows
 
 
-def pv_rows(pv, irr, temp, hour, month, clear, typical=None):
+def pv_rows(pv, irr, temp, hour, month, clear):
     """Una fila per hora (+0..+23) per predir la solar. clear = solar maxima del mes per hora (dia clar)."""
     n = len(pv)
     day_max = max([x for x in pv[-24:] if x == x], default=NAN)
-    base = pv_base(pv, hour, typical)
+    base = pv_base(pv, hour)
     last, irr_last = at(pv, n - 1), at(irr, len(irr) - 1)
     clear_last = clear[(hour - 1) % 24] if clear else NAN
     rows = []
@@ -198,15 +178,11 @@ def pv_rows(pv, irr, temp, hour, month, clear, typical=None):
     return rows
 
 
-def load_model(name, seeds=1):
-    """Carrega els models d'una serie (un per llavor). Si no n'hi ha cap, None."""
-    models = []
-    for k in range(seeds):
-        try:
-            models.append(lgb.Booster(model_file=str(FOLDER / f"{name}_{k}.txt")))
-        except Exception:
-            pass
-    return models or None
+def load_model(name):
+    try:
+        return lgb.Booster(model_file=str(FOLDER / f"{name}.txt"))
+    except Exception:
+        return None
 
 
 class BatteryAgent:
@@ -225,38 +201,13 @@ class BatteryAgent:
         self.price_profile = params.get("price_profile") or {}
         self.co2_profile = params.get("co2_profile") or {}
         self.pv_clear = params.get("pv_clear") or {}
-        self.pv_mean = params.get("pv_mean") or {}
-        self.safety_night = params.get("safety_night", self.safety)
-        self.pv_now = 0.0
-        self.history = params.get("history") or {}
-        self.surplus_boost = params.get("surplus_boost", True)
-        self.surplus_q = params.get("surplus_q", 4)
-        self.plan_surplus = params.get("plan_surplus", False)
-        self.plan_margin = params.get("plan_margin", True)
-        self.anchor_weight = params.get("anchor_weight", {"co2": [1.0, 0.5], "price": [0.5]})
-        # errors passats del consum net de l'hora actual, per hora del dia (quantils 5..50 %)
-        self.net_errors = params.get("net_errors") or {}
-        self.quantile = params.get("quantile")
-        self.models = {name: load_model(name, params.get("seeds", 1)) for name in ("price", "co2", "load", "pv")}
+        self.models = {name: load_model(name) for name in ("price", "co2", "load", "pv")}
         # fins a quina hora (+j) corregim amb cada model; mes enlla, previsio senzilla
         self.near_hours = params.get("near_hours", {"price": 8, "co2": 8, "load": 2, "pv": 2})
         # historic de la simulacio (un valor per hora)
         self.price, self.co2, self.load, self.pv, self.irr, self.temp = [], [], [], [], [], []
         self.prev_time = None
         self.started = False
-
-    def seed_history(self, now):
-        """Omple l'historic amb les ultimes hores del train si acaben just abans d'ara."""
-        if now is None:
-            return False
-        h = self.history.get((now - timedelta(hours=1)).strftime("%Y-%m-%d %H"))
-        if not h:
-            return False
-        clean = lambda v: [to_float(x, NAN) for x in v]
-        self.price, self.co2 = clean(h["price"]), clean(h["co2"])
-        self.load, self.pv = clean(h["load"]), clean(h["pv"])
-        self.irr, self.temp = clean(h["irr"]), clean(h["temp"])
-        return True
 
     def reset_history(self):
         self.price, self.co2, self.load, self.pv, self.irr, self.temp = [], [], [], [], [], []
@@ -272,7 +223,7 @@ class BatteryAgent:
             try:
                 close = rows[:, 0] <= self.near_hours.get(name, 0)
                 if close.any():
-                    out[close] += np.mean([m.predict(rows[close]) for m in model], axis=0)
+                    out[close] += model.predict(rows[close])
             except Exception:
                 out = rows[:, -1].copy()
         return np.maximum(out, 0.0)
@@ -280,22 +231,11 @@ class BatteryAgent:
     def forecast_market(self, name, hist, other_hist, known, other_known, hour, dow, month, irr_last):
         profile = (self.price_profile if name == "price" else self.co2_profile).get(str(month))
         rows = market_rows(hist, other_hist, known, other_known, hour, dow, month, irr_last, profile)
-        pred = self.predict(name, rows)
-        # a les primeres hores, la forma d'ahir/abans d'ahir ancorada a l'ultima hora coneguda encerta
-        # mes que el model: les barregem (pes de la formula per hora +3, +4, ...)
-        for i, wgt in enumerate(self.anchor_weight.get(name, [])):
-            if i < len(pred):
-                a24, a48 = rows[i][-5], rows[i][-3]
-                anc = a24 if a48 != a48 else (a48 if a24 != a24 else 0.5 * (a24 + a48))
-                if anc == anc:
-                    pred[i] = wgt * anc + (1.0 - wgt) * pred[i]
-        return np.concatenate([known, pred])
+        return np.concatenate([known, self.predict(name, rows)])
 
     def forecast_net(self, hour, dow, month):
         load = self.predict("load", load_rows(self.load, self.temp, hour, dow, month, self.load_profile))
-        pv = self.predict("pv", pv_rows(self.pv, self.irr, self.temp, hour, month, self.pv_clear.get(str(month)),
-                                         self.pv_mean.get(str(month))))
-        self.pv_now = float(pv[0])
+        pv = self.predict("pv", pv_rows(self.pv, self.irr, self.temp, hour, month, self.pv_clear.get(str(month))))
         return load - pv
 
     # ------------------------------------------------------------ pla
@@ -341,13 +281,9 @@ class BatteryAgent:
 
         # entre setmanes de test hi ha un salt d'un mes: l'historic vell ja no serveix
         jump = now is not None and self.prev_time is not None and abs((now - self.prev_time).total_seconds()) > 5400
-        if jump or not self.started:
+        if jump:
             self.reset_history()
-            # si el train acaba just l'hora abans, en recuperem els ultims dies
-            seeded = self.seed_history(now)
-        else:
-            seeded = False
-        if self.started and not jump and not seeded:
+        if self.started and not jump:
             last = obs.get("noves_dades_5min") or {}
             self.load.append(max(to_float(last.get("ultim_consum_kw"), NAN), 0.0))
             self.pv.append(max(to_float(last.get("ultima_solar_kw"), NAN), 0.0))
@@ -368,37 +304,14 @@ class BatteryAgent:
         self.price.append(prices[0])
         self.co2.append(co2[0])
 
-        # el pla sap que a algunes hores el consum net es preveu pitjor: alla compta amb menys consum
-        # (nomes per a descarregar; l'excedent solar es queda igual)
-        net_plan = np.array(net, dtype=float)
-        if self.plan_margin and self.net_errors and self.quantile is not None:
-            for j in range(len(net_plan)):
-                errors = self.net_errors.get(str((hour + j) % 24))
-                if errors and net_plan[j] > 0:
-                    net_plan[j] = net_plan[j] + errors[self.quantile]
-                    if not self.plan_surplus:
-                        net_plan[j] = max(net_plan[j], 0.0)
         try:
-            p = self.plan(soc, w, net_plan, cap, pmax)
+            p = self.plan(soc, w, net, cap, pmax)
         except Exception:
             p = self.backup_rule(w, net[0], pmax)
 
-        # excedent solar: carregar de menys perd energia gratis, carregar de mes nomes compra una mica de
-        # xarxa a l'hora mes barata. Per aixo carreguem pensant en el cas de mes excedent (mateix quantil).
-        errors_now = self.net_errors.get(str(hour))
-        if self.surplus_boost and errors_now and self.quantile is not None and p >= 0:
-            p = max(p, -(net[0] + errors_now[self.surplus_q]))
-
-        # no descarreguem mes del consum net que esperem ara, amb un marge per l'error de previsio:
-        # de nit (sense sol) el consum es preveu molt millor que de dia
+        # no descarreguem mes del consum net que esperem ara (amb un marge per l'error de previsio)
         if p < 0:
-            errors = self.net_errors.get(str(hour))
-            if errors and self.quantile is not None:
-                # error que nomes se supera per sota en un tant per cent dels casos a aquesta hora
-                limit = net[0] + errors[self.quantile]
-            else:
-                limit = net[0] * (self.safety_night if self.pv_now < 20.0 else self.safety)
-            p = max(p, -max(limit, 0.0))
+            p = max(p, -max(net[0], 0.0) * self.safety)
         max_c = max(0.0, min(pmax, (cap - soc) / ETA - 1e-4))
         max_d = max(0.0, min(pmax, soc * ETA - 1e-4))
         p = min(max(to_float(p, 0.0), -max_d), max_c)

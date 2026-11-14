@@ -104,7 +104,7 @@ La clau de l'API d'OpenCode: copia el fitxer `.env.example` amb el nom `.env` i 
 
 ## 4. Comprovar que tot funciona
 ```
-python -m src.evaluate agents/mpc_lp
+python -m src.evaluate agents/estandard_lp
 ```
 Ha de sortir alguna cosa com `VALID (7d/mes) ... 'score': 6.08 ... 'infraccions': 0`. Si és així, ja ho tens tot a punt.
 
@@ -143,7 +143,7 @@ git checkout analisi
 > demana ajuda al grup o al teu assistent: "tinc un conflicte de git, ajuda'm a resoldre'l pas a pas".
 
 ## 6. Com enviar un agent a la web (puntuació oficial)
-1. Crea el zip i valida'l: `python scripts/make_submission.py agents/mpc_lp`
+1. Crea el zip i valida'l: `python scripts/make_submission.py agents/estandard_lp`
    → ha de dir **"LA SOLUCIÓ ÉS VÀLIDA"**. El zip queda a la carpeta `submissions/`.
 2. Obre https://repteupc.datathon.cat/ → pestanya **"Lliurament de Solucions"**.
 3. Omple: **Nom de l'equip** (sempre el mateix!), **PIN** (el de l'equip, el guarda l'Adrià; no el
@@ -172,7 +172,7 @@ git checkout analisi
 | Saber per què hem fet les coses | `docs/DECISIONS.md` |
 | Veure resultats i enviaments | `docs/DIARI.md` |
 | Saber què queda per fer | `docs/PLA.md` |
-| El nostre agent | `agents/mpc_lp/agent.py` |
+| El nostre agent | `agents/estandard_lp/agent.py` |
 | Material oficial (no tocar) | `starter_kit/`, `docs/repte/` |
 
 ## 9. Glossari ràpid

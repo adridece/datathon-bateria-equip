@@ -29,7 +29,7 @@ def _cached(name, build):
     return df
 
 
-def run(agent="mpc_robust", cap=2000.0, power=500.0, data=None) -> pd.DataFrame:
+def run(agent="estandard_robust", cap=2000.0, power=500.0, data=None) -> pd.DataFrame:
     data = valid_data() if data is None else data
     return replay(make_agent(agent, cap, power), data, cap, power)
 
@@ -64,7 +64,7 @@ def strategies() -> pd.DataFrame:
     def build():
         rows = []
         for label, agent in [("Sense bateria", "sense_bateria"), ("Regles per hores", "plantilla"),
-                             ("MPC + programació lineal", "mpc_robust")]:
+                             ("MPC + programació lineal", "estandard_robust")]:
             r = run(agent).attrs["resultat"]
             rows.append({"strategy": label, "score": r["score"], "co2_pct": r["co2_estalviat_pct"],
                          "cost_pct": r["cost_estalviat_pct"], "violations": r["infraccions"]})
@@ -82,7 +82,7 @@ def sizing() -> pd.DataFrame:
         rows = []
         for p in POWERS:
             for c in CAPACITIES:
-                r = run("mpc_robust", float(c), float(p)).attrs["resultat"]
+                r = run("estandard_robust", float(c), float(p)).attrs["resultat"]
                 rows.append({"capacity_kwh": c, "power_kw": p, "score": r["score"],
                              "co2_pct": r["co2_estalviat_pct"], "cost_pct": r["cost_estalviat_pct"],
                              "co2_t_year": r["co2_estalviat_kg"] / 1000 * HOURS_PER_YEAR / hours,
@@ -112,7 +112,7 @@ def robustness() -> pd.DataFrame:
     def build():
         rows = []
         for e in [0.0, 0.05, 0.10, 0.20, 0.30, 0.50]:
-            d = replay(NoisyForecast(make_agent("mpc_robust"), e), valid_data())
+            d = replay(NoisyForecast(make_agent("estandard_robust"), e), valid_data())
             rows.append({"error_pct": int(100 * e), "score": d.attrs["resultat"]["score"],
                          "violations": d.attrs["resultat"]["infraccions"]})
         return pd.DataFrame(rows)

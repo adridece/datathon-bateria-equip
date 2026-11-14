@@ -1,7 +1,7 @@
 [
  {
   "date": "2026-11-14 22:10",
-  "agent": "mpc_robust",
+  "agent": "estandard_robust",
   "co2_t_year": 44.2,
   "eur_year": 96458,
   "co2_pct": 5.69,

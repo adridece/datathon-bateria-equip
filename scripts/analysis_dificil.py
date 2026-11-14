@@ -1,6 +1,6 @@
 """
-Analisi de dades del Mode Dificil: genera les figures de docs/figures/hard_*.png que expliquen el disseny de l'agent.
-    python scripts/analysis_hard.py
+Analisi de dades del Mode Dificil: genera les figures de docs/figures/dificil_*.png que expliquen el disseny de l'agent.
+    python scripts/analysis_dificil.py
 """
 import sys
 from pathlib import Path
@@ -32,7 +32,7 @@ def net_by_hour(d):
     ax.set_xlabel("hora del dia"); ax.set_ylabel("kW")
     ax.set_title("Consum net del campus amb 12 vegades més solar")
     ax.legend(frameon=False, fontsize=8, loc="lower left")
-    fig.tight_layout(); fig.savefig(OUT / "hard_01_consum_net.png"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(OUT / "dificil_01_consum_net.png"); plt.close(fig)
     return float((net < 0).mean() * 100), float(-net.min())
 
 
@@ -53,7 +53,7 @@ def solar_vs_irradiance(d):
         ax.set_title(f"{title}\ncorrelació {r:.3f}, error mitjà {mae:.0f} kW", fontsize=9)
         ax.set_xlabel("W/m²")
     axes[0].set_ylabel("solar de l'hora (kW)")
-    fig.tight_layout(); fig.savefig(OUT / "hard_02_solar_irradiancia.png"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(OUT / "dificil_02_solar_irradiancia.png"); plt.close(fig)
     return out
 
 
@@ -68,14 +68,14 @@ def co2_by_hour(d):
     ax.set_xlabel("hora del dia"); ax.set_ylabel("g CO₂/kWh")
     ax.set_title("CO₂ de la xarxa: mediana i 50 % central dels dies")
     ax.legend(frameon=False, fontsize=8)
-    fig.tight_layout(); fig.savefig(OUT / "hard_03_co2_hores.png"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(OUT / "dificil_03_co2_hores.png"); plt.close(fig)
     day = (d.co2_kg_per_kwh * 1000).groupby(d.index.date)
     return float((day.max() - day.min()).median())
 
 
 def where_points_go():
-    """Escala de puntuacio a F0 (tests/bench_hard.py i l'experiment de previsions perfectes de docs/ANALISI_MODE_DIFICIL.md)."""
-    steps = [("hard_final", 18.80), ("hard_v3", 18.88), ("+ irradiància\nde l'hora actual*", 19.02),
+    """Escala de puntuacio a F0 (tests/bench_dificil.py i l'experiment de previsions perfectes de docs/ANALISI_MODE_DIFICIL.md)."""
+    steps = [("dificil_marges", 18.80), ("dificil_co2_irradiancia", 18.88), ("+ irradiància\nde l'hora actual*", 19.02),
              ("previsió de\nmercat perfecta", 19.54), ("totes les previsions\nperfectes", 20.18), ("òptim teòric", 20.28)]
     # punts i no barres: l'eix no comenca a zero i una barra exageraria les diferencies
     fig, ax = plt.subplots(figsize=(8, 3.4))
@@ -87,7 +87,7 @@ def where_points_go():
     ax.set_xticks(range(len(steps)), [s[0] for s in steps], fontsize=8)
     ax.set_ylim(18.5, 20.6); ax.set_ylabel("puntuació (validació F0)")
     ax.set_title("On són els punts: el mètode ja és bo, el que falta és previsió")
-    fig.tight_layout(); fig.savefig(OUT / "hard_04_on_son_els_punts.png"); plt.close(fig)
+    fig.tight_layout(); fig.savefig(OUT / "dificil_04_on_son_els_punts.png"); plt.close(fig)
 
 
 def main():

@@ -37,9 +37,9 @@ python scripts/setup.py
 
 ## Ús
 ```
-python -m src.evaluate agents/mpc_robust            # Mode Estàndard: puntuació local
-python tests/bench_hard.py 0,1,2                    # Mode Difícil: validació honesta i òptim teòric
-python scripts/make_submission.py agents/hard_v3    # zip per a la web, ja validat
+python -m src.evaluate agents/estandard_robust            # Mode Estàndard: puntuació local
+python tests/bench_dificil.py 0,1,2                    # Mode Difícil: validació honesta i òptim teòric
+python scripts/make_submission.py agents/dificil_co2_irradiancia    # zip per a la web, ja validat
 python scripts/serve_dashboard.py                   # obre el dashboard a http://localhost:8000
 ```
 

@@ -1,6 +1,6 @@
 """
 Crea submissions/<nom>.zip a partir d'una carpeta d'agent i el valida amb el checker oficial.
-    python scripts/make_submission.py agents/mpc_lp
+    python scripts/make_submission.py agents/estandard_lp
 Posa agent.py i els fitxers auxiliars (json, pkl, py) a l'ARREL del zip, com demana la web.
 """
 import subprocess

@@ -7,7 +7,7 @@ una darrere l'altra), aqui fem un pseudo-test semblant amb el train:
   - FULL : tot el train seguit.
 
 Us (des de l'arrel del projecte):
-    python -m src.evaluate agents/mpc_lp            # avalua un agent
+    python -m src.evaluate agents/estandard_lp            # avalua un agent
     python -m src.evaluate starter_kit              # plantilla oficial
     python -m src.evaluate --oracle                 # cota superior (info perfecta)
 """

@@ -3,8 +3,8 @@ Banc de proves honest del Mode Dificil.
 Per a cada validacio (F0 = ultima setmana de cada mes del train, F1 = la d'abans, F2 = la d'abans encara)
 entrena els models SENSE aquelles setmanes, avalua l'agent i calcula l'optim teoric (sabent tot el futur).
 
-    python tests/bench_hard.py                 (agents/hard_v3, F0 i F1)
-    python tests/bench_hard.py 0,1,2           (tambe F2, la que reservem per comprovar al final)
+    python tests/bench_dificil.py                 (agents/dificil_co2_irradiancia, F0 i F1)
+    python tests/bench_dificil.py 0,1,2           (tambe F2, la que reservem per comprovar al final)
 
 Un canvi nomes es queda si millora totes les validacions: aixi evitem ajustar-nos a unes setmanes concretes.
 """
@@ -23,7 +23,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from src.data import contiguous_blocks, load_hourly  # noqa: E402
 from src.evaluate import load_agent  # noqa: E402
-from tests.evaluate_hard import run_hard  # noqa: E402
+from tests.evaluate_dificil import run_hard  # noqa: E402
 
 
 def split(d, k):
@@ -58,7 +58,7 @@ def oracle(test, cap=6000.0, pmax=1500.0):
 
 
 def train_module():
-    spec = importlib.util.spec_from_file_location("train_hard_v3", ROOT / "scripts" / "train_hard_v3.py")
+    spec = importlib.util.spec_from_file_location("train_dificil_co2_irradiancia", ROOT / "scripts" / "train_dificil_co2_irradiancia.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -73,7 +73,7 @@ def main():
         train, test = split(d, k)
         with tempfile.TemporaryDirectory() as tmp:
             work = Path(tmp) / "agent"
-            shutil.copytree(ROOT / "agents" / "hard_v3", work)
+            shutil.copytree(ROOT / "agents" / "dificil_co2_irradiancia", work)
             trainer.train(train, work, seeds_base=2)
             res = run_hard(load_agent(work), test)
         best = oracle(test)
