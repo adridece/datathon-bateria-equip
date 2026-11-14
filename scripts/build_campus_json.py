@@ -39,17 +39,29 @@ MAX_PTS = 40
 CONTEXT_BUFFER_M = 120         # edificis veïns (context gris) fins a aquesta distància del límit
 BBOX = (41.3845, 2.1075, 41.3925, 2.1185)  # S, W, N, E (només per retallar)
 
-# Noms deduïts per posició (OSM no hi posa nom). Justificació a docs/RECERCA_CAMPUS3D.md.
-INFERRED_NAMES = {
-    1436110226: "Pav-A1A2", 1436110225: "Pav-A2A3", 1436110224: "Pav-A3A4", 1436110223: "Pav-A4A5",
-    187765244: "A4",   # fila A, 5 plantes, plaques FV a coberta (OSM way 1321485800)
-    187765249: "A5",   # idem (1321485799)
-    187765253: "A6",   # idem (1321485798)
-    1124652469: "B3",  # OSM: nom = ETSETB; posició entre B2 i B4
-    642719991: "B6",   # posició al final de la fila B
+# Fonts dels noms que OSM no porta a "name"
+UPC_TENDER_2009 = ("https://seuelectronica.upc.edu/ca/perfil-de-contractant/historic-de-licitacions/"
+                   "Licitacions_Previes_28-feb-2011/procediments-oberts-any-2009-carpeta/"
+                   "conse160000ho2009111-83/plec-tec.pdf")
+# Noms confirmats: OSM hi posa addr:housenumber (A4, A5, A6, B6) i la UPC els llista al plec de
+# manteniment del Campus Nord (2009). B3 = ETSETB ho diu la mateixa escola.
+CONFIRMED_NAMES = {
+    187765244: ("A4", UPC_TENDER_2009),
+    187765249: ("A5", UPC_TENDER_2009),
+    187765253: ("A6", UPC_TENDER_2009),
+    1124652469: ("B3", "https://telecos.upc.edu/ca"),
+    642719991: ("B6", "https://www.fib.upc.edu/en/contact"),
+}
+# Pavellons d'1 planta sense nom públic: posem un nom descriptiu (no és cap nom oficial)
+DESCRIPTIVE_NAMES = {
+    1436110226: ("Pav-A1A2", "Pavelló entre A1 i A2"),
+    1436110225: ("Pav-A2A3", "Pavelló entre A2 i A3"),
+    1436110224: ("Pav-A3A4", "Pavelló entre A3 i A4"),
+    1436110223: ("Pav-A4A5", "Pavelló entre A4 i A5"),
 }
 DISPLAY_NAMES = {
     1124652469: "B3 (ETSETB)",
+    642719991: "B6 (FIB)",
     642719955: "Capella Torre Girona (BSC, MareNostrum)",
 }
 # Generadors FV OSM -> edifici (comprovat amb punt-dins-polígon, aquí només per etiquetar)
@@ -58,6 +70,7 @@ DEFAULT_H = {"university": 12.0, "office": 12.0, "stadium": 9.0, "dormitory": 18
 ROLE = {  # paper a l'escena (per a hover). Clau = nom.
     **{f"A{i}": "Aulari (aules). Coberta amb plaques FV" for i in range(1, 7)},
     **{f"B{i}": "Departaments / ETSETB" for i in range(0, 7)},
+    "B6": "Facultat d'Informàtica de Barcelona (FIB)",
     **{f"C{i}": "Departaments i laboratoris" for i in range(1, 7)},
     **{f"D{i}": "Departaments i laboratoris" for i in range(1, 7)},
     "Biblioteca Rector Gabriel Ferraté": "Biblioteca",
@@ -323,14 +336,16 @@ def build(raw_path=RAW, out_path=OUT):
                 ring = [[r1(x), r1(z)] for x, z in ccw(simplify_ring([P(p) for p in ll], 1.5, 16))]
             context.append({"h": round(h, 1), "ring": ring})
             continue
-        name = t.get("name") or INFERRED_NAMES.get(oid)
-        inferred = oid in INFERRED_NAMES and (t.get("name") is None or oid == 1124652469)
-        if oid in INFERRED_NAMES:
-            name = INFERRED_NAMES[oid]
+        name, display, name_src = t.get("name"), None, f"OSM {typ}/{oid}"
+        if oid in CONFIRMED_NAMES:
+            name, name_src = CONFIRMED_NAMES[oid]
+        elif oid in DESCRIPTIVE_NAMES:
+            name, display = DESCRIPTIVE_NAMES[oid]
+            name_src = "nom descriptiu (sense nom públic)"
         pv_here = [g for g in pv if pip(g["c"], ring_m)]
         b = {
             "id": name or f"{typ}/{oid}",
-            "name": DISPLAY_NAMES.get(oid, name) if name else None,
+            "name": display or DISPLAY_NAMES.get(oid, name) if name else None,
             "osm": f"{typ}/{oid}",
             "building": t.get("building"),
             "levels": int(float(t["building:levels"])) if "building:levels" in t else None,
@@ -341,11 +356,12 @@ def build(raw_path=RAW, out_path=OUT):
             "has_pv": True if pv_here else "unknown",
             "pv_area_m2": sum(g["area_m2"] for g in pv_here) or None,
             "role": ROLE.get(name, "Edifici universitari" if t.get("building") == "university" else "Edifici sense nom a OSM"),
-            "name_inferred": bool(inferred),
+            "name_inferred": False,
+            "name_source": name_src,
             "centroid": [r1(cx_), r1(cz_)],
             "area_m2": round(abs(A)),
             "polygon": ring_out(ll),
-            "source": f"OSM {typ}/{oid}" + (" (nom deduït per posició)" if inferred else ""),
+            "source": f"OSM {typ}/{oid}",
         }
         if holes:
             b["holes"] = [[[r1(x), r1(z)] for x, z in simplify_ring([P(p) for p in hr], 0.5, 20)] for hr in holes]
@@ -356,7 +372,7 @@ def build(raw_path=RAW, out_path=OUT):
     for b in buildings:
         if b["id"] in {f"A{i}" for i in range(1, 7)}:
             b["has_pv"] = True
-    buildings.sort(key=lambda b: (b["name_inferred"], str(b["id"])))
+    buildings.sort(key=lambda b: str(b["id"]))
 
     # vies
     streets = []
@@ -419,6 +435,56 @@ def build(raw_path=RAW, out_path=OUT):
         {"id": "INV2", "serves": ["A3", "A4"], "pos": [r1(x) for x in roof("A4")]},
         {"id": "INV3", "serves": ["A5", "A6"], "pos": [r1(x) for x in roof("A6")]},
     ]
+    def free_spot(anchor, margin=3.0):
+        """Punt lliure més proper a `anchor` (dins del campus i a `margin` m de tot edifici)."""
+        for r in range(0, 80, 2):
+            for k in range(max(1, r * 2)):
+                a = 2 * math.pi * k / max(1, r * 2)
+                cand = [r1(anchor[0] + r * math.cos(a)), r1(anchor[1] + r * math.sin(a))]
+                if pip(cand, boundary_xy) and clear(cand, margin - 4):
+                    return cand
+        return [r1(anchor[0]), r1(anchor[1])]
+
+    # Punts de connexió a la xarxa. La UPC no publica on són els seus CT: només el de BSC
+    # (subestació 110/25 kV) està documentat. La resta són una proposta raonada
+    # (veure docs/RECERCA_ELECTRICA_CAMPUS.md).
+    aularis = ["A1", "A2", "A3", "A4", "A5", "A6", "Pav-A1A2", "Pav-A2A3", "Pav-A3A4", "Pav-A4A5",
+               "Biblioteca Rector Gabriel Ferraté", "Poliesportiu UPC", "Nexus 1"]
+    modules = [f"{c}{i}" for c in "BCD" for i in range(0, 7) if f"{c}{i}" in byid]
+    omega = ["Edifici Omega", "Nexus 2", "way/1451552792"]
+    vertex = ["Edifici Vèrtex"]
+    bsc = ["Edifici BSC-Repsol", "Edifici Capella"]
+    doc_url = "docs/RECERCA_ELECTRICA_CAMPUS.md"
+    grid_connections = [
+        {"id": "upc_main", "kind": "escomesa_mt", "main": True,
+         "name": "Escomesa principal UPC (mitja tensió) + CT aularis",
+         "pos": [grid_xz[0], 0.0, grid_xz[1]], "feeds": aularis,
+         "confidence": "proposta", "source": doc_url,
+         "note": "Posició no publicada. Vora del C/ Jordi Girona (accés principal, xarxa d'Endesa sota la vorera), al costat del poliesportiu i de les plaques FV dels aularis A."},
+        {"id": "ct_modules", "kind": "ct", "name": "CT mòduls B, C i D", "near": "C3",
+         "feeds": modules, "confidence": "proposta", "source": doc_url,
+         "note": "24 mòduls de 3 plantes (~75.000 m²): calen 1-2 transformadors més. Posició il·lustrativa al centre de les files."},
+        {"id": "ct_omega", "kind": "ct", "name": "CT Omega (CPD)", "near": "Edifici Omega",
+         "feeds": omega, "confidence": "proposta", "source": doc_url,
+         "note": "L'Omega té el CPD central de la UPC (6 % de l'electricitat de tota la UPC, SIRENA 2010) i SAI propi."},
+        {"id": "ct_vertex", "kind": "ct", "name": "CT Vèrtex", "near": "Edifici Vèrtex",
+         "feeds": vertex, "confidence": "proposta", "source": doc_url,
+         "note": "Edifici de 18.574 m² construït a part (anys 2000): és habitual que tingui CT propi."},
+        {"id": "bsc_substation", "kind": "subestacio_at", "name": "Subestació BSC 110/25 kV (soterrada)",
+         "pos": [byid["Edifici BSC-Repsol"]["centroid"][0], 0.0, byid["Edifici BSC-Repsol"]["centroid"][1]]
+         if "Edifici BSC-Repsol" in byid else None,
+         "feeds": bsc, "underground": True, "upc_meter": False, "confidence": "documentada",
+         "source": "https://ewebapps.bsc.es/tenders/ca/download/file/tender-file/47",
+         "note": "Del BSC, no de la UPC: 2 transformadors de 20/25 MVA, 20 MW contractats, línia de 110 kV d'Endesa. Posició exacta dins de l'edifici no publicada."},
+    ]
+    # els CT proposats van al primer espai lliure al costat de l'edifici de referència
+    for g in grid_connections:
+        if g.get("pos") is None:
+            xz = free_spot(byid[g.pop("near")]["centroid"])
+            g["pos"] = [xz[0], 0.0, xz[1]]
+    # anell intern de mitja tensió (proposta): escomesa -> CT
+    mv_links = [["upc_main", "ct_modules"], ["upc_main", "ct_omega"], ["ct_omega", "ct_vertex"]]
+
     allx = [p[0] for b in buildings for p in b["polygon"]]
     allz = [p[1] for b in buildings for p in b["polygon"]]
 
@@ -443,11 +509,17 @@ def build(raw_path=RAW, out_path=OUT):
         "pv_arrays": [{k: v for k, v in g.items() if k != "c"} | {"centroid": [r1(g["c"][0]), r1(g["c"][1])]}
                       for g in sorted(pv, key=lambda g: g["c"][0])],
         "energy_assets": {
-            "grid_connection": {"pos": [grid_xz[0], 0.0, grid_xz[1]], "assumption": True,
-                                "note": "Posició no publicada. Suposem el CT/escomesa a la vora del campus (C/ Jordi Girona), al costat del poliesportiu."},
+            "grid_connection": {"pos": [grid_xz[0], 0.0, grid_xz[1]], "assumption": True, "id": "upc_main",
+                                "note": "Connexió principal (compatibilitat). Llista completa a grid_connections."},
+            "grid_connections": grid_connections,
+            "mv_links": mv_links,
             "battery": {"pos": [bat_xz[0], 0.0, bat_xz[1]], "size_m": [6.1, 2.6, 2.4],
                         "rotation_y_deg": 0, "capacity_kwh": 2000, "power_kw": 500, "assumption": True,
-                        "note": "Bateria hipotètica del repte (contenidor 20 peus). Ubicació proposada en espai obert entre la fila A i el poliesportiu."},
+                        "connects_to": "upc_main",
+                        "note": "Bateria hipotètica del repte (contenidor de 20 peus). Ubicació proposada.",
+                        "rationale": ("Al costat de l'escomesa principal, on es troben la xarxa i les plaques dels aularis A "
+                                      "(menys pèrdues i el mateix punt de mesura). Espai obert pavimentat, accessible "
+                                      "des del C/ Jordi Girona per a un camió i per als bombers, i a més de 10 m de qualsevol edifici.")},
             "pv_inverters": [dict(i, assumption=True) for i in inverters],
             "pv_note": "Plaques FV reals a les cobertes dels aularis A1–A6 (OSM power=generator, location=roof; SIRENA 2023: 170 kWp A1–A4 + 80 kWp A5–A6). L'agrupació en 3 inversors és una suposició.",
             "campus_load_anchor": {"pos": [r1(x) for x in roof("Edifici Omega")], "note": "Punt d'ancoratge per a l'etiqueta de consum del campus."},

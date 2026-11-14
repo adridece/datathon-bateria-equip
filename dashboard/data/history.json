@@ -1,0 +1,13 @@
+[
+ {
+  "date": "2026-11-14 20:04",
+  "agent": "mpc_robust",
+  "co2_t_year": 46.1,
+  "eur_year": 103796,
+  "co2_pct": 5.94,
+  "cost_pct": 7.52,
+  "of_best_pct": 100.0,
+  "worst_week_co2_pct": 3.36,
+  "violations": 0
+ }
+]

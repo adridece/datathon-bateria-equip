@@ -1,0 +1,211 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="color-scheme" content="light only">
+<title>Informe UPC Sostenible | Bateria del Campus Nord</title>
+<link rel="icon" type="image/png" href="static/logo-datathon.png">
+<style>
+  @font-face { font-family: "Plex Sans"; src: url(fonts/IBMPlexSans-Regular.woff2) format("woff2"); font-weight: 400; }
+  @font-face { font-family: "Plex Sans"; src: url(fonts/IBMPlexSans-SemiBold.woff2) format("woff2"); font-weight: 600; }
+  @font-face { font-family: "Plex Mono"; src: url(fonts/IBMPlexMono-Medium.woff2) format("woff2"); font-weight: 500; }
+  :root { --dt-ink: #1F2326; --dt-muted: #6E6A63; --dt-line: #E6E2DA; --dt-soft: #F7F5F1; --dt-accent: #47908B; --dt-accent-soft: #E4F1EF;
+          --dt-charge: #0072B2; --dt-discharge: #D55E00; --dt-co2: #A9824F; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: #E9E6E0; font: 10.5px/1.5 "Plex Sans", system-ui, sans-serif; color: var(--dt-ink); }
+  .bar { position: sticky; top: 0; display: flex; gap: 10px; justify-content: center; padding: 12px; background: #E9E6E0; }
+  .bar button { font: 13px "Plex Sans", sans-serif; border-radius: 999px; padding: 8px 18px; border: 1px solid #CFC9BD; background: #fff; cursor: pointer; }
+  .bar button.primary { background: var(--dt-accent); color: #fff; border-color: var(--dt-accent); }
+  .sheet { width: 210mm; height: 297mm; margin: 0 auto 30px; page-break-after: always; background: #fff; padding: 14mm 15mm 12mm; position: relative;
+           box-shadow: 0 10px 40px rgba(0,0,0,.12); overflow: hidden; display: flex; flex-direction: column; }
+  header { display: flex; align-items: center; gap: 14px; padding-bottom: 10px; border-bottom: 2px solid var(--dt-accent); }
+  header img { width: 68px; }
+  header .team { font-weight: 600; letter-spacing: .16em; color: #4A4F54; font-size: 11px; }
+  header .meta { margin-left: auto; text-align: right; color: var(--dt-muted); }
+  h1 { font-size: 21px; line-height: 1.2; margin: 14px 0 6px; font-weight: 600; }
+  .lead { font-size: 12.5px; color: #3B3F42; margin: 0 0 12px; max-width: 165mm; }
+  .lead b { color: var(--dt-accent); }
+  .kpis { display: grid; grid-template-columns: repeat(4, 1fr); gap: 7px; margin-bottom: 12px; }
+  .kpi { background: var(--dt-soft); border-radius: 10px; padding: 9px 11px; color: var(--dt-muted); }
+  .kpi b { display: block; font: 500 19px "Plex Mono", monospace; color: var(--dt-ink); }
+  .kpi.main { background: var(--dt-accent-soft); } .kpi.main b { color: var(--dt-accent); }
+  h2 { font-size: 11.5px; margin: 0 0 6px; text-transform: none; }
+  .recs { display: grid; grid-template-columns: 1fr 1fr; gap: 6px 10px; margin-bottom: 12px; }
+  .rec { border: 1px solid var(--dt-line); border-radius: 10px; padding: 9px 11px; }
+  .rec .n { font: 500 10px "Plex Mono", monospace; color: var(--dt-accent); }
+  .rec b { display: block; font-size: 11.5px; margin: 2px 0 3px; }
+  .rec p { margin: 0; color: #3B3F42; }
+  .charts { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+  .chart { border: 1px solid var(--dt-line); border-radius: 10px; padding: 9px 11px 6px; }
+  .chart .s { color: var(--dt-muted); margin: -3px 0 4px; }
+  .chart text { font: 8.5px "Plex Sans", sans-serif; fill: var(--dt-muted); }
+  .chart .lab { fill: var(--dt-ink); font-family: "Plex Mono", monospace; }
+  .foot { margin-top: auto; padding-top: 8px; border-top: 1px solid var(--dt-line); color: var(--dt-muted); font-size: 9px; display: flex; gap: 12px; }
+  .foot p { margin: 0; flex: 1; }
+  table { width: 100%; border-collapse: collapse; margin-bottom: 12px; }
+  th { text-align: right; font-weight: 400; color: var(--dt-muted); padding: 4px 6px; border-bottom: 1px solid var(--dt-line); }
+  td { text-align: right; padding: 4px 6px; border-bottom: 1px solid #F0EDE7; font-family: "Plex Mono", monospace; font-size: 9.5px; }
+  th:first-child, td:first-child { text-align: left; }
+  tfoot td { font-weight: 500; border-top: 1px solid var(--dt-line); border-bottom: 0; }
+  .cols { display: grid; grid-template-columns: 1fr 1fr; gap: 14px; }
+  .box { background: var(--dt-soft); border-radius: 10px; padding: 9px 11px; margin-bottom: 12px; }
+  .box p { margin: 0 0 4px; } ul { margin: 0; padding-left: 15px; } li { margin-bottom: 3px; }
+  .page { margin-left: 12px; white-space: nowrap; }
+  @page { size: A4; margin: 0; }
+  @media print { body { background: #fff; } .bar { display: none; } .sheet { margin: 0; box-shadow: none; } }
+</style>
+<script src="vendor/d3.min.js"></script>
+<script src="data/data.js"></script>
+</head>
+<body>
+<div class="bar"><button onclick="window.close()">Tancar</button><button class="primary" onclick="window.print()">Desar en PDF</button></div>
+<div class="sheet" id="p1"></div>
+<div class="sheet" id="p2"></div>
+<script>
+  // l'informe es genera amb les mateixes dades i càlculs que el dashboard
+  const D = window.DATA, yr = D.yearly, st = D.strategies, rob = D.robustness, W = D.weekly, P = D.profile;
+  const f = (x, d = 0) => x.toLocaleString("ca-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
+  const eur = x => (Math.abs(x) >= 10000 ? f(x / 1000) + " k€" : f(x) + " €");
+  const tons = s => s.co2_pct / yr.co2_pct * yr.co2_t_year;
+  const sz = D.sizing.filter(s => s.power_kw === 500).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
+  const best = sz.filter(s => s.payback < 10).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
+  const cur = sz.find(s => s.capacity_kwh === 2000);
+  const chargeH = [...P].sort((a, b) => b.battery_kw - a.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
+  const dischargeH = [...P].sort((a, b) => a.battery_kw - b.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
+  const keep = 100 * rob[rob.length - 1].score / rob[0].score;
+  const today = new Date().toLocaleDateString("ca-ES", { day: "numeric", month: "long", year: "numeric" });
+  const header = n => `<header><img src="static/logo-datathon.png" alt=""><div><div class="team">UPC SOSTENIBLE</div><div>Bateria del Campus Nord</div></div>
+      <div class="meta">Informe per a UPC Sostenible<br>${today}<span class="page">${n} / 2</span></div></header>`;
+  const decisions = [
+    ["Operar la bateria amb control predictiu", `Evita ${f(tons(st[2]))} t de CO₂ i ${eur(yr.eur_year)} l'any, el ${f(100 * st[2].co2_pct / st[3].co2_pct)} % del que s'evitaria coneixent el futur. Un horari fix només n'evita ${f(tons(st[1]))} t.`],
+    ["Carregar a les hores de sol, descarregar al matí i al vespre", `Carrega sobretot a les ${chargeH.join(", ")} h, les de menys CO₂, i descarrega a les ${dischargeH.join(", ")} h, les de més CO₂ i preu.`],
+    [`Ampliar la bateria a ${f(best.capacity_kwh)} kWh`, `Amb el mateix inversor de 500 kW passaria de ${f(cur.co2_t_year)} a ${f(best.co2_t_year)} t de CO₂ l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh).`],
+    ["Posar-la en marxa amb les previsions de REE", `Amb un 50 % d'error a les previsions de preu i CO₂ encara conserva el ${f(keep)} % de l'estalvi.`],
+    ["Respectar sempre els límits de la bateria", `Mai demana més de 500 kW ni més energia de la que hi cap o en queda: ${f(yr.violations)} infraccions. Un horari fix en faria ${f(st[1].violations)}.`],
+    ["Moure els consums flexibles a les hores netes", `El dashboard avisa quan la xarxa és de les més netes del dia: és el moment de fer servir equips que es poden programar.`],
+  ];
+
+  document.getElementById("p1").innerHTML = header(1) + `
+    <h1>Operar la bateria del Campus Nord amb control predictiu</h1>
+    <p class="lead">Cada hora, el control planifica les 24 hores següents amb el preu i el CO₂ de la xarxa i decideix quan carregar i
+      quan descarregar. Així el campus evitaria <b>${f(yr.co2_t_year)} tones de CO₂</b> i <b>${eur(yr.eur_year)}</b> de factura cada any,
+      sense canviar el seu consum: només canvia <b>quan</b> compra l'electricitat.</p>
+    <div class="kpis">
+      <div class="kpi main"><b>${f(yr.co2_t_year)} t</b>CO₂ evitat per any (−${f(yr.co2_pct, 1)} %)</div>
+      <div class="kpi"><b>${eur(yr.eur_year)}</b>estalvi a la factura per any (−${f(yr.cost_pct, 1)} %)</div>
+      <div class="kpi"><b>${f(Math.min(100, d3.mean(W, w => w.of_best_pct)))} %</b>del màxim possible coneixent el futur</div>
+      <div class="kpi"><b>${f(W.length)} de ${f(W.length)}</b>setmanes amb estalvi</div>
+    </div>
+    <h2>Decisions que recomanem i per què</h2>
+    <div class="recs">${decisions.map((d, i) => `<div class="rec"><div class="n">${String(i + 1).padStart(2, "0")}</div><b>${d[0]}</b><p>${d[1]}</p></div>`).join("")}</div>
+    <div class="charts">
+      <div class="chart"><h2>Quan carrega i quan descarrega</h2><div class="s">Potència mitjana per hora del dia (barres, kW) i CO₂ de la xarxa (línia, g/kWh)</div><div id="c1"></div></div>
+      <div class="chart"><h2>Quina mida de bateria</h2><div class="s">CO₂ evitat per any (t) segons la capacitat, una línia per potència</div><div id="c2"></div></div>
+      <div class="chart"><h2>Comparació d'estratègies</h2><div class="s">CO₂ evitat per any (t); la línia és el màxim coneixent el futur</div><div id="c3"></div></div>
+      <div class="chart"><h2>Si les previsions fallen</h2><div class="s">Part de l'estalvi que es conserva segons l'error de les previsions</div><div id="c4"></div></div>
+    </div>
+    <div class="foot"><p><b>Com llegir-ho.</b> Totes les xifres surten del simulador oficial del repte amb 11 setmanes reals de validació
+      (una de cada mes), cada una començant amb la bateria al 50 %. Les xifres per any multipliquen per 8.760 / 1.848 hores.</p></div>`;
+
+  const tot = { co2: d3.sum(W, w => w.co2_kg), eur: d3.sum(W, w => w.eur), rules: d3.sum(W, w => w.rules_co2_kg) };
+  const worst = d3.least(W, w => w.co2_pct), bestW = d3.greatest(W, w => w.co2_pct);
+  const hist = (D.history || []).slice().reverse();
+  document.getElementById("p2").innerHTML = header(2) + `
+    <h1>Rendiment i seguiment</h1>
+    <p class="lead">Com ha anat cada setmana de validació i com s'ha de seguir el sistema un cop en marxa.</p>
+    <h2>Rendiment setmana a setmana</h2>
+    <table><thead><tr><th>Setmana</th><th>CO₂ evitat</th><th>% CO₂</th><th>Estalvi</th><th>% factura</th><th>De l'òptim</th><th>Amb horari fix</th><th>Cicles</th></tr></thead>
+      <tbody>${W.map(w => `<tr><td>${w.label}</td><td>${f(w.co2_kg)} kg</td><td>${f(w.co2_pct, 1)} %</td><td>${eur(w.eur)}</td><td>${f(w.cost_pct, 1)} %</td>
+        <td>${f(Math.min(100, w.of_best_pct))} %</td><td>${f(w.rules_co2_kg)} kg</td><td>${f(w.cycles, 1)}</td></tr>`).join("")}</tbody>
+      <tfoot><tr><td>Total</td><td>${f(tot.co2)} kg</td><td></td><td>${eur(tot.eur)}</td><td></td><td>${f(Math.min(100, d3.mean(W, w => w.of_best_pct)))} %</td>
+        <td>${f(tot.rules)} kg</td><td>${f(d3.sum(W, w => w.cycles), 0)}</td></tr></tfoot></table>
+    <div class="box"><p><b>Què en traiem.</b> Totes les setmanes estalvia CO₂ i diners, i cada una arriba al màxim que es podria treure
+      coneixent el futur. La millor és la del ${bestW.label} (${f(bestW.co2_pct, 1)} %) i la més fluixa la del ${worst.label} (${f(worst.co2_pct, 1)} %):
+      la bateria rendeix més quan el CO₂ de la xarxa canvia molt dins del dia. Amb un horari fix s'evitarien ${f(tot.rules)} kg en lloc de ${f(tot.co2)} kg.</p></div>
+    <div class="cols">
+      <div><h2>Historial de rendiment</h2>
+        <table><thead><tr><th>Data</th><th>CO₂ / any</th><th>Estalvi / any</th><th>De l'òptim</th></tr></thead>
+          <tbody>${hist.map(h => `<tr><td>${h.date}</td><td>${f(h.co2_t_year, 1)} t</td><td>${eur(h.eur_year)}</td><td>${f(Math.min(100, h.of_best_pct))} %</td></tr>`).join("")}</tbody></table>
+        <h2>Com seguir-lo un cop en marxa</h2>
+        <ul><li>Cada mes, regenerar les dades i comprovar que el CO₂ evitat i la part de l'òptim no baixen.</li>
+          <li>Si una setmana estalvia molt menys, mirar si la xarxa va variar poc o si va fallar el comptador.</li>
+          <li>Revisar el desgast: uns ${f(d3.sum(W, w => w.cycles) * 8760 / 1848, 0)} cicles complets l'any.</li></ul></div>
+      <div><h2>Com funciona el control</h2>
+        <ul><li>Cada hora mira el preu i el CO₂ de les 24 hores següents (publicats per REE el dia abans).</li>
+          <li>Busca el pla de càrrega que més redueix el 70 % CO₂ + 30 % factura, amb programació lineal.</li>
+          <li>Aplica només la primera hora i a l'hora següent torna a planificar amb dades noves.</li>
+          <li>No demana mai més de 500 kW ni més energia de la que hi cap o en queda.</li></ul>
+        <h2 style="margin-top:10px">Supòsits i dades</h2>
+        <ul><li>Preu i CO₂ de les 24 h següents coneguts; consum i solar futurs, no.</li>
+          <li>Rendiment del 90 % per cicle i sense degradació, com el simulador oficial.</li>
+          <li>Cost de la bateria (350 €/kWh) orientatiu, sense manteniment ni subvencions.</li>
+          <li>Ubicació de la bateria i dels centres de transformació: proposta.</li>
+          <li>Dades: telemetria del Campus Nord, REE (PVPC i CO₂) i OpenStreetMap.</li></ul></div>
+    </div>
+    <div class="foot"><p>Generat amb el dashboard de la bateria del Campus Nord a partir de les mateixes dades. Per actualitzar-lo:
+      <code>python scripts/build_dashboard_data.py</code> i tornar a obrir l'informe.</p></div>`;
+
+  const Wd = 330, Hd = 158;
+  function svg(id, h = Hd, mg = { t: 8, r: 34, b: 18, l: 30 }) {
+    const s = d3.select("#" + id).append("svg").attr("viewBox", `0 0 ${Wd} ${h}`).attr("width", "100%");
+    return { g: s.append("g").attr("transform", `translate(${mg.l},${mg.t})`), iw: Wd - mg.l - mg.r, ih: h - mg.t - mg.b };
+  }
+  const axis = (g, a, tr) => g.append("g").attr("transform", tr || "").call(a.tickSize(0).tickPadding(4)).call(s => s.select(".domain").remove());
+
+  // 1. perfil horari
+  { const { g, iw, ih } = svg("c1");
+    const x = d3.scaleBand().domain(d3.range(24)).range([0, iw]).padding(0.2);
+    const y = d3.scaleLinear().domain([-500, 500]).range([ih, 0]);
+    const yc = d3.scaleLinear().domain(d3.extent(P, d => d.co2_g)).nice().range([ih, 0]);
+    g.selectAll("rect").data(P).join("rect").attr("x", d => x(d.hour)).attr("width", x.bandwidth()).attr("rx", 1.5)
+      .attr("y", d => y(Math.max(0, d.battery_kw))).attr("height", d => Math.abs(y(d.battery_kw) - y(0)))
+      .attr("fill", d => (d.battery_kw > 0 ? "#0072B2" : "#D55E00"));
+    g.append("line").attr("x1", 0).attr("x2", iw).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "#E6E2DA");
+    g.append("path").datum(P).attr("fill", "none").attr("stroke", "#A9824F").attr("stroke-width", 1.4)
+      .attr("d", d3.line().x(d => x(d.hour) + x.bandwidth() / 2).y(d => yc(d.co2_g)).curve(d3.curveMonotoneX));
+    axis(g, d3.axisLeft(y).ticks(4));
+    axis(g, d3.axisRight(yc).ticks(3), `translate(${iw},0)`);
+    axis(g, d3.axisBottom(x).tickValues(d3.range(0, 24, 3)).tickFormat(h => h + " h"), `translate(0,${ih})`); }
+
+  // 2. mida de la bateria
+  { const { g, iw, ih } = svg("c2", Hd, { t: 8, r: 40, b: 18, l: 24 }), rows = D.sizing;
+    const x = d3.scaleLinear().domain([0, 8000]).range([0, iw]);
+    const y = d3.scaleLinear().domain([0, d3.max(rows, d => d.co2_t_year) * 1.08]).range([ih, 0]);
+    [250, 500, 1000].forEach(p => {
+      const pr = rows.filter(d => d.power_kw === p), on = p === 500;
+      g.append("path").datum(pr).attr("fill", "none").attr("stroke", on ? "#47908B" : "#CFC9BD").attr("stroke-width", on ? 2 : 1.4)
+        .attr("d", d3.line().x(d => x(d.capacity_kwh)).y(d => y(d.co2_t_year)).curve(d3.curveMonotoneX));
+      const l = pr[pr.length - 1];
+      g.append("text").attr("x", x(l.capacity_kwh) + 3).attr("y", y(l.co2_t_year) + 3).text(p + " kW");
+    });
+    g.append("circle").attr("cx", x(best.capacity_kwh)).attr("cy", y(best.co2_t_year)).attr("r", 4).attr("fill", "#47908B");
+    g.append("text").attr("class", "lab").attr("x", x(best.capacity_kwh) + 6).attr("y", y(best.co2_t_year) + 12)
+      .text(`recomanada: ${f(best.capacity_kwh)} kWh`);
+    axis(g, d3.axisLeft(y).ticks(4));
+    axis(g, d3.axisBottom(x).ticks(4).tickFormat(v => f(v) + " kWh"), `translate(0,${ih})`); }
+
+  // 3. estratègies, en tones per any
+  { const { g, iw, ih } = svg("c3", 130, { t: 10, r: 50, b: 16, l: 92 }), rows = st.slice(0, 3);
+    const names = { "Sense bateria": "Sense bateria", "Regles per hores": "Horari fix", "MPC + programació lineal": "Control predictiu" };
+    const x = d3.scaleLinear().domain([0, tons(st[3]) * 1.1]).range([0, iw]);
+    const yb = d3.scaleBand().domain(rows.map(d => d.strategy)).range([0, ih]).padding(0.4);
+    g.selectAll("rect").data(rows).join("rect").attr("y", d => yb(d.strategy)).attr("height", yb.bandwidth()).attr("rx", yb.bandwidth() / 2)
+      .attr("width", d => x(tons(d))).attr("fill", d => (d.strategy.startsWith("MPC") ? "#47908B" : "#CFC9BD"));
+    g.selectAll("text.l").data(rows).join("text").attr("x", -6).attr("y", d => yb(d.strategy) + yb.bandwidth() / 2 + 3).attr("text-anchor", "end").text(d => names[d.strategy]);
+    g.selectAll("text.v").data(rows).join("text").attr("class", "lab").attr("x", d => x(tons(d)) + 5).attr("y", d => yb(d.strategy) + yb.bandwidth() / 2 + 3).text(d => `${f(tons(d))} t, ${eur(d.cost_pct / yr.cost_pct * yr.eur_year)}`);
+    g.append("line").attr("x1", x(tons(st[3]))).attr("x2", x(tons(st[3]))).attr("y1", 0).attr("y2", ih).attr("stroke", "#1F2326").attr("stroke-dasharray", "2 2");
+    axis(g, d3.axisBottom(x).ticks(4).tickFormat(v => v + " t"), `translate(0,${ih})`); }
+
+  // 4. robustesa
+  { const { g, iw, ih } = svg("c4", 130, { t: 14, r: 14, b: 16, l: 30 });
+    const k = d => 100 * d.score / rob[0].score;
+    const x = d3.scaleLinear().domain([0, 50]).range([0, iw]), y = d3.scaleLinear().domain([80, 102]).range([ih, 0]);
+    g.append("path").datum(rob).attr("fill", "none").attr("stroke", "#47908B").attr("stroke-width", 2)
+      .attr("d", d3.line().x(d => x(d.error_pct)).y(d => y(k(d))).curve(d3.curveMonotoneX));
+    g.selectAll("circle").data(rob).join("circle").attr("cx", d => x(d.error_pct)).attr("cy", d => y(k(d))).attr("r", 2.5).attr("fill", "#47908B");
+    g.selectAll("text.v").data(rob.filter(d => [0, 20, 50].includes(d.error_pct))).join("text").attr("class", "lab").attr("x", d => x(d.error_pct)).attr("y", d => y(k(d)) - 6).attr("text-anchor", "middle").text(d => f(k(d)) + " %");
+    axis(g, d3.axisLeft(y).ticks(3).tickFormat(v => v + " %"));
+    axis(g, d3.axisBottom(x).ticks(5).tickFormat(v => v + " % error"), `translate(0,${ih})`); }
+</script>
+</body>
+</html>

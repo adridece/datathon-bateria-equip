@@ -12,7 +12,7 @@ Decisions amb incertesa (errors de previsio mesurats fora de mostra, per hora de
   - a l'hora actual no descarreguem mes del que el campus segur que consumira,
   - amb excedent solar carreguem pensant en el cas de mes sol (carregar de menys perd energia gratis).
 El primer dia de cada setmana fem servir els ultims dies del train com a historial.
-Validacio a docs/DIARI.md (D-023 i D-024). Si algun model no es pot carregar, es fa servir la previsio senzilla.
+Validacio a docs/DIARI.md (D-033 i D-034). Si algun model no es pot carregar, es fa servir la previsio senzilla.
 """
 import json
 import math

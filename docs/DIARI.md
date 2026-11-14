@@ -10,6 +10,7 @@
 | `agents/hard_mpc` (Mode Difícil) | 19,87 | – | 0 | LP amb xarxa i excedent solar + previsions de preu, CO₂, consum i solar. Òptim teòric: 22,34 |
 | `agents/hard_final` (Mode Difícil) | 20,75 (F0) / 17,70 (F1) | – | 0 | versió final: veure registre 14/11 vespre. Òptim: 22,34 / 18,75 |
 | oracle (cota superior) | 6,08 | 5,68 | – | sap el futur sencer |
+| `mpc_robust`, cada setmana a part des del 50 % (dashboard) | 6,41 | – | 0 | igual que l'oracle setmana a setmana (6,41); més a prop del test públic (6,43) |
 
 ## Enviaments a la web
 | Data/hora | Fitxer | Score públic | Qui | Notes |
@@ -94,3 +95,10 @@
   - Web: cap dada nova útil en temps real (vent = 0 sempre; senyals de maquinària no arriben a l'agent).
   **Conclusió:** l'agent és al límit d'informació. Amb previsions perfectes faria 22,15 (validació); tot el que falta és error de
   previsió irreductible amb dades horàries. Ens quedem amb `hard_final` v2.
+
+## Conclusions de l'anàlisi exploratòria (`notebooks/01_eda.ipynb`)
+- **Consum net gairebé sempre > 500 kW (99,5 %):** el campus consumeix una mitjana de ~1.120 kW i la generació solar arriba com a màxim a ~145 kW. La bateria mai no exporta excedents a la xarxa i no cal predir el consum futur.
+- **Finestra clara d'operació:** la intensitat de CO₂ cau al migdia (11–16 h) per la generació solar peninsular, mentre que el preu PVPC assoleix el màxim al vespre (19–22 h).
+- **Correlació preu–CO₂ de 0,58:** els dos objectius van en la mateixa direcció però no són idèntics; formular-los com a funció objectiu lineal ponderada (70 % CO₂, 30 % cost) captura el compromís òptim.
+- **Qualitat de dades i robustesa:** el comptador presenta consum nocturn pla (0–5 h) i talls puntuals a 0 kW (p. ex. 17/06/2026), fet que justifica el límit de descàrrega `max_dis_now` de `mpc_robust`.
+- **Empat amb l'òptim teòric:** `mpc_robust` obté **6,08** a la validació (igual que l'Oracle, amb 0 infraccions) i **6,43** al test públic oficial.
