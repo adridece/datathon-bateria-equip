@@ -55,9 +55,9 @@ def campus_theme():
 
 
 CSS = f"""<style>
-[data-testid="stHeader"] {{ background: transparent; }}
+[data-testid="stHeader"] {{ background: {PAPER}; border-bottom: 1px solid {RULE}; }}
 [data-testid="stDecoration"] {{ display: none; }}
-.block-container {{ padding-top: 2.2rem; max-width: 1240px; }}
+.block-container {{ padding-top: 4.2rem; max-width: 1240px; }}
 [data-testid="stMetricValue"] {{ font-family: {MONO}; font-variant-numeric: tabular-nums; }}
 [data-testid="stCaptionContainer"] {{ color: {MUTED}; }}
 footer {{ visibility: hidden; }}

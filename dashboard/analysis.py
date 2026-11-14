@@ -11,6 +11,7 @@ from src.evaluate import oracle, valid_split
 from src.replay import make_agent, replay
 
 HOURS_PER_YEAR = 8760
+MONTHS_SHORT = ["gen", "feb", "març", "abr", "maig", "juny", "jul", "ag", "set", "oct", "nov", "des"]
 CAPACITIES = [500, 1000, 2000, 3000, 4000, 6000, 8000]
 POWERS = [250, 500, 1000]
 
@@ -102,7 +103,7 @@ def hourly_profile(d: pd.DataFrame) -> pd.DataFrame:
 def monthly(d: pd.DataFrame) -> pd.DataFrame:
     g = d.groupby(d.index.to_period("M"))
     return pd.DataFrame({
-        "month": [p.strftime("%b %y") for p in g.size().index],
+        "month": [f"{MONTHS_SHORT[p.month - 1]} {p.year % 100}" for p in g.size().index],
         "order": range(len(g.size())),
         "co2_pct": (100 * (g.co2_base_kg.sum() - g.co2_kg.sum()) / g.co2_base_kg.sum()).values,
         "cost_pct": (100 * (g.cost_base_eur.sum() - g.cost_eur.sum()) / g.cost_base_eur.sum()).values,

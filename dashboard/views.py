@@ -12,6 +12,8 @@ from src.data import contiguous_blocks
 
 HERE = Path(__file__).parent
 WEEKDAYS = ["dl", "dt", "dc", "dj", "dv", "ds", "dg"]
+MONTHS = ["de gener", "de febrer", "de març", "d'abril", "de maig", "de juny", "de juliol", "d'agost",
+          "de setembre", "d'octubre", "de novembre", "de desembre"]
 
 
 # ---------------------------------------------------------------- dades en cache
@@ -23,7 +25,8 @@ def sim(agent="mpc_lp", cap=2000.0, power=500.0):
 @st.cache_data
 def weeks():
     blocks = [b for b in contiguous_blocks(an.valid_data()) if len(b) >= 24 * 5]
-    return {f"Setmana del {b.index[0].day} {b.index[0].strftime('%b %Y')}": (b.index[0], b.index[-1]) for b in blocks}
+    return {f"Setmana del {b.index[0].day} {MONTHS[b.index[0].month - 1]} de {b.index[0].year}": (b.index[0], b.index[-1])
+            for b in blocks}
 
 
 def chart(c, height=None):
@@ -172,7 +175,7 @@ def strategy():
                                                                   color=alt.value(s.INK))
     best = alt.Chart(pd.DataFrame({"x": [st_.score.iloc[3]], "t": ["òptim teòric"]}))
     rule = best.mark_rule(strokeDash=[4, 3], color=s.INK).encode(x="x:Q")
-    rule_txt = best.mark_text(align="left", dx=4, dy=-60, color=s.INK, fontSize=11).encode(x="x:Q", text="t:N")
+    rule_txt = best.mark_text(align="right", dx=-4, y=-6, color=s.MUTED, fontSize=11).encode(x="x:Q", text="t:N")
     chart(bars + labels + rule + rule_txt, 150)
     note()
 
@@ -232,9 +235,11 @@ def sizing():
     best = ok.loc[ok.co2_t_year.idxmax()] if len(ok) else None
     st.markdown("### Més capacitat només ajuda fins a unes 4 hores de potència")
     txt = (f"La configuració triada ({s.num(cap)} kWh, {s.num(power)} kW) evitaria <b>{s.num(cur.co2_t_year)} t de CO₂</b> "
-           f"i {s.eur(cur.eur_year)} l'any ({'+' if cur.co2_t_year >= base.co2_t_year else '−'}"
-           f"{s.num(abs(cur.co2_t_year - base.co2_t_year))} t respecte a la bateria actual), amb un retorn de "
-           f"{s.num(cur.payback, 1)} anys.")
+           f"i {s.eur(cur.eur_year)} l'any")
+    if (cap, power) != (2000, 500):
+        diff = cur.co2_t_year - base.co2_t_year
+        txt += f" ({'+' if diff >= 0 else '−'}{s.num(abs(diff))} t respecte a la bateria del repte)"
+    txt += f", amb un retorn de {s.num(cur.payback, 1)} anys."
     if best is not None:
         txt += (f" Amb {s.num(power)} kW, l'opció que evita més CO₂ amb retorn de menys de 10 anys és "
                 f"<b>{s.num(best.capacity_kwh)} kWh</b>.")

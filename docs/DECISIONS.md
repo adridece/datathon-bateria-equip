@@ -49,3 +49,13 @@ Pestanya inicial "Decisions" amb 4 preguntes (estratègia, quan carregar, mida d
 cadascuna amb la resposta, el gràfic que la justifica i una conclusió. Totes les xifres surten de la mateixa
 simulació. Resultats clau: MPC = òptim (gap 0 %); amb 50 % d'error a les previsions el score només baixa de 6,08 a 5,68;
 amb 500 kW, més de 4.000 kWh no aporta gaire; ≈ 44 t CO₂ i ≈ 96 k€ estalviats per any (estimació).
+
+### D-009 · 14/11 · Adrià — Dashboard v2: disseny propi i campus real en 3D
+- **Disseny:** fons paper, un sol color d'accent (el nostre agent), escenaris de comparació en gris, colors
+  d'energia aptes per a daltonisme (Okabe-Ito), CO₂ en una rampa d'un sol to, IBM Plex, cap emoji. Tot surt de
+  `dashboard/style.py`, així un concepte té sempre el mateix color (coherència, criteri de la Tukey).
+- **Estructura:** 5 pàgines, cadascuna una pregunta → resposta amb xifra → gràfic → supòsits.
+- **3D:** edificis reals del Campus Nord (OpenStreetMap), three.js incrustat dins l'HTML perquè funcioni sense
+  internet i a Windows. La ubicació de la bateria i de l'escomesa és una suposició (no està publicada) i es diu a la
+  mateixa escena.
+- Fonts de la recerca: `docs/RECERCA_DASHBOARD.md` i `docs/RECERCA_CAMPUS3D.md`.
