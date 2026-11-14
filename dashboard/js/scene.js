@@ -127,10 +127,13 @@ export function createScene(container, campus, colors) {
   // bateria, escomesa i nus elèctric (més grans que la realitat perquè es vegin)
   const A = campus.energy_assets;
   const at = p => new THREE.Vector3(p[0] * S, p[1] * S * VX, p[2] * S);
-  const batPos = at(A.battery.pos);
-  const gridPos = at(A.grid_connection.pos).add(new THREE.Vector3(2.4, 0, 1.4));
+  // l'escomesa principal fa de nus: la xarxa hi arriba pel sud (carrer), la bateria és a l'est
+  // i les plaques i els centres de transformació queden al nord. Així els cables no es creuen.
+  const mainCT = at(A.grid_connection.pos);
+  const node = mainCT.clone().setY(0.3);
+  const gridPos = mainCT.clone().add(new THREE.Vector3(0.6, 0, 4.2));
+  const batPos = mainCT.clone().add(new THREE.Vector3(4.4, 0, 0.8));
   const loadPos = at(A.campus_load_anchor.pos);
-  const node = batPos.clone().lerp(gridPos, 0.5).setY(0.3);
 
   const battery = new THREE.Group();
   const shellGeo = new THREE.BoxGeometry(2.8, 1.3, 1.2);
@@ -166,8 +169,7 @@ export function createScene(container, campus, colors) {
   const roofMat = new THREE.MeshStandardMaterial({ color: "#6E6A63", roughness: 0.7 });
   conns.forEach(c => {
     const p = at(c.pos);
-    connPos[c.id] = c.main ? gridPos.clone() : p;
-    if (c.main) return;                                  // la principal ja és la torre
+    connPos[c.id] = c.main ? mainCT.clone() : p;
     if (c.underground) {
       const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.08, 40), new THREE.MeshStandardMaterial({ color: "#B9B4AA" }));
       disc.position.copy(p).setY(0.05);
@@ -177,6 +179,7 @@ export function createScene(container, campus, colors) {
       return;
     }
     const kiosk = new THREE.Group();
+    if (c.main) p.copy(mainCT);
     const box = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.9, 1.0), kioskMat);
     box.position.y = 0.45;
     const roof = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.1, 1.15), roofMat);
@@ -218,31 +221,41 @@ export function createScene(container, campus, colors) {
   })();
 
   const curve = pts => new THREE.CatmullRomCurve3(pts, false, "centripetal");
-  let slot = 0;
-  const around = () => { const a = (slot++) * 2.4; return node.clone().add(new THREE.Vector3(Math.cos(a) * 0.9, 0, Math.sin(a) * 0.9)); };
+  // camí recte per trams (per seguir l'anell soterrat)
+  const polyline = pts => { const p = new THREE.CurvePath(); for (let j = 1; j < pts.length; j++) p.add(new THREE.LineCurve3(pts[j - 1], pts[j])); return p; };
   const lift = (v, y) => v.clone().setY(y);
   const flows = {
-    grid: curve([lift(gridPos, 3.2), lift(gridPos.clone().lerp(node, 0.5), 1.3), around()]),
-    bat: curve([around(), lift(node.clone().lerp(batPos, 0.5), 0.7), lift(batPos, 0.9)]),
+    grid: curve([lift(gridPos, 3.2), lift(gridPos.clone().lerp(node, 0.5), 1.6), lift(node, 0.6)]),
+    bat: curve([lift(node, 0.6), lift(node.clone().lerp(batPos, 0.5), 0.9), lift(batPos, 0.9)]),
   };
+  const flowColor = { grid: "#B79D7E", bat: "#9CC3E0" };
   const area = id => { const b = campus.buildings.find(x => x.id === id || x.name === id); return b ? b.area_m2 * b.height_m : 0; };
   const shares = {};
   conns.filter(c => c.upc_meter !== false).forEach(c => { shares[c.id] = c.feeds.reduce((s, n) => s + area(n), 0); });
   const totalShare = Object.values(shares).reduce((a, b) => a + b, 0) || 1;
+  // el consum va pel mateix camí que l'anell soterrat fins a cada centre
+  const ringPath = id => {
+    const link = (A.mv_links || []).find(([, b]) => b === id);
+    if (!link) return [node];
+    return [...ringPath(link[0]), connPos[id]];
+  };
   conns.filter(c => c.upc_meter !== false).forEach(c => {
-    const end = connPos[c.id].clone().setY(c.main ? 2.6 : 1.0);
-    const start = around();
-    flows["load_" + c.id] = curve([start, lift(start.clone().lerp(end, 0.5), 0.5), end]);
+    const pts = c.main ? [lift(node, 0.25), lift(at(A.pv_inverters[1].pos), 0.25)] : ringPath(c.id).map(p => lift(p, 0.25));
+    flows["load_" + c.id] = polyline(pts);
+    flowColor["load_" + c.id] = null;   // ja es veu el cable de l'anell
   });
   A.pv_inverters.forEach((inv, i) => {
     const p = at(inv.pos).setY(17.5 * S * VX + 0.25);
-    flows["pv" + i] = curve([p, lift(p.clone().lerp(node, 0.3), 2.0), lift(p.clone().lerp(node, 0.7), 0.9), around()]);
+    flows["pv" + i] = curve([p, lift(p.clone().lerp(node, 0.35), 3.2), lift(p.clone().lerp(node, 0.8), 2.2), lift(node, 1.2)]);
+    flowColor["pv" + i] = "#F2D08A";
   });
 
   const MAX_P = 28;
   const streams = {};
   for (const [name, c] of Object.entries(flows)) {
-    const guide = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 0.028, 6), new THREE.MeshBasicMaterial({ color: "#D6D0C4" }));
+    // la guia de cada flux té un to del seu color, així es distingeixen les línies
+    const guide = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 0.035, 6),
+      new THREE.MeshBasicMaterial({ color: flowColor[name] || "#D6D0C4", transparent: true, opacity: flowColor[name] ? 0.7 : 0 }));
     scene.add(guide);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MAX_P * 3), 3));
@@ -278,10 +291,16 @@ export function createScene(container, campus, colors) {
     el.className = "tag";
     tags[name] = { el, pos, dx, dy };
   }
-  addTag("battery", lift(batPos, 1.6), -100, 46);
-  addTag("grid", lift(gridPos, 3.8), 110, 14);
+  addTag("battery", lift(batPos, 1.6), 70, 30);
+  addTag("grid", lift(gridPos, 3.8), 90, 20);
   addTag("load", lift(loadPos, loadPos.y + 1.6), 50, -18);
   addTag("solar", at(A.pv_inverters[0].pos).setY(17.5 * S * VX + 1.6), -50, -18);
+  conns.forEach(c => {
+    const short = c.main ? "Escomesa principal" : c.underground ? "Subestació BSC" : c.name.replace("CT ", "Centre ").replace(" (CPD)", "");
+    addTag("ct_" + c.id, lift(connPos[c.id], 2.4), 0, -4);
+    tags["ct_" + c.id].el.classList.add("small");
+    tags["ct_" + c.id].el.textContent = short;
+  });
   const credit = document.createElement("div");
   credit.className = "credit";
   credit.textContent = "Edificis reals © OpenStreetMap contributors. Centres de transformació i bateria: proposta. Alçades ×1,5.";
@@ -327,7 +346,7 @@ export function createScene(container, campus, colors) {
     streams.grid.mat.color.set(co2Color);
     Object.keys(shares).forEach(id => {
       streams["load_" + id].kw = h.load * shares[id] / totalShare;
-      streams["load_" + id].mat.color.set("#7C776E");
+      streams["load_" + id].mat.color.set("#3E4A56");
     });
     streams.bat.kw = Math.abs(h.bat);
     streams.bat.dir = h.bat >= 0 ? -1 : 1;

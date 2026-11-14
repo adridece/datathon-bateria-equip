@@ -40,7 +40,6 @@
       <div><h1 id="title">Visió general</h1><p id="subtitle"></p></div>
       <div class="right">
         <select id="week" aria-label="Setmana que es mostra"></select>
-        <button data-act="demo">Presentació</button>
         <button class="primary" data-act="report">Informe PDF</button>
         <span class="chip"><i></i>Leaderboard <b class="num" id="chip-score"></b></span>
         <span class="chip num" id="chip-time"></span>
@@ -121,7 +120,7 @@
               <button data-act="full" aria-label="Pantalla completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
             </div>
             <div class="overlay legend3d"><span><i style="background:var(--solar)"></i>solar</span><span><i style="background:var(--charge)"></i>càrrega</span>
-              <span><i style="background:var(--discharge)"></i>descàrrega</span><span><i style="background:#8C6A45"></i>xarxa (color = CO₂)</span><span><i style="background:#9A958C"></i>consum</span><span><i style="background:#EFEAE0;border:1px solid #6E6A63"></i>centre de transformació</span></div>
+              <span><i style="background:var(--discharge)"></i>descàrrega</span><span><i style="background:#8C6A45"></i>xarxa (color = CO₂)</span><span><i style="background:#3E4A56"></i>consum (per l'anell soterrat)</span><span><i style="background:#EFEAE0;border:1px solid #6E6A63"></i>centre de transformació</span></div>
             <div class="overlay caption" id="caption"></div>
           </div>
           <div class="player" data-player></div>
@@ -205,7 +204,6 @@
 <script src="js/charts.js"></script>
 <script src="js/planner.js"></script>
 <script src="js/report.js"></script>
-<script src="js/demo.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>
 </html>
