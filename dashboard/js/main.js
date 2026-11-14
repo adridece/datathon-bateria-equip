@@ -34,6 +34,7 @@ function go(name) {
   if (name === "overview") setTimeout(drawCalendar, 60);
   if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(() => { drawStrip(); drawPlan(); }, 450); }   // es torna a dibuixar quan la vista ja és oberta
   window.Charts.show(name);
+  if (name === "planner") stop();   // l'escenari no s'ha de moure mentre es prova
   if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color }), 30);
 }
 all(".nav button").forEach(b => b.onclick = () => go(b.dataset.view));
@@ -82,7 +83,7 @@ function show(i, fromPlayer) {
   setAll("[data-price]", e => (e.textContent = f(H.price[k] * 1000) + " €/MWh"));
   setAll("[data-why]", e => (e.textContent = H.why[k]));
   const sv = savedUntil(k);
-  setAll("[data-saved]", e => (e.textContent = `${f(sv.co2)} kg CO₂, ${f(sv.eur)} €`));
+  setAll("[data-saved]", e => (e.innerHTML = `${f(sv.co2)} kg CO₂<br>${f(sv.eur)} €`));
   setAll("[data-clock]", e => (e.textContent = $("chip-time").textContent));
   setAll("[data-pos]", e => (e.textContent = `hora ${k - week.start + 1} de ${week.end - week.start}`));
   setAll("[data-cycles]", e => (e.textContent = f(weekCycles(), 1)));
@@ -184,7 +185,7 @@ function planAgreement(idx) {
   const hits = idx.map(() => 0);
   for (let s = 0; s < N; s++) {
     const w = idx.map((i, j) => 0.7 * H.co2[i] * err(j) / 0.0921 + 0.3 * H.price[i] * err(j) / 0.1568);
-    window.Planner.solve(w, net, soc0, 500, 0).plan.forEach((p, j) => { if (kind(p) === kind(H.bat[idx[j]])) hits[j]++; });
+    window.Planner.solve(w, net, soc0, 500, 0, H.soc[idx[idx.length - 1]] * 2000).plan.forEach((p, j) => { if (kind(p) === kind(H.bat[idx[j]])) hits[j]++; });
   }
   const out = hits.map(h => h / N);
   agreeCache.set(k, out);

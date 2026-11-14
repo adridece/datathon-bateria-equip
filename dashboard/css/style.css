@@ -259,7 +259,10 @@ body.demo-on .view.on .grid > .card { animation: none; }
 .topbar > div:first-child { min-width: 0; }
 
 /* ---------- panell del mapa ampliat: el més important sempre a la vista ---------- */
+/* el panell de dades en directe es veu sempre al 3D gran; els controls ja són a sota del mapa */
 .stage .hud-live { display: none; }
+#stage-big .hud-live { display: block; left: 14px; bottom: 14px; width: min(540px, calc(100% - 28px)); padding: 12px 14px; }
+#stage-big:not(.expanded) .hud-top { display: none; }
 .stage.expanded .hud-live { display: block; left: 16px; bottom: 16px; width: min(560px, calc(100% - 32px)); padding: 14px 16px; }
 .hud-top { display: flex; align-items: center; gap: 10px; margin-bottom: 12px; }
 .hud-clock { font-size: 17px; font-weight: 500; margin-right: auto; }
@@ -286,3 +289,9 @@ body.demo-on .view.on .grid > .card { animation: none; }
 
 /* dins la targeta del 3D només s'encongeix el mapa */
 #v-live .player, #v-live .legend { flex-shrink: 0; }
+/* panell en directe més compacte perquè no tapi el campus */
+#stage-big:not(.expanded) .hud-live { width: min(470px, calc(100% - 28px)); padding: 10px 12px; }
+#stage-big:not(.expanded) .hud-grid { grid-template-columns: 0.8fr 1fr 1fr 0.9fr 1.3fr; gap: 8px; }
+#stage-big:not(.expanded) .hud-grid b { font-size: 13px; }
+#stage-big:not(.expanded) .hud-grid span { font-size: 10.5px; }
+#stage-big:not(.expanded) .hud-why { margin-top: 8px; font-size: 12.5px; padding: 6px 9px; }

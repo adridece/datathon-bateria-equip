@@ -174,3 +174,11 @@ amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, a
 - **Res repetit:** fora el 3D petit i la targeta Bateria de la visió general (repetien el panell del 3D), fora les respostes
   de dalt d'Estratègia i Fiabilitat (repetien les decisions) i fora els petits múltiples de setmanes (repetien el calendari).
   La visió general passa a dir-se Conclusions. Els KPI de puntuació i infraccions es canvien per energia moguda i cicles per any.
+
+### D-024 · 14/11 · Adrià — Panell en directe sempre visible i planificador just
+- El panell amb les dades de l'hora (bateria, compra, CO₂, preu, estalvi i el motiu de la decisió) es veu sempre sobre
+  el 3D, en petit i a baix a l'esquerra. Abans només sortia a pantalla completa i el 3D no s'entenia sol.
+- Planificador: el pla nou ha d'acabar el dia amb almenys la mateixa càrrega que el de l'agent. Si no, buidava la bateria
+  al final "gratis" i semblava que millorava l'agent (257 contra 237 kg); ara surten iguals (264 i 263 kg).
+  La reproducció s'atura en entrar-hi perquè l'escenari no es mogui mentre es prova.
+- Estratègies amb noms per a UPC: "Horari fix" i "Control predictiu".

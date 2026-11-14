@@ -94,11 +94,16 @@
     const y = d3.scaleBand().domain(rows.map(r => r.strategy)).range([0, ih]).padding(0.35);
     axisX(g, x, ih, s => d3.axisBottom(s).ticks(5).tickFormat(v => v + " t"));
     g.selectAll("text.n").data(rows).join("text").attr("x", -12).attr("y", r => y(r.strategy) + y.bandwidth() / 2 + 4)
-      .attr("text-anchor", "end").style("font-size", "12.5px").style("fill", r => (r.strategy.startsWith("MPC") ? C.text : C.muted)).text(r => r.strategy);
+      .attr("text-anchor", "end").style("font-size", "12.5px").style("fill", r => (r.strategy.startsWith("MPC") ? C.text : C.muted))
+      .text(r => ({ "Regles per hores": "Horari fix", "MPC + programació lineal": "Control predictiu" })[r.strategy] || r.strategy);   // noms per a UPC Sostenible
     g.selectAll("rect").data(rows).join("rect").attr("y", r => y(r.strategy)).attr("height", y.bandwidth()).attr("rx", y.bandwidth() / 2)
       .attr("fill", r => (r.strategy.startsWith("MPC") ? C.accent : C.ref)).attr("width", 0)
       .transition().duration(T).ease(ease).delay((_, i) => i * 90).attr("width", r => (tons(r) < 0.01 ? 0 : Math.max(y.bandwidth(), x(tons(r)))));
-    g.selectAll("text.v").data(rows).join("text").attr("class", "lab").attr("x", r => Math.max(y.bandwidth(), x(tons(r))) + 8)
+    // si la barra és llarga l'etiqueta va a dins, així no xoca amb la línia del màxim
+    const inside = r => x(tons(r)) > iw * 0.6;
+    g.selectAll("text.v").data(rows).join("text").attr("class", "lab")
+      .attr("x", r => (inside(r) ? x(tons(r)) - 10 : Math.max(y.bandwidth(), x(tons(r))) + 8)).attr("text-anchor", r => (inside(r) ? "end" : "start"))
+      .style("fill", r => (inside(r) ? "#fff" : null))
       .attr("y", r => y(r.strategy) + y.bandwidth() / 2 + 4).text(r => `${f(tons(r))} t, ${eur(euros(r))}`).style("opacity", 0)
       .transition().delay(T).style("opacity", 1);
     const ox = x(tons(st[3]));
