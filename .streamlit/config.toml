@@ -1,0 +1,47 @@
+[server]
+enableStaticServing = true
+
+[client]
+toolbarMode = "minimal"
+showErrorDetails = "none"
+
+[browser]
+gatherUsageStats = false
+
+[[theme.fontFaces]]
+family = "IBM Plex Sans"
+url = "app/static/fonts/IBMPlexSans-Regular.woff2"
+weight = 400
+
+[[theme.fontFaces]]
+family = "IBM Plex Sans"
+url = "app/static/fonts/IBMPlexSans-SemiBold.woff2"
+weight = 600
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/fonts/IBMPlexMono-Regular.woff2"
+weight = 400
+
+[[theme.fontFaces]]
+family = "IBM Plex Mono"
+url = "app/static/fonts/IBMPlexMono-Medium.woff2"
+weight = 500
+
+[theme]
+base = "light"
+font = "IBM Plex Sans, system-ui, sans-serif"
+headingFont = "IBM Plex Sans, system-ui, sans-serif"
+codeFont = "IBM Plex Mono, ui-monospace, monospace"
+baseFontSize = 16
+headingFontWeights = 600
+primaryColor = "#0F5C4D"
+backgroundColor = "#F6F4EF"
+secondaryBackgroundColor = "#ECE8DF"
+textColor = "#1C1F22"
+linkColor = "#0F5C4D"
+borderColor = "#DAD6CE"
+showWidgetBorder = true
+baseRadius = "small"
+chartCategoricalColors = ["#0F5C4D", "#A9A49B", "#6B6760", "#0072B2", "#D55E00", "#E69F00"]
+chartSequentialColors = ["#EFE9DD", "#D7C3A0", "#B58D5E", "#87603A", "#4E3524"]

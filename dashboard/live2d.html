@@ -1,0 +1,205 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<style>
+  :root { --ink:#1C1F22; --muted:#6B6760; --rule:#DAD6CE; --paper:#F6F4EF; --surface:#FFFFFF;
+          --accent:#0F5C4D; --solar:#E69F00; --charge:#0072B2; --discharge:#D55E00; }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--paper); color: var(--ink);
+         font: 15px/1.45 "IBM Plex Sans", system-ui, sans-serif; }
+  .num { font-family: "IBM Plex Mono", ui-monospace, monospace; font-variant-numeric: tabular-nums; }
+  .bar { display: flex; gap: 32px; align-items: flex-end; padding: 4px 2px 14px; border-bottom: 1px solid var(--rule); }
+  .bar .label { color: var(--muted); font-size: 12px; }
+  .bar .value { font-size: 22px; }
+  .bar .time { font-size: 22px; font-weight: 600; margin-right: auto; }
+  .controls { display: flex; gap: 10px; align-items: center; margin: 14px 0 6px; }
+  button { font: inherit; background: var(--surface); color: var(--ink); border: 1px solid var(--rule);
+           border-radius: 4px; padding: 5px 14px; cursor: pointer; }
+  button:hover { border-color: var(--ink); }
+  button.on { background: var(--ink); color: var(--paper); border-color: var(--ink); }
+  input[type=range] { flex: 1; accent-color: var(--accent); }
+  .why { margin: 10px 0 4px; padding: 10px 0 10px 14px; border-left: 3px solid var(--muted); min-height: 44px; }
+  .flow { fill: none; stroke-linecap: round; }
+  svg text { font-family: "IBM Plex Sans", system-ui, sans-serif; fill: var(--ink); }
+  .caption { color: var(--muted); font-size: 12px; margin: 14px 0 4px; }
+</style>
+</head>
+<body>
+<div class="bar">
+  <div class="time num" id="time">-</div>
+  <div><div class="label">Preu</div><div class="value num" id="price">-</div></div>
+  <div><div class="label">CO₂ xarxa</div><div class="value num" id="co2">-</div></div>
+  <div><div class="label">CO₂ evitat</div><div class="value num" id="co2s" style="color:var(--accent)">-</div></div>
+  <div><div class="label">Estalvi</div><div class="value num" id="eurs" style="color:var(--accent)">-</div></div>
+</div>
+<div class="controls">
+  <button id="play">Reproduir</button>
+  <button data-speed="400">1×</button><button data-speed="120" class="on">4×</button><button data-speed="30">16×</button>
+  <input type="range" id="slider" min="0" value="0">
+  <span class="num" id="pos" style="color:var(--muted);font-size:13px"></span>
+</div>
+
+<svg id="scheme" viewBox="0 0 900 300" width="100%">
+  <path id="f_grid" class="flow" d="M170,150 L425,150"/>
+  <path id="f_sol" class="flow" d="M450,78 L450,132"/>
+  <path id="f_bat" class="flow" d="M450,168 L450,214"/>
+  <path id="f_load" class="flow" d="M475,150 L720,150"/>
+  <circle cx="450" cy="150" r="7" fill="var(--ink)"/>
+
+  <!-- xarxa: torre -->
+  <g transform="translate(60,100)">
+    <rect width="110" height="100" rx="4" fill="var(--surface)" stroke="var(--rule)"/>
+    <path d="M45 18 L55 18 L64 62 L36 62 Z M40 34 L60 34 M38 48 L62 48" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="55" y="80" text-anchor="middle" font-size="13">Xarxa</text>
+    <text id="t_grid" x="55" y="96" text-anchor="middle" font-size="12" class="num">-</text>
+  </g>
+  <!-- solar -->
+  <g transform="translate(395,6)">
+    <rect width="110" height="72" rx="4" fill="var(--surface)" stroke="var(--rule)"/>
+    <circle cx="26" cy="36" r="9" fill="none" stroke="var(--solar)" stroke-width="1.5"/>
+    <path d="M26 20 V23 M26 49 V52 M10 36 H13 M39 36 H42 M15 25 L17 27 M35 45 L37 47 M15 47 L17 45 M35 27 L37 25" stroke="var(--solar)" stroke-width="1.5"/>
+    <text x="74" y="32" text-anchor="middle" font-size="13">Solar</text>
+    <text id="t_sol" x="74" y="50" text-anchor="middle" font-size="12" class="num">-</text>
+  </g>
+  <!-- campus: edifici -->
+  <g transform="translate(720,100)">
+    <rect width="120" height="100" rx="4" fill="var(--surface)" stroke="var(--rule)"/>
+    <path d="M38 62 V24 H82 V62 M46 32 H52 M60 32 H66 M46 42 H52 M60 42 H66 M46 52 H52 M60 52 H66 M30 62 H90" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <text x="60" y="80" text-anchor="middle" font-size="13">Campus</text>
+    <text id="t_load" x="60" y="96" text-anchor="middle" font-size="12" class="num">-</text>
+  </g>
+  <!-- bateria -->
+  <g transform="translate(390,214)">
+    <rect width="120" height="62" rx="4" fill="var(--surface)" stroke="var(--rule)"/>
+    <rect x="12" y="12" width="88" height="22" rx="2" fill="none" stroke="var(--ink)" stroke-width="1.5"/>
+    <rect x="100" y="18" width="4" height="10" fill="var(--ink)"/>
+    <rect id="bat_fill" x="14" y="14" width="0" height="18" fill="var(--accent)"/>
+    <text id="t_soc" x="60" y="52" text-anchor="middle" font-size="12" class="num">-</text>
+  </g>
+  <text id="mode" x="530" y="250" font-size="14" font-weight="600">-</text>
+</svg>
+
+<div class="why" id="why">-</div>
+
+<div class="caption">Properes 24 h: intensitat de CO₂ (més fosc = més brut) i pla de la bateria (blau càrrega, vermelló descàrrega)</div>
+<svg id="ahead" viewBox="0 0 900 70" width="100%"></svg>
+<div class="caption">Compra a la xarxa amb bateria (línia) i sense bateria (gris), setmana</div>
+<svg id="week" viewBox="0 0 900 170" width="100%"></svg>
+
+<script>
+const D = __DATA__;
+const C = D.colors;
+const N = D.ts.length;
+const $ = id => document.getElementById(id);
+let k = 0, timer = null, speed = 120, dash = 0;
+
+const fmt = (x, d = 0) => x.toLocaleString("ca-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
+
+// CO2 -> color de la rampa (de net a brut)
+const co2Min = Math.min(...D.co2), co2Max = Math.max(...D.co2);
+function co2Color(v) {
+  const t = Math.max(0, Math.min(0.999, (v - co2Min) / ((co2Max - co2Min) || 1))) * (C.co2.length - 1);
+  const i = Math.floor(t), f = t - i;
+  const a = hex(C.co2[i]), b = hex(C.co2[i + 1]);
+  return `rgb(${a.map((x, j) => Math.round(x + (b[j] - x) * f)).join(",")})`;
+}
+function hex(h) { return [1, 3, 5].map(i => parseInt(h.slice(i, i + 2), 16)); }
+
+function flow(id, kw, color, dir) {
+  const e = $(id);
+  const w = kw < 1 ? 0 : 1.5 + 9 * Math.min(1, kw / 1500);
+  e.setAttribute("stroke", color);
+  e.setAttribute("stroke-width", w);
+  e.setAttribute("stroke-dasharray", "10 8");
+  e.style.opacity = kw < 1 ? 0.15 : 1;
+  e.dataset.dir = dir; e.dataset.kw = kw;
+}
+
+function draw() {
+  const b = D.bat[k];
+  $("time").textContent = D.ts[k];
+  $("price").textContent = fmt(D.price[k] * 1000) + " €/MWh";
+  $("co2").textContent = fmt(D.co2[k] * 1000) + " g/kWh";
+  $("co2s").textContent = fmt(D.co2_saved[k]) + " kg";
+  $("eurs").textContent = fmt(D.eur_saved[k]) + " €";
+
+  flow("f_grid", D.grid[k], co2Color(D.co2[k]), 1);
+  flow("f_sol", D.pv[k], C.solar, 1);
+  flow("f_bat", Math.abs(b), b > 0 ? C.charge : C.discharge, b > 0 ? 1 : -1);
+  flow("f_load", D.load[k], C.ink, 1);
+  $("t_grid").textContent = fmt(D.grid[k]) + " kW";
+  $("t_sol").textContent = fmt(D.pv[k]) + " kW";
+  $("t_load").textContent = fmt(D.load[k]) + " kW";
+  $("bat_fill").setAttribute("width", 84 * D.soc[k]);
+  $("t_soc").textContent = fmt(100 * D.soc[k]) + " % · " + (b > 1 ? "+" : "") + fmt(b) + " kW";
+
+  const mode = b > 1 ? ["Carregant", C.charge] : b < -1 ? ["Descarregant", C.discharge] : ["En espera", C.muted];
+  $("mode").textContent = mode[0];
+  $("mode").style.fill = mode[1];
+  $("why").textContent = D.why[k];
+  $("why").style.borderLeftColor = mode[1];
+  $("slider").value = k;
+  $("pos").textContent = `${k + 1} / ${N} h`;
+  drawAhead();
+  drawWeek();
+}
+
+function drawAhead() {
+  const n = Math.min(24, N - k), w = 900 / 24;
+  let s = "";
+  for (let j = 0; j < n; j++) {
+    const i = k + j, b = D.bat[i];
+    s += `<rect x="${j * w + 1}" y="0" width="${w - 2}" height="34" fill="${co2Color(D.co2[i])}"/>`;
+    if (Math.abs(b) > 1) {
+      const h = 22 * Math.abs(b) / D.pmax;
+      s += `<rect x="${j * w + w * 0.3}" y="${b > 0 ? 58 - h : 58}" width="${w * 0.4}" height="${h}" fill="${b > 0 ? C.charge : C.discharge}"/>`;
+    }
+    if (D.hour[i] % 6 === 0) s += `<text x="${j * w + 3}" y="47" font-size="10" fill="${C.muted}">${String(D.hour[i]).padStart(2, "0")}h</text>`;
+  }
+  s += `<line x1="0" x2="900" y1="58" y2="58" stroke="${C.rule}"/>`;
+  $("ahead").innerHTML = s;
+}
+
+function drawWeek() {
+  const W = 900, H = 170, P = 26;
+  const top = Math.max(...D.base, ...D.grid) * 1.05;
+  const x = i => P + (W - 2 * P) * i / (N - 1);
+  const y = v => H - 20 - (H - 40) * v / top;
+  const path = arr => arr.map((v, i) => (i ? "L" : "M") + x(i).toFixed(1) + "," + y(v).toFixed(1)).join("");
+  let s = "";
+  for (let i = 0; i < N; i++) if (D.hour[i] === 0)
+    s += `<line x1="${x(i)}" x2="${x(i)}" y1="10" y2="${H - 20}" stroke="${C.rule}"/><text x="${x(i) + 3}" y="${H - 6}" font-size="10" fill="${C.muted}">${D.ts[i].slice(0, 8)}</text>`;
+  s += `<path d="${path(D.base)}" fill="none" stroke="#A9A49B" stroke-width="1.5"/>`;
+  s += `<path d="${path(D.grid)}" fill="none" stroke="${C.accent}" stroke-width="1.8"/>`;
+  s += `<line x1="${x(k)}" x2="${x(k)}" y1="6" y2="${H - 20}" stroke="${C.ink}" stroke-width="1.5"/>`;
+  $("week").innerHTML = s;
+}
+
+function step() { if (k < N - 1) { k++; draw(); } else stop(); }
+function stop() { clearInterval(timer); timer = null; $("play").textContent = "Reproduir"; }
+function start() { timer = setInterval(step, speed); $("play").textContent = "Pausa"; }
+$("play").onclick = () => (timer ? stop() : start());
+document.querySelectorAll("[data-speed]").forEach(btn => btn.onclick = () => {
+  document.querySelectorAll("[data-speed]").forEach(x => x.classList.remove("on"));
+  btn.classList.add("on"); speed = +btn.dataset.speed;
+  if (timer) { stop(); start(); }
+});
+$("slider").max = N - 1;
+$("slider").oninput = e => { k = +e.target.value; draw(); };
+document.addEventListener("keydown", e => { if (e.code === "Space") { e.preventDefault(); $("play").click(); } });
+
+// les línies de flux es mouen més ràpid com més potència porten
+(function animate() {
+  dash -= 1;
+  for (const id of ["f_grid", "f_sol", "f_bat", "f_load"]) {
+    const e = $(id), kw = +e.dataset.kw || 0;
+    e.style.strokeDashoffset = dash * (+e.dataset.dir || 1) * (0.3 + Math.min(1, kw / 800));
+  }
+  requestAnimationFrame(animate);
+})();
+
+draw();
+</script>
+</body>
+</html>
