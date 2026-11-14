@@ -232,3 +232,46 @@ amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, a
   historial, com funciona el control, com seguir-lo i supòsits. S'ha arreglat el gràfic d'estratègies (sortia buit).
 - El nom que surt és el del repte, **UPC Sostenible**, amb "Bateria del Campus Nord" a sota.
 - El semàfor queda centrat a la seva caixa.
+
+### D-029 · 14/11 · Ivan — Les dues versions generalitzen: no les toquem
+Comprovat amb `tests/check_generalization.py` (veure DIARI): validació creuada per mesos, 10 tests simulats com l'oficial,
+error a les previsions, talls del comptador, final de simulació, SOC als límits i sensibilitat de params.json.
+Cap problema real: 0 infraccions sempre, a 0,002 de l'òptim de mitjana i estables davant canvis dels paràmetres.
+`mpc_robust` i `mpc_test_weights` empaten (+0,0001), així que per al jurat són dues opcions igual de bones.
+El que més pesa al test privat són els talls del comptador: `mpc_lp` hi perdria fins a 0,2 punts, les nostres versions no.
+**Decisió:** les dues versions queden congelades tal com estan. Si el test privat té talls, `mpc_robust`/`mpc_test_weights` són clarament millors que `mpc_lp`.
+
+### D-030 · 14/11 · Ivan — Agent per al Mode Difícil (`agents/hard_mpc`)
+Al Mode Difícil ja no val la idea del mode estàndard: només sabem 3 h de mercat i la bateria (1.500 kW) pot descarregar més
+del que consumeix el campus. Mantenim LP + MPC de 24 h, amb dos canvis:
+1. **Previsions.** Preu i CO₂: mitjana dels últims 3 dies a la mateixa hora barrejada amb el perfil del train del mateix mes
+   (feiner / cap de setmana), corregida amb el nivell de les 3 h que sí sabem. Consum: perfil del train per dia de la setmana i
+   hora, escalat amb les últimes mesures. Solar: la dels últims dies a la mateixa hora, corregida segons com de clar està avui.
+2. **La xarxa dins del LP** (`xarxa ≥ consum − solar + bateria`, `xarxa ≥ 0`): el pla aprofita l'excedent solar gratuït i no
+   descarrega més del que es consumirà. A l'hora actual descarreguem com a molt el 92 % del consum net previst (marge d'error).
+**Alternatives:** adaptar `mpc_robust` sense previsions (10,50) o models LightGBM per a les previsions (més feina i risc de
+sobreajustar; queda com a millora possible: el marge fins a l'òptim és de 2,5 punts).
+Només hi ha 2 enviaments cada 4 h: validar sempre en local i amb la Validació Ràpida abans d'enviar.
+
+### D-031 · 14/11 · Ivan — Mode Difícil amb models de previsió (`agents/hard_ml`)
+Mateix LP que `hard_mpc`, però el consum i el preu els corregeix un model LightGBM entrenat amb el train: el model no prediu
+el valor sinó l'error de la previsió senzilla, així si no es pot carregar al servidor l'agent funciona igual (sense la millora).
+Els models es guarden en text (`.txt`) perquè no depenguin de la versió de LightGBM.
+El CO₂ és el que més pesa i el que pitjor es pot predir amb 3 setmanes de dades per mes: cap model millora la previsió senzilla.
+**Pendent:** enviar `hard_mpc` per saber quin score públic correspon al nostre 19,9 local abans de decidir res més.
+
+### D-032 · 14/11 · Ivan — `hard_ml`: els models només corregeixen les hores properes
+Substitueix la part de models de D-031. Hem mesurat que el que decideix el score és l'hora actual (consum i solar) i el mercat de
+les hores +3..+7; més lluny, els models no milloren la previsió senzilla. Per tant: un model per sèrie, entrenat i aplicat només a
+les hores properes (`near_hours` a params.json), i previsió senzilla per a la resta. Marge de descàrrega 0,96.
+
+### D-033 · 14/11 · Ivan — Agent final del Mode Difícil (`agents/hard_final`)
+Substitueix `hard_ml` com a candidat principal. Mateix LP + MPC, amb 5 millores validades a dues validacions independents
+(veure DIARI 14/11 vespre): previsió solar del 1r dia, marge de descàrrega per hora segons l'error real, el pla també
+compta amb aquest marge, historial del train al principi de cada setmana, i previsió de CO₂/preu a +3/+4 h amb la forma
+d'ahir ancorada. Models: 5 llavors (mitjana) per ser més estables. Es reentrena amb `python scripts/train_hard_final.py`.
+**Per què no LightGBM per a tot:** a partir de cert punt els models no milloren la previsió senzilla i afegeixen soroll.
+
+### D-034 · 14/11 · Ivan — `hard_final` v2: excedent solar i preu a totes les hores
+Amb excedent solar carreguem pensant en el cas de més sol (l'error de carregar de més és comprar una mica de xarxa a l'hora
+més barata; el de carregar de menys és perdre energia gratis). El model de preu s'aplica a totes les hores. Validació: 19,22.
