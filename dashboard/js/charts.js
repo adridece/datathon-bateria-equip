@@ -240,6 +240,7 @@
     sizing: () => sizing(),
     trust: () => robust(),
     live: () => {},
+    planner: () => {},
   };
   let current = "overview";
   window.Charts = {

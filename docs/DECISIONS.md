@@ -104,3 +104,13 @@ i perseguir el públic seria sobreajustar. Com que el jurat puntua al test priva
 1. `agents/mpc_robust` (gestiona fallades del comptador).
 2. `agents/mpc_test_weights`: el mateix codi amb la proporció CO₂/€ del test públic (71.816 kg / 118.746 €), que és la
    ponderació exacta del test. Validació 6,08 · train complet 5,67 · 0 infraccions.
+
+### D-017 · 14/11 · Adrià — Dashboard: eines de gestió i representació elèctrica del campus
+- **Planificador "què passaria si":** recalcula el pla de 24 h al navegador amb programació dinàmica (nivells de 20 kWh)
+  canviant preu, CO₂, reserva mínima, potència i prioritat. Sense canvis dona el mateix que l'agent (comprovat).
+- **Informe PDF** d'una pàgina per a UPC Sostenible i **presentació guiada** de tot el dashboard per a la demo.
+- **Mapa:** mode ampliat propi (funciona a tots els navegadors), zoom amb botons, comparació sense bateria.
+- **Xarxa elèctrica:** la ubicació dels centres de transformació de la UPC no és pública. Representem una escomesa principal
+  i 3 centres proposats amb un anell soterrat; el consum es reparteix segons el volum dels edificis que alimenta cada centre.
+  La subestació del BSC (documentada) surt en gris perquè és un client a part. Detall i fonts: `docs/RECERCA_ELECTRICA_CAMPUS.md`.
+- Noms dels edificis confirmats amb fonts de la UPC (ja no n'hi ha cap de deduït).
