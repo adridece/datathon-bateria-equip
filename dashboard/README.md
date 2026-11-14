@@ -1,25 +1,33 @@
 # Dashboard
 
-Tauler de decisions per a UPC Sostenible (side challenge Tukey Commission).
+Tauler de decisions per a UPC Sostenible (side challenge de la Tukey Commission). És una web feta a mida:
+el Campus Nord real en 3D a la portada i, a sota, les decisions amb els gràfics que les justifiquen.
 
 ```
-streamlit run dashboard/app.py
+python scripts/serve_dashboard.py
 ```
-S'obre sol al navegador (http://localhost:8501). Per parar-lo: `Ctrl + C` a la terminal.
-Funciona sense internet: les fonts i three.js són dins del repo.
+S'obre sol al navegador (http://localhost:8000). Funciona sense internet. Per parar-lo: `Ctrl + C`.
 
-## Pàgines
-1. **Resum** – què ha de fer la UPC, amb les xifres clau i les 4 decisions.
-2. **Operació en directe** – el Campus Nord real en 3D hora a hora (o esquema 2D). Botó "Presentació guiada" (tecla P).
-3. **Estratègia** – per què el control predictiu és el millor i quan carrega/descarrega.
-4. **Dimensionament** – quina mida de bateria convé i en quants anys es recupera.
-5. **Fiabilitat** – robustesa a errors de previsió, estacionalitat i supòsits.
+Si canvia l'agent o les dades, regenereu les xifres amb:
+```
+python scripts/build_dashboard_data.py
+```
+
+## Què hi ha
+- **Portada (Directe):** campus real en 3D hora a hora. Fluxos d'energia, estat de la bateria, CO₂ i preu, estalvi acumulat,
+  franja de la setmana (clic per moure's) i **presentació guiada** (botó o tecla P; fletxes per avançar, Esc per sortir).
+- **01 Estratègia:** per què el control predictiu és el millor.
+- **02 Quan carrega:** perfil horari i mapa de calor de cada hora de cada dia.
+- **03 Mida:** quina bateria convé i retorn de la inversió (controls interactius).
+- **04 Fiabilitat:** robustesa a errors de previsió i resultats per setmana.
+- **05 Supòsits i límits.**
 
 ## Fitxers
-- `app.py` – navegació entre pàgines.
-- `views.py` – les pàgines.
-- `analysis.py` – càlculs (tots amb el simulador oficial; es guarden a `data/processed/`).
-- `style.py` – colors, tipografia i tema dels gràfics (un sol lloc per a tot).
-- `scene3d.html` – escena 3D (three.js 0.170.0, a `vendor/`).
-- `live2d.html` – esquema 2D de reserva.
-- `static/campus_nord.json` – edificis reals del campus (© OpenStreetMap contributors, ODbL), generat amb `scripts/build_campus_json.py`.
+- `index.html`, `css/style.css`: estructura i estil (sala de control fosca, IBM Plex).
+- `js/scene.js`: escena 3D (three.js 0.170.0, a `vendor/`).
+- `js/main.js`: reproducció, panells i presentació guiada.
+- `js/charts.js`: gràfics de les decisions (D3 7.9, a `vendor/`).
+- `data/`: dades generades per `scripts/build_dashboard_data.py` (no editar a mà).
+- `analysis.py`: càlculs amb el simulador oficial (els fa servir el script de dades).
+- `static/campus_nord.json`: edificis reals (© OpenStreetMap contributors, ODbL), de `scripts/build_campus_json.py`.
+- `app.py`, `views.py`, `style.py`, `live2d.html`, `scene3d.html`: versió antiga amb Streamlit, ja no es fa servir (es pot esborrar).

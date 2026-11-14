@@ -1,0 +1,165 @@
+<!doctype html>
+<html lang="ca">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Bateria del Campus Nord · Tauler de decisions</title>
+<link rel="icon" href="static/icon.svg">
+<link rel="stylesheet" href="css/style.css">
+<script type="importmap">
+  { "imports": { "three": "./vendor/three.module.min.js",
+                 "three/addons/controls/OrbitControls.js": "./vendor/OrbitControls.js" } }
+</script>
+<script src="vendor/d3.min.js"></script>
+<script src="data/data.js"></script>
+<script src="data/campus.js"></script>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand"><b>Bateria del Campus Nord</b><span>Tauler de decisions · UPC Sostenible</span></div>
+  <nav>
+    <a href="#directe">Directe</a>
+    <a href="#decisions">Decisions</a>
+    <a href="#estrategia">Estratègia</a>
+    <a href="#mida">Mida</a>
+    <a href="#fiabilitat">Fiabilitat</a>
+  </nav>
+</header>
+
+<section class="hero" id="directe">
+  <div id="scene"></div>
+
+  <div class="hud clock">
+    <h3>Hora simulada</h3>
+    <div class="time" id="time">--:--</div>
+    <div class="date" id="date">-</div>
+    <select id="week"></select>
+  </div>
+
+  <div class="hud state">
+    <h3>Estat ara</h3>
+    <div class="gauge">
+      <svg width="74" height="74" viewBox="0 0 74 74">
+        <circle cx="37" cy="37" r="31" fill="none" stroke="#24282C" stroke-width="6"/>
+        <circle id="ring" cx="37" cy="37" r="31" fill="none" stroke="#5FD3A8" stroke-width="6"
+                stroke-dasharray="194.8" stroke-dashoffset="194.8" transform="rotate(-90 37 37)"/>
+      </svg>
+      <div><div class="big" id="soc">-</div><div class="mode" id="mode">-</div></div>
+    </div>
+    <div class="rows">
+      <span class="k"><i id="dot-grid"></i>Xarxa</span><span class="v" id="v-grid">-</span>
+      <span class="k"><i style="background:var(--muted)"></i>Campus</span><span class="v" id="v-load">-</span>
+      <span class="k"><i style="background:var(--solar)"></i>Solar</span><span class="v" id="v-pv">-</span>
+      <span class="k">CO₂ xarxa</span><span class="v" id="v-co2">-</span>
+      <span class="k">Preu</span><span class="v" id="v-price">-</span>
+    </div>
+  </div>
+
+  <div class="hud totals">
+    <h3>Aquesta setmana</h3>
+    <div class="big" id="t-co2">-</div><div class="lab">CO₂ evitat respecte al campus sense bateria</div>
+    <div class="big" id="t-eur">-</div><div class="lab">estalviats a la factura</div>
+    <h3 style="margin-top:6px">Compra a la xarxa</h3>
+    <svg id="spark" width="248" height="70"></svg>
+    <div class="legend"><span><i style="background:var(--accent)"></i>amb bateria</span><span><i style="background:var(--dim)"></i>sense</span></div>
+  </div>
+
+  <div class="hud caption" id="caption"></div>
+  <div class="hud why" id="why">-</div>
+
+  <div class="hud timeline">
+    <div class="tl-controls">
+      <button id="play">Reproduir</button>
+      <button data-speed="600">1×</button><button data-speed="160" class="on">4×</button><button data-speed="45">16×</button>
+      <span class="sep"></span>
+      <button id="next-charge">Propera càrrega</button>
+      <button id="next-peak">Pic de CO₂</button>
+      <button id="tour">Presentació guiada</button>
+      <button id="home">Vista inicial</button>
+      <span class="pos mono" id="pos"></span>
+    </div>
+    <svg id="strip"></svg>
+    <div class="legend">
+      <span>CO₂ de la xarxa: net<svg class="ramp" id="ramp"></svg>brut</span>
+      <span><i style="background:var(--charge)"></i>càrrega</span>
+      <span><i style="background:var(--discharge)"></i>descàrrega</span>
+      <span>clic o arrossega per moure't · espai: reproduir · P: presentació</span>
+    </div>
+  </div>
+
+  <div id="tip"></div>
+  <div class="credit">Edificis © OpenStreetMap contributors (ODbL) · alçades ×1,5 · ubicació de la bateria i l'escomesa suposada</div>
+</section>
+
+<main>
+  <div class="intro" id="decisions">
+    <p class="lead" id="lead"></p>
+    <div class="kpis" id="kpis"></div>
+  </div>
+
+  <section class="section" id="estrategia">
+    <div class="side"><div class="idx">01</div><h2>Com s'ha de controlar la bateria?</h2></div>
+    <div>
+      <p class="answer" id="a-strategy"></p>
+      <div class="chart" id="c-strategy"></div>
+      <p class="note">Puntuació oficial del repte (0,7 · CO₂ evitat + 0,3 · factura estalviada). Validació local: 12 setmanes, 1.848 h.</p>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="side"><div class="idx">02</div><h2>Quan carrega i quan descarrega?</h2></div>
+    <div>
+      <p class="answer" id="a-profile"></p>
+      <div class="chart" id="c-profile"></div>
+      <div class="chart-title">Cada hora de cada dia <span>· potència de la bateria (blau càrrega, vermelló descàrrega)</span></div>
+      <div class="chart" id="c-heat"></div>
+    </div>
+  </section>
+
+  <section class="section" id="mida">
+    <div class="side"><div class="idx">03</div><h2>Quina bateria li convé a la UPC?</h2></div>
+    <div>
+      <div class="controls">
+        <div class="grp"><div class="l">Capacitat (kWh)</div><div class="btns" id="b-cap"></div></div>
+        <div class="grp"><div class="l">Potència de l'inversor (kW)</div><div class="btns" id="b-pow"></div></div>
+        <div class="grp"><div class="l">Cost instal·lat: <span class="mono" id="cost-v"></span> €/kWh (hipòtesi)</div>
+          <input type="range" id="cost" min="150" max="600" step="25" value="350"></div>
+      </div>
+      <p class="answer" id="a-size"></p>
+      <div class="chart" id="c-size"></div>
+      <table class="t" id="t-size"></table>
+      <p class="note">Retorn = inversió / estalvi anual. Vida útil suposada 15 anys, sense degradació ni manteniment.</p>
+    </div>
+  </section>
+
+  <section class="section" id="fiabilitat">
+    <div class="side"><div class="idx">04</div><h2>Ens en podem refiar?</h2></div>
+    <div>
+      <p class="answer" id="a-robust"></p>
+      <div class="chart" id="c-robust"></div>
+      <div class="chart-title">Estalvi per setmana de validació <span>· CO₂ evitat (accent) i factura (gris)</span></div>
+      <div class="chart" id="c-month"></div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="side"><div class="idx">05</div><h2>Supòsits i límits</h2></div>
+    <div>
+      <ul class="assumptions">
+        <li><b>Previsions.</b> El preu i el CO₂ de les properes 24 h es coneixen, com al repte. El consum i la solar futurs no.</li>
+        <li><b>Anualització.</b> Les xifres per any multipliquen les 12 setmanes de validació per 8.760 / 1.848 hores.</li>
+        <li><b>Bateria.</b> 90 % de rendiment i sense degradació, com el simulador oficial.</li>
+        <li><b>Excedents.</b> L'energia abocada a la xarxa no es paga ni compta com a CO₂ evitat.</li>
+        <li><b>Ubicació.</b> La posició de la bateria i de l'escomesa al mapa és una suposició; els edificis i les plaques solars són reals.</li>
+        <li><b>Inversió.</b> El cost per kWh és una hipòtesi editable; no inclou manteniment ni subvencions.</li>
+      </ul>
+      <footer>La Datoneta · Datathon FME 2026 · Dades: telemetria real del Campus Nord, REE (PVPC i CO₂), OpenStreetMap.</footer>
+    </div>
+  </section>
+</main>
+
+<script src="js/charts.js"></script>
+<script type="module" src="js/main.js"></script>
+</body>
+</html>

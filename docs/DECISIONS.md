@@ -64,3 +64,9 @@ amb 500 kW, més de 4.000 kWh no aporta gaire; ≈ 44 t CO₂ i ≈ 96 k€ esta
 Enviem `agents/mpc_lp` amb el nom d'equip **La Datoneta**. Resultat públic: **6,43** (CO₂ −5,97 %, factura −7,5 %,
 0 infraccions). La validació local donava 6,08: el nostre pseudo-test és una bona estimació del test real.
 El PIN de l'equip el guarda l'Adrià (mai al repo).
+
+### D-011 · 14/11 · Adrià — El dashboard passa a ser una web feta a mida (substitueix D-006)
+Streamlit sempre semblava "una eina interna". Fem una web pròpia (HTML + CSS + JS, gràfics amb D3 i 3D amb three.js),
+estil sala de control fosca, amb el campus real en 3D a la portada i les decisions a sota. Funciona sense internet
+amb `python scripts/serve_dashboard.py`. Les xifres es generen amb `scripts/build_dashboard_data.py` a partir del
+simulador oficial, així segueixen sent coherents amb el leaderboard.

@@ -81,14 +81,14 @@ Ha de sortir alguna cosa com `VALID (7d/mes) ... 'score': 6.08 ... 'infraccions'
 git fetch
 git checkout dashboard
 pip install -r requirements.txt
-streamlit run dashboard/app.py
+python scripts/serve_dashboard.py
 ```
-S'obre sol al navegador (http://localhost:8501). El primer cop tarda ~2 minuts (fa els càlculs).
+S'obre sol al navegador (http://localhost:8000).
 Què has de mirar:
-- Les 5 pàgines de dalt: Resum, Operació en directe, Estratègia, Dimensionament i Fiabilitat.
-- A **Operació en directe**, la vista 3D: gira la càmera arrossegant amb el ratolí, prem **Reproduir**,
+- La portada amb el campus en 3D i, baixant, les seccions de decisions.
+- A la portada: gira la càmera arrossegant amb el ratolí, prem **Reproduir**,
   prem **Presentació guiada** (o la tecla P) i passa el ratolí per sobre dels edificis.
-- Si el 3D no es veu, desactiva "Vista 3D" i comprova que l'esquema 2D funciona.
+- Prova també els botons de capacitat i potència de la secció "Quina bateria li convé a la UPC?".
 
 Per parar-lo: `Ctrl + C`. Després torna a la teva branca: `git checkout analisi` (Jesús) o
 `git checkout presentacio` (Martí). Si alguna cosa falla, envia una captura o l'error de la terminal pel grup.
