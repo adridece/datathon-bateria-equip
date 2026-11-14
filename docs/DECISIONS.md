@@ -43,3 +43,9 @@ També serveix per al side challenge de la Tukey Commission (veure `docs/SIDE_CH
 ### D-007 · 14/11 · equip — No enviem encara a la web
 L'agent `mpc_lp` està validat a la web (dry-run correcte, 0 infraccions, 1,55 ms/hora). Decidim esperar
 abans de gastar un enviament al leaderboard.
+
+### D-008 · 14/11 · Adrià — Dashboard orientat a decisions (side challenge Tukey)
+Pestanya inicial "Decisions" amb 4 preguntes (estratègia, quan carregar, mida de bateria, robustesa),
+cadascuna amb la resposta, el gràfic que la justifica i una conclusió. Totes les xifres surten de la mateixa
+simulació. Resultats clau: MPC = òptim (gap 0 %); amb 50 % d'error a les previsions el score només baixa de 6,08 a 5,68;
+amb 500 kW, més de 4.000 kWh no aporta gaire; ≈ 44 t CO₂ i ≈ 96 k€ estalviats per any (estimació).

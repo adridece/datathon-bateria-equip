@@ -17,6 +17,7 @@ sys.path.insert(0, str(ROOT))
 from src.data import load_hourly, contiguous_blocks  # noqa: E402
 from src.evaluate import valid_split  # noqa: E402
 from src.replay import make_agent, replay  # noqa: E402
+from dashboard import decisions  # noqa: E402
 
 st.set_page_config(page_title="Bateria del Campus", page_icon="🔋", layout="wide")
 
@@ -81,7 +82,7 @@ def dades_animacio(d: pd.DataFrame, pmax: float) -> str:
 
 
 # ------------------------------------------------------------------ interficie
-st.title("🔋 Bateria del Campus Nord — en temps real")
+st.title("🔋 Bateria del Campus Nord — tauler de decisions")
 st.caption("Simulació hora a hora amb el simulador oficial del repte i dades reals del campus.")
 
 with st.sidebar:
@@ -89,7 +90,10 @@ with st.sidebar:
     per = st.selectbox("Període", list(periodes().keys()), index=1)
     nom_agent = st.selectbox("Agent", list(AGENTS.keys()))
 
-tab1, tab2, tab3, tab4 = st.tabs(["🔴 En directe", "📊 Comparativa", "🧪 Què passaria si...", "ℹ️ Com funciona"])
+tab0, tab1, tab2, tab3, tab4 = st.tabs(["🎯 Decisions", "🔴 En directe", "📊 Comparativa", "🧪 Què passaria si...", "ℹ️ Com funciona"])
+
+with tab0:
+    decisions.render()
 
 with tab1:
     d = simula(per, AGENTS[nom_agent])
@@ -115,6 +119,8 @@ with tab2:
     st.dataframe(pd.DataFrame(files).set_index("Escenari"), use_container_width=True)
     st.markdown("**CO₂ estalviat acumulat (kg)** al llarg del període")
     st.line_chart(pd.DataFrame(acum))
+    st.caption("📌 El nostre agent acumula estalvi de CO₂ de manera constant; les regles fixes per hores en treuen "
+               "molt poc perquè no miren el preu ni el CO₂ futurs.")
     st.markdown("**Quan carrega i quan descarrega** el nostre agent (mitjana per hora del dia, kW)")
     dd = simula(per, "mpc_lp")
     perfil = dd.groupby(dd.index.hour)[["bat_kw"]].mean().rename(columns={"bat_kw": "bateria (kW)"})
@@ -122,6 +128,7 @@ with tab2:
     perfil["preu (€/MWh)"] = dd.groupby(dd.index.hour).precio_eur_per_kwh.mean() * 1000
     st.bar_chart(perfil[["bateria (kW)"]])
     st.line_chart(perfil[["CO₂ (g/kWh)", "preu (€/MWh)"]])
+    st.caption("📌 Les hores de càrrega coincideixen amb les de CO₂ baix, i les de descàrrega amb el pic de CO₂ i preu.")
 
 with tab3:
     st.subheader("Què passaria si la UPC instal·lés una bateria diferent?")
