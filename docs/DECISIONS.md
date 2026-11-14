@@ -49,3 +49,8 @@ Pestanya inicial "Decisions" amb 4 preguntes (estratègia, quan carregar, mida d
 cadascuna amb la resposta, el gràfic que la justifica i una conclusió. Totes les xifres surten de la mateixa
 simulació. Resultats clau: MPC = òptim (gap 0 %); amb 50 % d'error a les previsions el score només baixa de 6,08 a 5,68;
 amb 500 kW, més de 4.000 kWh no aporta gaire; ≈ 44 t CO₂ i ≈ 96 k€ estalviats per any (estimació).
+
+### D-009 · 14/11 · Ivan — Agent robust (`agents/mpc_robust`)
+mpc_lp + no descarregar més del consum net de l'hora anterior (talls del comptador: FULL 5,65 → 5,67)
++ neteja de NaN/llistes buides + regla de reserva si el LP falla (sola fa 4,68 al VALID).
+Provat: el paràmetre `terminal` i `co2_ref/preu_ref` ±20 % no canvien el score → no els ajustem.
