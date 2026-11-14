@@ -142,7 +142,20 @@ function toggleExpand(stage, force) {
   stage.querySelector('[data-act="full"]').innerHTML = on ? ICON_CLOSE : ICON_EXPAND;
   stage.querySelector('[data-act="full"]').setAttribute("aria-label", on ? "Tancar el mapa ampliat" : "Ampliar el mapa");
   scene.controls.enableZoom = on || stage.id === "stage-big";
+  // pantalla completa de debò (Safari fa servir el prefix webkit)
+  const fs = document.fullscreenElement || document.webkitFullscreenElement;
+  if (on && !fs) {
+    const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+    if (req) { const r = req.call(stage); if (r && r.catch) r.catch(() => {}); }
+  } else if (!on && fs) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  }
 }
+// si se surt de la pantalla completa amb Esc del navegador, el mapa torna a la seva targeta
+["fullscreenchange", "webkitfullscreenchange"].forEach(ev => document.addEventListener(ev, () => {
+  if (!(document.fullscreenElement || document.webkitFullscreenElement))
+    document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false));
+}));
 
 // ---------------------------------------------------------------- cicles de la bateria
 // un cicle = descarregar l'equivalent a tota la capacitat (2.000 kWh); serveix per vigilar el desgast

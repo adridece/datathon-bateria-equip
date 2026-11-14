@@ -1,10 +1,12 @@
 /* Sistema visual: tema clar i càlid, targetes rodones, un sol accent per al nostre agent */
 @font-face { font-family: "Plex Sans"; src: url(../fonts/IBMPlexSans-Regular.woff2) format("woff2"); font-weight: 400; }
 @font-face { font-family: "Plex Sans"; src: url(../fonts/IBMPlexSans-SemiBold.woff2) format("woff2"); font-weight: 600; }
+@font-face { font-family: "Plex Sans"; src: url(../fonts/IBMPlexSans-Bold.woff2) format("woff2"); font-weight: 700; }
 @font-face { font-family: "Plex Mono"; src: url(../fonts/IBMPlexMono-Regular.woff2) format("woff2"); font-weight: 400; }
 @font-face { font-family: "Plex Mono"; src: url(../fonts/IBMPlexMono-Medium.woff2) format("woff2"); font-weight: 500; }
 
 :root {
+  color-scheme: light;   /* que el navegador no apliqui el seu mode fosc automàtic */
   --bg: #F1EEE8;
   --card: #FFFFFF;
   --soft: #F7F5F1;
@@ -47,7 +49,7 @@ button, select, input { -webkit-tap-highlight-color: transparent; }
 .side { display: flex; flex-direction: column; gap: 6px; padding: 22px 16px; border-right: 1px solid var(--line); background: var(--soft); }
 .logo { display: flex; flex-direction: column; align-items: center; gap: 4px; padding: 0 8px 20px; }
 .logo img { width: 120px; height: auto; }
-.logo .team { font: 600 13px var(--sans); letter-spacing: .16em; color: var(--accent); }
+.logo .team { font: 700 15px var(--sans); letter-spacing: .14em; color: #111; }
 .nav button { display: flex; align-items: center; gap: 11px; width: 100%; border: 0; background: transparent; border-radius: 12px;
               padding: 10px 12px; color: var(--muted); text-align: left; }
 .nav button svg { flex: none; }
@@ -181,6 +183,7 @@ button:focus-visible, select:focus-visible, input:focus-visible { outline: 2px s
 .maptools button { width: 32px; height: 32px; padding: 0; display: grid; place-items: center; font-size: 17px; line-height: 1; }
 .switch { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 0 8px; cursor: pointer; }
 .switch input { accent-color: var(--accent); }
+.stage.expanded:fullscreen, .stage.expanded:-webkit-full-screen { inset: 0; border-radius: 0; }
 .stage.expanded { position: fixed; inset: 16px; z-index: 100; height: auto !important; box-shadow: 0 30px 80px rgba(31,35,38,.25); }
 body.has-expanded::after { content: ""; position: fixed; inset: 0; z-index: 99; background: rgba(31,35,38,.35); }
 

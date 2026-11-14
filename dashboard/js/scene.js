@@ -165,8 +165,8 @@ export function createScene(container, campus, colors) {
   // centres de transformació (proposta) i subestació del BSC (real, però és un client a part)
   const conns = A.grid_connections || [];
   const connPos = {};
-  const kioskMat = new THREE.MeshStandardMaterial({ color: "#EFEAE0", roughness: 0.8 });
-  const roofMat = new THREE.MeshStandardMaterial({ color: "#6E6A63", roughness: 0.7 });
+  const markerMat = new THREE.MeshStandardMaterial({ color: "#2F7A74", roughness: 0.45 });
+  const markerPadMat = new THREE.MeshStandardMaterial({ color: "#D3E7E3", roughness: 0.9 });
   conns.forEach(c => {
     const p = at(c.pos);
     connPos[c.id] = c.main ? mainCT.clone() : p;
@@ -178,19 +178,19 @@ export function createScene(container, campus, colors) {
       pickables.push(disc);
       return;
     }
-    const kiosk = new THREE.Group();
+    // marcador rodó: base circular a terra i un pilonet arrodonit
+    const marker = new THREE.Group();
     if (c.main) p.copy(mainCT);
-    const box = new THREE.Mesh(new THREE.BoxGeometry(1.3, 0.9, 1.0), kioskMat);
-    box.position.y = 0.45;
-    const roof = new THREE.Mesh(new THREE.BoxGeometry(1.45, 0.1, 1.15), roofMat);
-    roof.position.y = 0.95;
-    kiosk.add(box, roof);
-    kiosk.position.copy(p);
-    kiosk.scale.setScalar(1.7);   // més gran que la realitat perquè es vegi
-    kiosk.traverse(o => { o.castShadow = true; });
-    box.userData = { kind: "ct", info: c };
-    scene.add(kiosk);
-    pickables.push(box);
+    const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.06, 48), markerPadMat);
+    pad.position.y = 0.03;
+    const pin = new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 0.55, 8, 24), markerMat);
+    pin.position.y = 0.6;
+    marker.add(pad, pin);
+    marker.position.copy(p);
+    pin.castShadow = true;
+    pin.userData = { kind: "ct", info: c };
+    scene.add(marker);
+    pickables.push(pin);
   });
   // anell soterrat de mitja tensió: un cable fi arran de terra
   const cableMat = new THREE.MeshBasicMaterial({ color: "#A08C70", transparent: true, opacity: 0.75 });
