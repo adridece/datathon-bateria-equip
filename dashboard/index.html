@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>Bateria del Campus Nord · Tauler de decisions</title>
+<title>La Datoneta | Bateria del Campus Nord</title>
 <link rel="icon" href="static/icon.svg">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">
@@ -19,8 +19,8 @@
 
   <aside class="side">
     <div class="logo">
-      <div class="mark"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><rect x="3" y="7" width="15" height="10" rx="3"/><path d="M21 10.5v3"/><path d="M7 12h4"/></svg></div>
-      <div><b>Bateria Campus Nord</b><span>Tauler de decisions</span></div>
+      <img src="static/logo-datathon.png" alt="datathon.cat">
+      <div class="team">LA DATONETA</div>
     </div>
     <nav class="nav">
       <button data-view="overview" class="on"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><rect x="3" y="3" width="7" height="9" rx="2.5"/><rect x="14" y="3" width="7" height="5" rx="2.5"/><rect x="14" y="12" width="7" height="9" rx="2.5"/><rect x="3" y="16" width="7" height="5" rx="2.5"/></svg><span>Visió general</span></button>
@@ -30,7 +30,7 @@
       <button data-view="trust"><svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9 12l2 2 4-4"/></svg><span>Fiabilitat</span></button>
     </nav>
     <div class="foot">
-      <p><b>La Datoneta</b> · Datathon FME 2026<br>Dades reals del Campus Nord, REE i OpenStreetMap.</p>
+      <p>Datathon FME 2026<br>Dades reals del Campus Nord, REE i OpenStreetMap.</p>
     </div>
   </aside>
 
@@ -53,7 +53,10 @@
           <div class="card s8">
             <h2>El campus ara mateix</h2>
             <div class="sub">Edificis reals del Campus Nord. Les partícules són l'energia: com més n'hi ha, més kW.</div>
-            <div class="stage" id="stage-small" style="height:360px"></div>
+            <div class="stage" id="stage-small" style="height:380px"><div class="overlay maptools">
+              <button data-act="zoom-in" aria-label="Apropar">+</button><button data-act="zoom-out" aria-label="Allunyar">−</button>
+              <button data-act="full" aria-label="Pantalla completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+            </div></div>
             <div class="player" data-player></div>
           </div>
           <div class="card s4">
@@ -62,7 +65,7 @@
             <div class="battery-now">
               <svg width="92" height="92" viewBox="0 0 92 92">
                 <circle cx="46" cy="46" r="38" fill="none" stroke="#EFECE6" stroke-width="10"/>
-                <circle class="ring" cx="46" cy="46" r="38" fill="none" stroke="#0F7A62" stroke-width="10" stroke-linecap="round"
+                <circle class="ring" cx="46" cy="46" r="38" fill="none" stroke="#2F7A74" stroke-width="10" stroke-linecap="round"
                         stroke-dasharray="238.8" stroke-dashoffset="238.8" transform="rotate(-90 46 46)" style="transition:stroke-dashoffset .5s var(--ease)"/>
               </svg>
               <div><div class="big" data-soc>-</div><div class="mode" data-mode>-</div></div>
@@ -73,8 +76,28 @@
               <span class="k"><i style="background:var(--solar)"></i>Solar</span><span class="v" data-pv>-</span>
               <span class="k">CO₂ de la xarxa</span><span class="v" data-co2>-</span>
               <span class="k">Preu</span><span class="v" data-price>-</span>
+              <span class="k">Cicles aquesta setmana</span><span class="v" data-cycles>-</span>
             </div>
             <div class="why" data-why>-</div>
+          </div>
+        </div>
+        <div class="grid" style="margin-top:16px">
+          <div class="card s8">
+            <div class="head"><div><h2>Pla de les properes 24 hores</h2>
+              <div class="sub">El que farà la bateria a partir de l'hora triada, amb el CO₂ i el preu que ja es coneixen</div></div>
+              <button data-act="csv">Descarregar CSV</button></div>
+            <div class="plan-sum" id="plan-sum"></div>
+            <div class="chart" id="c-plan"></div>
+          </div>
+          <div class="card s4">
+            <h2>Avisos de la setmana</h2><div class="sub">Clica un avís per anar a aquella hora</div>
+            <div class="events" id="events"></div>
+          </div>
+        </div>
+        <div class="grid" style="margin-top:16px">
+          <div class="card s12">
+            <h2>Calendari d'estalvi</h2><div class="sub">CO₂ evitat cada dia de les 12 setmanes de validació. Clica un dia per veure'l al campus.</div>
+            <div class="chart" id="c-calendar"></div>
           </div>
         </div>
         <div class="grid" style="margin-top:16px">
@@ -89,6 +112,11 @@
       <section class="view" id="v-live">
         <div class="card" style="height:calc(100% - 4px);display:flex;flex-direction:column">
           <div class="stage" id="stage-big" style="flex:1;min-height:420px">
+            <div class="overlay maptools">
+              <label class="switch"><input type="checkbox" data-compare> Sense bateria</label>
+              <button data-act="zoom-in" aria-label="Apropar">+</button><button data-act="zoom-out" aria-label="Allunyar">−</button>
+              <button data-act="full" aria-label="Pantalla completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
+            </div>
             <div class="overlay legend3d"><span><i style="background:var(--solar)"></i>solar</span><span><i style="background:var(--charge)"></i>càrrega</span>
               <span><i style="background:var(--discharge)"></i>descàrrega</span><span><i style="background:#8C6A45"></i>xarxa (color = CO₂)</span><span><i style="background:#9A958C"></i>consum</span></div>
             <div class="overlay caption" id="caption"></div>
@@ -97,7 +125,7 @@
           <svg class="strip" id="strip"></svg>
           <div class="legend"><span>CO₂ de la xarxa: net<svg class="ramp" id="ramp"></svg>brut</span>
             <span><i style="background:var(--charge)"></i>càrrega</span><span><i style="background:var(--discharge)"></i>descàrrega</span>
-            <span>Clic o arrossega la franja per moure't · espai: reproduir · P: presentació guiada</span></div>
+            <span>Clic o arrossega la franja per moure't. Espai per reproduir, P per a la presentació guiada</span></div>
         </div>
       </section>
 
@@ -105,9 +133,9 @@
       <section class="view" id="v-strategy">
         <div class="grid">
           <div class="card s12 answer-card"><div class="q">QUINA ESTRATÈGIA?</div><p class="answer" id="a-strategy"></p></div>
-          <div class="card s5"><h2>Puntuació per estratègia</h2><div class="sub">0,7 · CO₂ evitat + 0,3 · factura estalviada</div><div class="chart" id="c-strategy"></div></div>
+          <div class="card s5"><h2>Puntuació per estratègia</h2><div class="sub">0,7 × CO₂ evitat + 0,3 × factura estalviada</div><div class="chart" id="c-strategy"></div></div>
           <div class="card s7"><h2>Què fa a cada hora del dia</h2><div class="sub">Bateria, CO₂ i preu amb el mateix eix horari</div><div class="chart" id="c-profile"></div></div>
-          <div class="card s12"><h2>Cada hora de cada dia de validació</h2><div class="sub">Blau: càrrega · vermelló: descàrrega · el patró es repeteix tot l'any</div><div class="chart" id="c-heat"></div></div>
+          <div class="card s12"><h2>Cada hora de cada dia de validació</h2><div class="sub">Blau és càrrega i vermelló descàrrega. El patró es repeteix tot l'any</div><div class="chart" id="c-heat"></div></div>
         </div>
       </section>
 
@@ -124,7 +152,7 @@
             <div class="rows" id="size-kpis"></div>
           </div>
           <div class="card s8"><h2>Més capacitat ajuda fins a unes 4 hores de potència</h2><div class="sub">CO₂ evitat per any segons la capacitat; cada línia és una potència</div><div class="chart" id="c-size"></div></div>
-          <div class="card s12"><h2>Inversió i retorn</h2><div class="sub">Amb la potència triada · vida útil suposada 15 anys</div><table class="t" id="t-size"></table></div>
+          <div class="card s12"><h2>Inversió i retorn</h2><div class="sub">Amb la potència triada, vida útil suposada de 15 anys</div><table class="t" id="t-size"></table></div>
         </div>
       </section>
 

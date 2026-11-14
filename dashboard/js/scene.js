@@ -229,7 +229,7 @@ export function createScene(container, campus, colors) {
   addTag("solar", at(A.pv_inverters[0].pos).setY(17.5 * S * VX + 1.6), -50, -18);
   const credit = document.createElement("div");
   credit.className = "credit";
-  credit.textContent = "Edificis © OpenStreetMap contributors · alçades ×1,5 · ubicació de la bateria i l'escomesa suposada";
+  credit.textContent = "Edificis © OpenStreetMap contributors. Alçades ×1,5. Ubicació de la bateria i l'escomesa suposada.";
 
   function placeTags() {
     if (!host) return;
@@ -281,7 +281,7 @@ export function createScene(container, campus, colors) {
     });
     socTarget = h.soc;
 
-    tags.battery.el.textContent = `Bateria ${fmt(100 * h.soc)} % · ${h.bat > 1 ? "+" : ""}${fmt(h.bat)} kW`;
+    tags.battery.el.textContent = `Bateria ${fmt(100 * h.soc)} %, ${h.bat > 1 ? "+" : ""}${fmt(h.bat)} kW`;
     tags.grid.el.textContent = `Xarxa ${fmt(h.grid)} kW`;
     tags.load.el.textContent = `Campus ${fmt(h.load)} kW`;
     tags.solar.el.textContent = `Solar ${fmt(h.pv)} kW`;
@@ -324,5 +324,10 @@ export function createScene(container, campus, colors) {
   place(HOME);
   mount(container);
   requestAnimationFrame(frame);
-  return { setHour, flyTo, views, pick, controls, mount, canvas: renderer.domElement };
+  function zoom(factor) {
+    camera.zoom = Math.min(controls.maxZoom, Math.max(controls.minZoom, camera.zoom * factor));
+    camera.updateProjectionMatrix();
+  }
+
+  return { setHour, flyTo, views, pick, controls, mount, zoom, canvas: renderer.domElement };
 }

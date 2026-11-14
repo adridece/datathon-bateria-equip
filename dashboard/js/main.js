@@ -2,7 +2,7 @@
 import { createScene } from "./scene.js";
 
 const D = window.DATA, H = D.hours;
-const COLORS = { accent: "#0F7A62", solar: "#E69F00", charge: "#0072B2", discharge: "#D55E00", muted: "#6E6A63" };
+const COLORS = { accent: "#2F7A74", solar: "#E69F00", charge: "#0072B2", discharge: "#D55E00", muted: "#6E6A63" };
 const CO2_RAMP = ["#C9D6CF", "#C9B48A", "#A9824F", "#7A5532", "#4A3220"];
 const DAYS = ["dg", "dl", "dt", "dc", "dj", "dv", "ds"];
 const MONTHS = ["gener", "febrer", "març", "abril", "maig", "juny", "juliol", "agost", "setembre", "octubre", "novembre", "desembre"];
@@ -28,7 +28,7 @@ function go(name) {
   all(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + name));
   $("title").textContent = VIEWS[name][0];
   $("subtitle").textContent = VIEWS[name][1];
-  if (name === "overview") scene.mount($("stage-small"));
+  if (name === "overview") { scene.mount($("stage-small")); setTimeout(() => { drawPlan(); drawCalendar(); }, 60); }
   if (name === "live") { scene.mount($("stage-big")); drawStrip(); }
   window.Charts.show(name);
 }
@@ -44,6 +44,7 @@ all("[data-player]").forEach(p => (p.innerHTML = PLAYER));
 
 // ---------------------------------------------------------------- setmana i hora actual
 let week = D.weeks[0], k = week.start;
+let compare = false;   // true: el 3D ensenya el campus sense bateria
 D.weeks.forEach((w, i) => {
   const [dd, mm, yy] = w.label.split("/");
   $("week").add(new Option(`Setmana del ${+dd} de ${MONTHS[+mm - 1]} ${yy}`, i));
@@ -64,10 +65,10 @@ function show(i) {
   const t = new Date(H.t[k].replace(" ", "T"));
   const b = H.bat[k];
   const mode = b > 1 ? ["Carregant", COLORS.charge] : b < -1 ? ["Descarregant", COLORS.discharge] : ["En espera", COLORS.muted];
-  $("chip-time").textContent = `${DAYS[t.getDay()]} ${t.getDate()}/${t.getMonth() + 1} · ${H.t[k].slice(11, 16)}`;
+  $("chip-time").textContent = `${DAYS[t.getDay()]} ${t.getDate()}/${t.getMonth() + 1}, ${H.t[k].slice(11, 16)} h`;
   setAll("[data-soc]", e => (e.textContent = f(100 * H.soc[k]) + " %"));
   setAll(".ring", e => e.setAttribute("stroke-dashoffset", 238.8 * (1 - H.soc[k])));
-  setAll("[data-mode]", e => (e.innerHTML = `<i style="width:8px;height:8px;border-radius:50%;background:${mode[1]}"></i>${mode[0]} · <span class="num">${b > 1 ? "+" : ""}${f(b)} kW</span>`));
+  setAll("[data-mode]", e => (e.innerHTML = `<i style="width:8px;height:8px;border-radius:50%;background:${mode[1]}"></i>${mode[0]} <span class="num">${b > 1 ? "+" : ""}${f(b)} kW</span>`));
   setAll("[data-grid]", e => (e.textContent = f(H.grid[k]) + " kW"));
   setAll("[data-dot-grid]", e => (e.style.background = co2Color(H.co2[k])));
   setAll("[data-load]", e => (e.textContent = f(H.load[k]) + " kW"));
@@ -76,8 +77,10 @@ function show(i) {
   setAll("[data-price]", e => (e.textContent = f(H.price[k] * 1000) + " €/MWh"));
   setAll("[data-why]", e => (e.textContent = H.why[k]));
   setAll("[data-pos]", e => (e.textContent = `hora ${k - week.start + 1} de ${week.end - week.start}`));
-  scene.setHour({ hour: +H.t[k].slice(11, 13), load: H.load[k], pv: H.pv[k], grid: H.grid[k], bat: b, soc: H.soc[k],
-                  busy: (H.load[k] - loadExt[0]) / (loadExt[1] - loadExt[0]) }, co2Color(H.co2[k]));
+  setAll("[data-cycles]", e => (e.textContent = f(weekCycles(), 1)));
+  scene.setHour({ hour: +H.t[k].slice(11, 13), load: H.load[k], pv: H.pv[k], busy: (H.load[k] - loadExt[0]) / (loadExt[1] - loadExt[0]),
+                  grid: compare ? H.base[k] : H.grid[k], bat: compare ? 0 : b, soc: compare ? 0 : H.soc[k] }, co2Color(H.co2[k]));
+  drawPlan();
   if (cursor) cursor.attr("x", sx(k) - 1.5);
 }
 
@@ -110,9 +113,122 @@ addEventListener("resize", drawStrip);
 function setWeek(i) {
   week = D.weeks[i];
   drawStrip();
+  events();
   show(week.start + 12);
 }
 $("week").onchange = e => { stop(); setWeek(+e.target.value); };
+
+// ---------------------------------------------------------------- cicles de la bateria
+// un cicle = descarregar l'equivalent a tota la capacitat (2.000 kWh); serveix per vigilar el desgast
+function weekCycles() {
+  let out = 0;
+  for (let i = week.start; i < week.end; i++) out += Math.max(0, -H.bat[i]);
+  return out / 2000;
+}
+
+// ---------------------------------------------------------------- pla de les properes 24 h
+function next24() { return d3.range(k, Math.min(k + 24, H.t.length)); }
+function drawPlan() {
+  const el = $("c-plan");
+  if (!el || !el.clientWidth) return;
+  const idx = next24();
+  let co2 = 0, eur = 0, cin = 0, cout = 0;
+  idx.forEach(i => {
+    co2 += (H.base[i] - H.grid[i]) * H.co2[i];
+    eur += (H.base[i] - H.grid[i]) * H.price[i];
+    cin += Math.max(0, H.bat[i]);
+    cout += Math.max(0, -H.bat[i]);
+  });
+  $("plan-sum").innerHTML = `<div><b class="good">${f(co2)} kg</b>CO₂ evitat</div><div><b class="good">${f(eur)} €</b>estalviats</div>` +
+    `<div><b>${f(cin)} kWh</b>carregats</div><div><b>${f(cout)} kWh</b>descarregats</div>`;
+
+  const w = el.clientWidth, h = 170, m = { t: 8, r: 46, b: 22, l: 40 };
+  const iw = w - m.l - m.r, ih = h - m.t - m.b;
+  el.innerHTML = "";
+  const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${w} ${h}`).attr("width", "100%");
+  const g = svg.append("g").attr("transform", `translate(${m.l},${m.t})`);
+  const x = d3.scaleBand().domain(idx).range([0, iw]).padding(0.18);
+  const y = d3.scaleLinear().domain([-500, 500]).range([ih, 0]);
+  // franja de CO2 a dalt i barres de la bateria
+  g.selectAll("rect.c").data(idx).join("rect").attr("x", i => x(i)).attr("y", 0).attr("width", x.bandwidth())
+    .attr("height", 8).attr("rx", 3).attr("fill", i => co2Color(H.co2[i]));
+  g.selectAll("rect.b").data(idx).join("rect").attr("x", i => x(i)).attr("width", x.bandwidth()).attr("rx", 3)
+    .attr("y", i => y(Math.max(0, H.bat[i]))).attr("height", i => Math.abs(y(H.bat[i]) - y(0)))
+    .attr("fill", i => (H.bat[i] > 0 ? COLORS.charge : COLORS.discharge));
+  g.append("line").attr("x1", 0).attr("x2", iw).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "#E6E2DA");
+  // preu com a línia fina amb el seu propi eix
+  const yp = d3.scaleLinear().domain(d3.extent(idx, i => H.price[i])).nice().range([ih, 14]);
+  g.append("path").datum(idx).attr("fill", "none").attr("stroke", "#7A5195").attr("stroke-width", 1.6).attr("stroke-dasharray", "3 3")
+    .attr("d", d3.line().x(i => x(i) + x.bandwidth() / 2).y(i => yp(H.price[i])).curve(d3.curveMonotoneX));
+  g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(4).tickSize(0).tickPadding(6)).call(a => a.select(".domain").remove());
+  g.append("g").attr("class", "axis").attr("transform", `translate(${iw},0)`)
+    .call(d3.axisRight(yp).ticks(3).tickSize(0).tickPadding(6).tickFormat(v => f(v * 1000))).call(a => a.select(".domain").remove());
+  g.append("g").attr("class", "axis").attr("transform", `translate(0,${ih})`)
+    .call(d3.axisBottom(x).tickValues(idx.filter((_, j) => j % 3 === 0)).tickFormat(i => H.t[i].slice(11, 13) + " h").tickSize(0).tickPadding(6))
+    .call(a => a.select(".domain").remove());
+  g.append("text").attr("x", -34).attr("y", 4).style("font-size", "10px").text("kW");
+  g.append("text").attr("x", iw + 8).attr("y", 4).style("font-size", "10px").text("€/MWh");
+}
+
+function downloadPlan() {
+  const rows = [["hora", "co2_g_kwh", "preu_eur_mwh", "bateria_kw", "carrega_pct", "compra_xarxa_kw", "compra_sense_bateria_kw"]];
+  next24().forEach(i => rows.push([H.t[i], (H.co2[i] * 1000).toFixed(0), (H.price[i] * 1000).toFixed(1), H.bat[i].toFixed(0),
+    (100 * H.soc[i]).toFixed(0), H.grid[i].toFixed(0), H.base[i].toFixed(0)]));
+  const blob = new Blob([rows.map(r => r.join(",")).join("\n")], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `pla_bateria_${H.t[k].slice(0, 13).replace(" ", "_")}h.csv`;
+  a.click();
+}
+
+// ---------------------------------------------------------------- avisos de la setmana
+function events() {
+  const idx = d3.range(week.start, week.end), list = [];
+  const label = i => { const d = new Date(H.t[i].replace(" ", "T")); return `${DAYS[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1}, ${H.t[i].slice(11, 13)} h`; };
+  const off = idx.filter(i => H.load[i] < 50);
+  if (off.length) list.push({ i: off[0], color: "#D55E00", title: "Fallada del comptador", text: `${off.length} hores amb consum 0. La bateria no descarrega per no perdre energia.` });
+  const low = idx.filter(i => H.load[i] >= 50 && H.load[i] - H.pv[i] < 500);
+  if (low.length) list.push({ i: low[0], color: "#E69F00", title: "Consum baix", text: `${low.length} hores amb menys de 500 kW de consum net (cap de setmana o festiu).` });
+  const peaks = [...idx].sort((a, b) => H.co2[b] - H.co2[a]).slice(0, 1);
+  peaks.forEach(i => list.push({ i, color: "#7A5532", title: "Pic de CO₂ de la setmana", text: `${f(H.co2[i] * 1000)} g/kWh. La bateria ${H.bat[i] < -1 ? "descarrega " + f(-H.bat[i]) + " kW" : "ja és buida"}.` }));
+  const clean = [...idx].sort((a, b) => H.co2[a] - H.co2[b])[0];
+  list.push({ i: clean, color: "#0072B2", title: "Hora més neta", text: `${f(H.co2[clean] * 1000)} g/kWh. ${H.bat[clean] > 1 ? "Aprofita per carregar " + f(H.bat[clean]) + " kW." : "La bateria ja és plena."}` });
+  // millor dia per CO2 evitat
+  let best = null;
+  for (let d = week.start; d < week.end; d += 24) {
+    let s = 0;
+    for (let i = d; i < Math.min(d + 24, week.end); i++) s += (H.base[i] - H.grid[i]) * H.co2[i];
+    if (!best || s > best.s) best = { d, s };
+  }
+  list.push({ i: best.d + 20, color: "#2F7A74", title: "Millor dia", text: `${f(best.s)} kg de CO₂ evitats en un sol dia.` });
+  $("events").innerHTML = list.map(e => `<button class="event" data-go="${e.i}"><i style="background:${e.color}"></i><div><b>${e.title}</b><span>${label(e.i)}</span><span>${e.text}</span></div></button>`).join("");
+}
+
+// ---------------------------------------------------------------- calendari d'estalvi (clic = anar a aquell dia)
+function drawCalendar() {
+  const el = $("c-calendar");
+  if (!el || !el.clientWidth) return;
+  const days = [];
+  D.weeks.forEach((w, wi) => {
+    for (let d = w.start, j = 0; d < w.end; d += 24, j++) {
+      let s = 0;
+      for (let i = d; i < Math.min(d + 24, w.end); i++) s += (H.base[i] - H.grid[i]) * H.co2[i];
+      days.push({ wi, j, d, s });
+    }
+  });
+  const w = el.clientWidth, cols = D.weeks.length, cell = Math.min(46, (w - 60) / cols - 6), h = 7 * (cell * 0.62 + 4) + 30;
+  el.innerHTML = "";
+  const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${w} ${h}`).attr("width", "100%");
+  const col = d3.scaleSequential([0, d3.max(days, d => d.s)], d3.interpolateRgb("#EEF4F2", "#1F5F59"));
+  const ch = cell * 0.62;
+  svg.selectAll("rect.day").data(days).join("rect").attr("class", "day").attr("x", d => 40 + d.wi * (cell + 6)).attr("y", d => d.j * (ch + 4))
+    .attr("width", cell).attr("height", ch).attr("rx", 6).attr("fill", d => col(d.s))
+    .on("click", (_, d) => { $("week").value = d.wi; setWeek(d.wi); show(d.d + 20); window.scrollTo(0, 0); })
+    .append("title").text(d => `${f(d.s)} kg de CO₂ evitats`);
+  D.weeks.forEach((wk, wi) => svg.append("text").attr("x", 40 + wi * (cell + 6) + cell / 2).attr("y", h - 6).attr("text-anchor", "middle")
+    .style("font-size", "10px").text(MONTHS[+wk.label.slice(3, 5) - 1].slice(0, 3)));
+  ["1r dia", "", "", "4t", "", "", "7è"].forEach((t, j) => svg.append("text").attr("x", 0).attr("y", j * (ch + 4) + ch / 2 + 4).style("font-size", "10px").text(t));
+}
 
 // ---------------------------------------------------------------- reproducció
 let timer = null, speed = 160;
@@ -120,6 +236,8 @@ function stop() { clearInterval(timer); timer = null; setAll("[data-act=play]", 
 function start() { timer = setInterval(() => (k < week.end - 1 ? show(k + 1) : stop()), speed); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
 const next = test => { for (let i = k + 1; i < week.end; i++) if (test(i)) return i; return k; };
 document.addEventListener("click", e => {
+  const go = e.target.closest("[data-go]");
+  if (go) { show(+go.dataset.go); return; }
   const b = e.target.closest("[data-act],[data-speed]");
   if (!b) return;
   if (b.dataset.speed) {
@@ -137,6 +255,10 @@ document.addEventListener("click", e => {
     show(best);
   }
   if (act === "home") scene.flyTo(scene.views.home);
+  if (act === "zoom-in") scene.zoom(1.25);
+  if (act === "zoom-out") scene.zoom(0.8);
+  if (act === "full") b.closest(".stage").requestFullscreen?.();
+  if (act === "csv") downloadPlan();
   if (act === "tour") step >= 0 ? endTour() : runTour();
 });
 
@@ -196,10 +318,10 @@ document.addEventListener("pointermove", e => {
   let html = "";
   if (u.kind === "building") {
     const b = u.info;
-    html = `<b>${b.name}</b>${b.name_inferred ? " (nom deduït)" : ""}<br>${b.role || ""}<br>${f(b.height_m)} m d'alçada${b.has_pv === true ? " · coberta solar" : ""}`;
-  } else if (u.kind === "pv") html = `<b>Plaques solars</b><br>${f(u.info.area_m2)} m² · el campus produeix ${f(H.pv[k])} kW ara`;
-  else if (u.kind === "battery") html = `<b>Bateria</b> (ubicació suposada)<br>${f(100 * H.soc[k])} % · ${f(H.bat[k])} kW<br>${H.why[k]}`;
-  else if (u.kind === "grid") html = `<b>Connexió a la xarxa</b> (ubicació suposada)<br>${f(H.grid[k])} kW · ${f(H.co2[k] * 1000)} g CO₂/kWh`;
+    html = `<b>${b.name}</b>${b.name_inferred ? " (nom deduït)" : ""}<br>${b.role || ""}<br>${f(b.height_m)} m d'alçada${b.has_pv === true ? ", coberta solar" : ""}`;
+  } else if (u.kind === "pv") html = `<b>Plaques solars</b><br>${f(u.info.area_m2)} m². Ara el campus en produeix ${f(H.pv[k])} kW ara`;
+  else if (u.kind === "battery") html = `<b>Bateria</b> (ubicació suposada)<br>${f(100 * H.soc[k])} %, ${f(H.bat[k])} kW<br>${H.why[k]}`;
+  else if (u.kind === "grid") html = `<b>Connexió a la xarxa</b> (ubicació suposada)<br>${f(H.grid[k])} kW, ${f(H.co2[k] * 1000)} g CO₂/kWh`;
   tip.innerHTML = html;
   tip.style.display = "block";
   tip.style.left = Math.min(e.clientX + 14, innerWidth - 300) + "px";
@@ -208,9 +330,18 @@ document.addEventListener("pointermove", e => {
 
 d3.select("#ramp").attr("viewBox", "0 0 56 8").selectAll("rect").data(CO2_RAMP).join("rect")
   .attr("x", (_, i) => i * 11.2).attr("width", 11.6).attr("height", 8).attr("fill", c => c);
+document.addEventListener("change", e => {
+  if (e.target.matches("[data-compare]")) {
+    compare = e.target.checked;
+    setAll("[data-compare]", x => (x.checked = compare));
+    show(k);
+  }
+});
+addEventListener("resize", () => { drawPlan(); drawCalendar(); });
 $("chip-score").textContent = f(D.official.score, 2);
 
 scene = createScene($("stage-small"), window.CAMPUS, COLORS);
 window.Charts.init(D, { co2Color });
 setWeek(0);
 go("overview");
+setTimeout(() => { drawPlan(); drawCalendar(); }, 60);
