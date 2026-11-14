@@ -63,7 +63,7 @@
         </div>
         <div class="grid" style="margin-top:16px">
           <div class="card s12">
-            <h2>Calendari d'estalvi</h2><div class="sub">CO₂ evitat cada dia de les 11 setmanes de validació. Clica un dia per veure'l al campus.</div>
+            <h2>Calendari d'estalvi</h2><div class="sub">CO₂ evitat cada dia de les 11 setmanes de validació (més fosc, més estalvi). Clica un dia per veure'l al campus en 3D.</div>
             <div class="chart" id="c-calendar"></div>
           </div>
         </div>
@@ -71,8 +71,9 @@
 
       <!-- 2. campus en directe -->
       <section class="view on" id="v-live">
-        <div class="card" style="height:min(80vh, 780px);display:flex;flex-direction:column">
-          <div class="stage" id="stage-big" style="flex:1;min-height:420px">
+        <div class="card live-card">
+          <div class="live-row">
+          <div class="stage" id="stage-big">
             <div class="overlay hud-live">
               <div class="hud-top"><span class="num hud-clock" data-clock>-</span>
                 <button class="primary" data-act="play">Reproduir</button>
@@ -92,8 +93,21 @@
               <button data-act="full" aria-label="Pantalla completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
             </div>
             <div class="overlay legend3d"><span><i style="background:var(--dt-solar)"></i>solar</span><span><i style="background:var(--dt-charge)"></i>càrrega</span>
-              <span><i style="background:var(--dt-discharge)"></i>descàrrega</span><span><i style="background:#8C6A45"></i>xarxa (color = CO₂)</span><span><i style="background:#3E4A56"></i>consum (per l'anell soterrat)</span><span><i style="background:#8B8F93"></i>pal del centre de transformació (línies cap als edificis)</span></div>
+              <span><i style="background:var(--dt-discharge)"></i>descàrrega</span><span><i style="background:#8C6A45"></i>xarxa (color = CO₂)</span><span><i style="background:#3E4A56"></i>consum</span><span><i style="background:#8B8F93"></i>centre de transformació</span></div>
             <div class="overlay caption" id="caption"></div>
+          </div>
+          <aside class="now" aria-live="polite">
+            <div class="now-head"><span>Ara mateix</span><b class="num" data-clock>-</b></div>
+            <div class="signal" id="signal" title="Consell per a la gent del campus: quan convé fer servir els consums que es poden moure"><i></i><div><b></b><p></p></div></div>
+            <svg class="clock24" id="clock24" viewBox="0 0 220 220" role="img" aria-label="El dia en un rellotge: CO₂ de la xarxa a fora i què fa la bateria a dins"></svg>
+            <div class="now-stats">
+              <div><span>Compra a la xarxa</span><b class="num" data-grid>-</b></div>
+              <div><span>CO₂ de la xarxa</span><b class="num" data-co2>-</b></div>
+              <div><span>Preu</span><b class="num" data-price>-</b></div>
+              <div><span>Estalviat la setmana</span><b class="num good" data-saved>-</b></div>
+            </div>
+            <div class="now-why" data-why>-</div>
+          </aside>
           </div>
           <div class="player" data-player></div>
           <svg class="strip" id="strip"></svg>

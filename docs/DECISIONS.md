@@ -182,3 +182,18 @@ amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, a
   al final "gratis" i semblava que millorava l'agent (257 contra 237 kg); ara surten iguals (264 i 263 kg).
   La reproducció s'atura en entrar-hi perquè l'escenari no es mogui mentre es prova.
 - Estratègies amb noms per a UPC: "Horari fix" i "Control predictiu".
+
+### D-025 · 14/11 · Adrià — Panell "Ara mateix", rellotge del dia i semàfor per al campus
+- El panell de dades sobre el 3D tapava el campus i es veia malament en petit. Ara hi ha una columna al costat del 3D,
+  "Ara mateix", i el panell flotant només surt a pantalla completa.
+- **Rellotge de 24 h**: a fora, el CO₂ de la xarxa de cada hora del dia; a dins, què fa la bateria (blau carrega,
+  vermelló descarrega, més llarg com més potència); l'agulla avança amb la reproducció i al centre hi ha la càrrega.
+  Es veu d'un cop d'ull que carrega a les hores netes i descarrega a les brutes.
+- **Semàfor per al campus** (idea d'Electricity Maps i Octopus): compara el CO₂ d'ara amb les properes 24 h i diu si és bon
+  moment per fer servir consums que es poden moure (equips, càrrega de cotxes...) o a quina hora serà més neta.
+  És una decisió nova per a UPC Sostenible, més enllà de la bateria.
+- **Sense salts**: cada hora té una consigna; en començar l'hora els valors passen al nou en poc temps i suau, i la
+  càrrega de la bateria avança contínua dins l'hora (abans mostrava la del final de l'hora i podia dir "100 %" carregant).
+  El 3D, el rellotge i les xifres fan servir els mateixos valors.
+- Disposició: el calendari ocupa tota l'amplada i un clic obre aquell dia al 3D; barres d'estratègia de gruix fix;
+  la fiabilitat amb eix del 80 al 100 % i sense àrea (l'eix no comença a zero).

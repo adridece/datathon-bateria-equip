@@ -72,16 +72,11 @@ function show(i, fromPlayer) {
   const b = H.bat[k];
   const mode = b > 1 ? ["Carregant", COLORS.charge] : b < -1 ? ["Descarregant", COLORS.discharge] : ["En espera", COLORS.muted];
   $("chip-time").textContent = `${DAYS[t.getDay()]} ${t.getDate()}/${t.getMonth() + 1}, ${H.t[k].slice(11, 16)} h`;
-  setAll("[data-soc]", e => (e.textContent = f(100 * H.soc[k]) + " %"));
-  setAll(".ring", e => e.setAttribute("stroke-dashoffset", 238.8 * (1 - H.soc[k])));
   setAll("[data-mode]", e => (e.innerHTML = `<i style="width:8px;height:8px;border-radius:50%;background:${mode[1]}"></i>${mode[0]} <span class="num">${b > 1 ? "+" : ""}${f(b)} kW</span>`));
-  setAll("[data-grid]", e => (e.textContent = f(H.grid[k]) + " kW"));
-  setAll("[data-dot-grid]", e => (e.style.background = co2Color(H.co2[k])));
-  setAll("[data-load]", e => (e.textContent = f(H.load[k]) + " kW"));
-  setAll("[data-pv]", e => (e.textContent = f(H.pv[k]) + " kW"));
-  setAll("[data-co2]", e => (e.textContent = f(H.co2[k] * 1000) + " g/kWh"));
-  setAll("[data-price]", e => (e.textContent = f(H.price[k] * 1000) + " €/MWh"));
   setAll("[data-why]", e => (e.textContent = H.why[k]));
+  liveNumbers(fromPlayer ? clock : k);
+  drawClock();
+  signal();
   const sv = savedUntil(k);
   setAll("[data-saved]", e => (e.innerHTML = `${f(sv.co2)} kg CO₂<br>${f(sv.eur)} €`));
   setAll("[data-clock]", e => (e.textContent = $("chip-time").textContent));
@@ -121,6 +116,7 @@ addEventListener("resize", drawStrip);
 
 function setWeek(i) {
   week = D.weeks[i];
+  clockDay = -1;
   Charts.setWeek(week);
   drawStrip();
   events();
@@ -294,14 +290,14 @@ function drawCalendar() {
       days.push({ wi, j, d, s });
     }
   });
-  const w = el.clientWidth, cols = D.weeks.length, cell = Math.min(46, (w - 60) / cols - 6), h = 7 * (cell * 0.62 + 4) + 30;
+  // les caselles ocupen tota l'amplada de la targeta
+  const w = el.clientWidth, cols = D.weeks.length, cell = (w - 46) / cols - 6, ch = Math.min(26, Math.max(16, cell * 0.3)), h = 7 * (ch + 4) + 22;
   el.innerHTML = "";
   const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${w} ${h}`).attr("width", "100%");
   const col = d3.scaleSequential([0, d3.max(days, d => d.s)], d3.interpolateRgb("#EEF4F2", "#1F5F59"));
-  const ch = cell * 0.62;
   svg.selectAll("rect.day").data(days).join("rect").attr("class", "day").attr("x", d => 40 + d.wi * (cell + 6)).attr("y", d => d.j * (ch + 4))
-    .attr("width", cell).attr("height", ch).attr("rx", 6).attr("fill", d => col(d.s))
-    .on("click", (_, d) => { $("week").value = d.wi; setWeek(d.wi); show(d.d + 20); window.scrollTo(0, 0); })
+    .attr("width", cell).attr("height", ch).attr("rx", 5).style("cursor", "pointer").attr("fill", d => col(d.s))
+    .on("click", (_, d) => { $("week").value = d.wi; setWeek(d.wi); go("live"); show(d.d + 12); })
     .append("title").text(d => `${f(d.s)} kg de CO₂ evitats`);
   D.weeks.forEach((wk, wi) => svg.append("text").attr("x", 40 + wi * (cell + 6) + cell / 2).attr("y", h - 6).attr("text-anchor", "middle")
     .style("font-size", "10px").text(MONTHS[+wk.label.slice(3, 5) - 1].slice(0, 3)));
@@ -312,13 +308,93 @@ function drawCalendar() {
 // el temps avança de manera contínua: entre dues hores tot canvia suaument (fluxos, bateria, sol)
 let timer = null, speed = 1.2, clock = 0, last = 0;   // speed = hores per segon
 const lerp = (a, b, x) => a + (b - a) * x;
+// cada hora té un sol valor (la bateria rep una consigna per hora): en començar l'hora es passa al nou valor en poc temps i suau
+const hourly = (key, c) => {
+  const i = Math.min(Math.floor(c), week.end - 1), x = (c - i) / 0.15;
+  if (x >= 1 || i === week.start) return H[key][i];
+  return lerp(H[key][i - 1], H[key][i], x * x * (3 - 2 * x));
+};
 function sceneAt(c) {
-  const i = Math.min(Math.floor(c), week.end - 1), j = Math.min(i + 1, week.end - 1), x = c - i;
-  const v = key => lerp(H[key][i], H[key][j], x);
-  const hour = (+H.t[i].slice(11, 13) + x) % 24;
+  const i = Math.min(Math.floor(c), week.end - 1);
+  const v = key => hourly(key, c);
+  const hour = (+H.t[i].slice(11, 13) + (c - i)) % 24;
   scene.setHour({ hour, load: v("load"), pv: v("pv"), busy: (v("load") - loadExt[0]) / (loadExt[1] - loadExt[0]),
-                  grid: compare ? v("base") : v("grid"), bat: compare ? 0 : v("bat"), soc: compare ? 0 : v("soc") }, co2Color(v("co2")));
+                  grid: compare ? v("base") : v("grid"), bat: compare ? 0 : v("bat"), soc: compare ? 0 : socAt(c) }, co2Color(v("co2")));
 }
+// ---------------------------------------------------------------- xifres en directe i rellotge del dia
+// la càrrega es guarda al final de cada hora: durant l'hora va de la de l'hora anterior a la nova
+const socAt = c => {
+  const i = Math.min(Math.floor(c), week.end - 1), x = c - i;
+  return lerp(i > week.start ? H.soc[i - 1] : 0.5, H.soc[i], x);
+};
+function liveNumbers(c) {
+  const v = key => hourly(key, c);
+  setAll("[data-soc]", e => (e.textContent = f(100 * socAt(c)) + " %"));
+  setAll("[data-grid]", e => (e.textContent = f(v("grid")) + " kW"));
+  setAll("[data-co2]", e => (e.textContent = f(v("co2") * 1000) + " g/kWh"));
+  setAll("[data-price]", e => (e.textContent = f(v("price") * 1000) + " €/MWh"));
+  clockHand(c);
+}
+
+const CLK = { c: 110, rOut: 104, rIn: 90, rBat: 58 };
+let clockDay = -1;
+const arc = d3.arc();
+const dayStart = c => week.start + Math.floor((Math.floor(c) - week.start) / 24) * 24;
+function drawClock() {
+  const svg = d3.select("#clock24");
+  if (svg.empty()) return;
+  const d0 = dayStart(k);
+  if (d0 === clockDay) return;
+  clockDay = d0;
+  svg.selectAll("*").remove();
+  const g = svg.append("g").attr("transform", `translate(${CLK.c},${CLK.c})`);
+  const a = h => (h / 24) * 2 * Math.PI, hours = d3.range(24).filter(h => d0 + h < week.end);
+  // anell de fora: CO₂ de la xarxa de cada hora del dia
+  g.selectAll("path.co2").data(hours).join("path").attr("class", "co2")
+    .attr("d", h => arc({ innerRadius: CLK.rIn, outerRadius: CLK.rOut, startAngle: a(h) + 0.01, endAngle: a(h + 1) - 0.01 }))
+    .attr("fill", h => co2Color(H.co2[d0 + h])).attr("opacity", 0).transition().duration(500).delay(h => h * 15).attr("opacity", 1);
+  // dins: què fa la bateria (blau carrega, vermelló descarrega), més llarg com més potència
+  g.selectAll("path.bat").data(hours.filter(h => Math.abs(H.bat[d0 + h]) > 1)).join("path").attr("class", "bat")
+    .attr("d", h => arc({ innerRadius: CLK.rBat, outerRadius: CLK.rBat + 4 + 24 * Math.abs(H.bat[d0 + h]) / 500, startAngle: a(h) + 0.02, endAngle: a(h + 1) - 0.02 }))
+    .attr("fill", h => (H.bat[d0 + h] > 0 ? COLORS.charge : COLORS.discharge)).attr("opacity", 0).transition().duration(500).delay(h => 200 + h * 15).attr("opacity", 0.85);
+  [0, 6, 12, 18].forEach(h => g.append("text").attr("class", "tick")
+    .attr("x", Math.sin(a(h)) * 50).attr("y", -Math.cos(a(h)) * 50 + 3).attr("text-anchor", "middle").text(h + " h"));
+  g.append("path").attr("class", "past");
+  g.append("g").attr("class", "hand").call(s => {
+    s.append("line").attr("y1", -CLK.rBat + 2).attr("y2", -CLK.rOut - 4);
+    s.append("circle").attr("cy", -CLK.rOut - 4).attr("r", 3.5);
+  });
+  g.append("text").attr("class", "soc num").attr("y", -2).attr("text-anchor", "middle").attr("data-soc", "");
+  g.append("text").attr("class", "mode").attr("y", 16).attr("text-anchor", "middle");
+}
+function clockHand(c) {
+  const svg = d3.select("#clock24");
+  if (svg.empty() || clockDay < 0) return;
+  // mateixos valors que el 3D, interpolats dins de l'hora
+  const b = hourly("bat", c);
+  const h = Math.max(0, Math.min(24, c - clockDay));
+  svg.select(".hand").attr("transform", `rotate(${h * 15})`);
+  svg.select(".past").attr("d", arc({ innerRadius: CLK.rIn - 2, outerRadius: CLK.rOut + 2, startAngle: 0, endAngle: h / 24 * 2 * Math.PI }));
+  svg.select(".mode").text(b >= 0.5 ? `carregant ${f(b)} kW` : b <= -0.5 ? `descarregant ${f(-b)} kW` : "en espera");
+}
+
+// semàfor per al campus: és bon moment per fer servir electricitat (equips de laboratori, càrrega de cotxes...)?
+function signal() {
+  const el = $("signal");
+  if (!el) return;
+  const ahead = d3.range(k, Math.min(k + 24, H.t.length)).map(i => H.co2[i]);
+  const rank = ahead.filter(v => v < H.co2[k]).length / ahead.length;
+  const best = k + d3.minIndex(ahead), less = 100 * (1 - H.co2[best] / H.co2[k]);
+  const [cls, title, text] = rank <= 0.25
+    ? ["go", "Bon moment per consumir", "Ara la xarxa és de les més netes de les properes 24 h."]
+    : rank >= 0.6
+      ? ["stop", "Millor esperar si es pot", `A les ${H.t[best].slice(11, 13)} h la xarxa serà un ${f(less)} % més neta.`]
+      : ["wait", "Moment normal", `L'hora més neta de les properes 24 h és a les ${H.t[best].slice(11, 13)} h.`];
+  el.className = "signal " + cls;
+  el.querySelector("b").textContent = title;
+  el.querySelector("p").textContent = text;
+}
+
 function frame(now) {
   if (!timer) return;
   const dt = Math.min(0.1, (now - last) / 1000);
@@ -327,6 +403,7 @@ function frame(now) {
   if (clock >= week.end - 1) { clock = week.end - 1; show(week.end - 1); stop(); return; }
   if (Math.floor(clock) !== k) show(Math.floor(clock), true);
   sceneAt(clock);
+  liveNumbers(clock);
   const min = Math.floor((clock % 1) * 60);
   $("chip-time").textContent = $("chip-time").textContent.replace(/\d\d:\d\d h$/, `${H.t[k].slice(11, 13)}:${String(min).padStart(2, "0")} h`);
   setAll("[data-clock]", e => (e.textContent = $("chip-time").textContent));
