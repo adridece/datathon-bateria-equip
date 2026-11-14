@@ -29,6 +29,16 @@ secretes i ens dona una puntuació. Com més CO₂ i diners estalviem, més punt
    ```
    Han de sortir números de versió. Si no, reinicia l'ordinador i torna-ho a provar.
 
+### Linux (Ubuntu / Debian)
+1. Obre la **Terminal** (Ctrl + Alt + T).
+2. Instal·la Python, l'entorn virtual i Git:
+   ```
+   sudo apt update
+   sudo apt install python3 python3-venv python3-pip git
+   ```
+3. Comprova: `python3 --version` (ha de ser 3.10 o més nou) i `git --version`.
+   > Serveix el Python 3.10, 3.11 o 3.12 que porta el sistema; no cal instal·lar-ne cap altre.
+
 ### Mac
 1. Obre el **Terminal** (Cmd + Espai → "Terminal").
 2. Si no tens Homebrew: segueix https://brew.sh (una sola comanda).
@@ -67,6 +77,14 @@ python scripts/setup.py
 ```
 > Si surt un error de "execution policy", executa un cop:
 > `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` i respon `S`.
+
+**Linux (Terminal, dins la carpeta del projecte):**
+```
+python3 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python scripts/setup.py
+```
 
 **Mac (Terminal, dins la carpeta del projecte):**
 ```
