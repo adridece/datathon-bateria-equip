@@ -46,13 +46,20 @@ def direct_dataset(d, agent):
     return np.array(X, dtype=float), np.array(y, dtype=float)
 
 
+def pv_per_irr(d):
+    """kW de solar per cada W/m2 d'irradiancia a la mateixa hora (minims quadrats, nomes hores de dia)."""
+    day = d[(d.irr_wm2 > 20) & d.pv_kw.notna()]
+    return round(float((day.pv_kw * day.irr_wm2).sum() / (day.irr_wm2 ** 2).sum()), 4)
+
+
 def train(d, folder, seeds_base=5, **kw):
     """Primer els models de hard_final i despres el model directe de CO2 a la mateixa carpeta."""
     folder = Path(folder)
     base.FOLDER = folder
     base.load_agent_module = lambda: load_agent_module(folder)
     market = {"num_leaves": 31, "min_data_in_leaf": 30}
-    base.train(d, folder, seeds=seeds_base, by_model={"price": market, "co2": market}, co2_direct=DIRECT, **kw)
+    base.train(d, folder, seeds=seeds_base, by_model={"price": market, "co2": market}, co2_direct=DIRECT,
+               pv_per_irr=pv_per_irr(d), margin_irr_now=0.7, **kw)
     X, y = direct_dataset(d, load_agent_module(folder))
     for k in range(DIRECT["seeds"]):
         model = lgb.train({**PARAMS, "seed": k}, lgb.Dataset(X, y), num_boost_round=500)

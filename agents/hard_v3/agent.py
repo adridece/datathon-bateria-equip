@@ -14,6 +14,8 @@ Decisions amb incertesa (errors de previsio mesurats fora de mostra, per hora de
 El primer dia de cada setmana fem servir els ultims dies del train com a historial.
 v3: el CO2 de les hores +3..+12 es barreja meitat i meitat amb un model directe que mira la corba sencera de les
 ultimes 48 h (scripts/train_hard_v3.py). Millora les tres validacions independents (docs/DIARI.md).
+A mes, l'agent comprova sol si la irradiancia que rep es de l'hora actual o de la passada (compara-la amb la solar
+de l'hora passada). Si es de l'hora actual, la solar d'ara surt gairebe exacta de la irradiancia (correlacio 0,995).
 Si algun model no es pot carregar, es fa servir la previsio senzilla.
 """
 import json
@@ -253,6 +255,12 @@ class BatteryAgent:
         self.co2_direct_hours = list(range(direct.get("first", 3), direct.get("last", 12) + 1))
         self.co2_direct_weight = direct.get("weight", 0.5)
         self.co2_direct = load_model("co2d", direct.get("seeds", 1)) if direct else None
+        # irradiancia de l'hora actual: es detecta durant la simulacio (veure check_irradiance)
+        self.pv_per_irr = params.get("pv_per_irr", 1.63)
+        self.margin_irr_now = params.get("margin_irr_now", 0.7)
+        self.base_errors = dict(self.net_errors)
+        self.irr_prev, self.err_if_past, self.err_if_now, self.irr_checks = None, 0.0, 0.0, 0
+        self.irr_now = None
         # fins a quina hora (+j) corregim amb cada model; mes enlla, previsio senzilla
         self.near_hours = params.get("near_hours", {"price": 8, "co2": 8, "load": 2, "pv": 2})
         # historic de la simulacio (un valor per hora)
@@ -334,8 +342,30 @@ class BatteryAgent:
         load = self.predict("load", load_rows(self.load, self.temp, hour, dow, month, self.load_profile))
         pv = self.predict("pv", pv_rows(self.pv, self.irr, self.temp, hour, month, self.pv_clear.get(str(month)),
                                          self.pv_mean.get(str(month))))
+        if self.irr_now is not None:
+            pv[0] = self.pv_per_irr * self.irr_now      # la irradiancia d'ara diu quanta solar hi ha ara
         self.pv_now = float(pv[0])
         return load - pv
+
+    def check_irradiance(self, last, jump):
+        """Mira si la irradiancia que arriba es de l'hora actual: si ho es, la de l'hora anterior s'assembla molt
+        mes a la solar de l'hora passada que no pas la d'ara. Funciona igual si la web la dona d'una manera o d'una altra."""
+        if jump:
+            self.irr_prev = None
+        irr, pv_last = to_float(last.get("irradiancia_wm2"), NAN), to_float(last.get("ultima_solar_kw"), NAN)
+        if irr != irr or pv_last != pv_last:
+            self.irr_now = None
+            return
+        if self.irr_prev is not None and (pv_last > 50 or irr > 30 or self.irr_prev > 30):
+            self.err_if_past += abs(pv_last - self.pv_per_irr * irr)
+            self.err_if_now += abs(pv_last - self.pv_per_irr * self.irr_prev)
+            self.irr_checks += 1
+        self.irr_prev = irr
+        now = self.irr_checks >= 6 and self.err_if_now < 0.6 * self.err_if_past
+        self.irr_now = irr if now else None
+        # sabent la solar d'ara la previsio falla menys: el marge de seguretat pot ser mes petit
+        scale = self.margin_irr_now if now else 1.0
+        self.net_errors = {h: [x * scale for x in v] for h, v in self.base_errors.items()}
 
     # ------------------------------------------------------------ pla
     def plan(self, soc0, w, net, cap, pmax):
@@ -393,6 +423,7 @@ class BatteryAgent:
             self.irr.append(to_float(last.get("irradiancia_wm2"), NAN))
             self.temp.append(to_float(last.get("temp_ambient_c"), NAN))
         self.started, self.prev_time = True, now
+        self.check_irradiance(obs.get("noves_dades_5min") or {}, jump)
         irr_last = at(self.irr, len(self.irr) - 1)
 
         if n_known < KNOWN:

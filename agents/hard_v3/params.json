@@ -8060,5 +8060,7 @@
   "last": 12,
   "weight": 0.5,
   "seeds": 3
- }
+ },
+ "pv_per_irr": 1.629,
+ "margin_irr_now": 0.7
 }
