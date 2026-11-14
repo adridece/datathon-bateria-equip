@@ -1,7 +1,7 @@
 // Gràfics del tauler (D3). Tots fan servir els mateixos colors i s'animen en entrar.
 (function () {
   const C = { text: "#1F2326", muted: "#6E6A63", dim: "#A19C93", line: "#E6E2DA", soft: "#F0EDE7",
-              accent: "#0F7A62", ref: "#CFC9BD", charge: "#0072B2", discharge: "#D55E00", price: "#7A5195", co2: "#A9824F" };
+              accent: "#2F7A74", ref: "#CFC9BD", charge: "#0072B2", discharge: "#D55E00", price: "#7A5195", co2: "#A9824F" };
   const f = (x, d = 0) => x.toLocaleString("ca-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
   const eur = x => (Math.abs(x) >= 10000 ? f(x / 1000) + " k€" : f(x) + " €");
   const $ = id => document.getElementById(id);
