@@ -41,7 +41,7 @@ def oracle_weeks(data: pd.DataFrame) -> dict:
     from src.data import contiguous_blocks
     net_all = (data.load_kw - data.pv_kw).clip(lower=0)
     C, K = (net_all * data.co2_kg_per_kwh).sum(), (net_all * data.precio_eur_per_kwh).sum()
-    eta, co2, cost = 0.9 ** 0.5, 0.0, 0.0
+    eta, co2, cost, weeks = 0.9 ** 0.5, 0.0, 0.0, []
     for b in contiguous_blocks(data):
         n, net = len(b), (b.load_kw - b.pv_kw).clip(lower=0).values
         w = len(data) * (0.7 * b.co2_kg_per_kwh.values / C + 0.3 * b.precio_eur_per_kwh.values / K)
@@ -50,11 +50,13 @@ def oracle_weeks(data: pd.DataFrame) -> dict:
         res = linprog(np.concatenate([w, -w]), A_ub=A, b_ub=np.full(2 * n, 1000.0 - 1e-3),
                       bounds=[(0, 500)] * n + [(0, min(500, x)) for x in net], method="highs")
         grid = np.maximum(net + res.x[:n] - res.x[n:], 0)
-        co2 += (grid * b.co2_kg_per_kwh.values).sum()
-        cost += (grid * b.precio_eur_per_kwh.values).sum()
+        c_w, e_w = (grid * b.co2_kg_per_kwh.values).sum(), (grid * b.precio_eur_per_kwh.values).sum()
+        weeks.append({"co2_saved_kg": float((net * b.co2_kg_per_kwh.values).sum() - c_w),
+                      "eur_saved": float((net * b.precio_eur_per_kwh.values).sum() - e_w)})
+        co2, cost = co2 + c_w, cost + e_w
     dco2, dcost = 1 - co2 / C, 1 - cost / K
     return {"score": round(100 * (0.7 * dco2 + 0.3 * dcost), 2),
-            "co2_estalviat_pct": round(100 * dco2, 2), "cost_estalviat_pct": round(100 * dcost, 2)}
+            "co2_estalviat_pct": round(100 * dco2, 2), "cost_estalviat_pct": round(100 * dcost, 2), "weeks": weeks}
 
 
 def strategies() -> pd.DataFrame:
