@@ -34,12 +34,13 @@
 
   // ---------------------------------------------------------------- KPI
   function kpis() {
-    const y = D.yearly, o = D.official, st = D.strategies;
+    const y = D.yearly, H = D.hours, toYear = 8760 / H.t.length;
+    const out = d3.sum(H.bat, v => Math.max(0, -v)) * toYear;   // kWh descarregats per any
     const cards = [
       { cls: "hero", label: "CO₂ evitat per any (estimació)", v: y.co2_t_year, fmt: v => f(v) + " t", delta: `−${f(y.co2_pct, 1)} % d'emissions` },
       { cls: "", label: "Estalvi a la factura per any (estimació)", v: y.eur_year, fmt: v => eur(v), delta: `−${f(y.cost_pct, 1)} % de cost` },
-      { cls: "", label: "Puntuació oficial (test ocult)", v: o.score, fmt: v => f(v, 2), delta: `al màxim teòric (validació: ${f(st[2].score, 2)} de ${f(st[3].score, 2)})`, n: true },
-      { cls: "", label: "Infraccions físiques", v: o.violations, fmt: v => f(v), delta: "al test públic", n: true },
+      { cls: "", label: "Energia moguda a hores netes per any", v: out / 1000, fmt: v => f(v) + " MWh", delta: "descarregada al vespre i al matí", n: true },
+      { cls: "", label: "Cicles complets per any", v: out / 2000, fmt: v => f(v), delta: "desgast de la bateria", n: true },
     ];
     $("kpis").innerHTML = cards.map((c, i) => `<div class="card kpi s3 ${c.cls}"><div class="label">${c.label}</div>` +
       `<div class="value" id="kv${i}">0</div><span class="delta ${c.n ? "neutral" : ""}">${c.delta}</span>${i < 2 ? `<svg id="ks${i}" width="96" height="34"></svg>` : ""}</div>`).join("");
@@ -60,6 +61,7 @@
   // ---------------------------------------------------------------- conclusions i decisions (el que demana la Tukey)
   function decisions() {
     const st = D.strategies, p = D.profile, r = D.robustness, H = D.hours, y = D.yearly;
+    const tons = s => s.co2_pct / y.co2_pct * y.co2_t_year;
     const top = [...p].sort((a, b) => b.battery_kw - a.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
     const bot = [...p].sort((a, b) => a.battery_kw - b.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
     const sz = D.sizing.filter(s => s.power_kw === 500).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
@@ -68,15 +70,15 @@
     const low = Math.min(...H.load);
     const rows = [
       { d: "Operar la bateria amb control predictiu", view: "strategy",
-        c: `Treu ${f(st[2].score, 2)} punts, igual que l'òptim teòric (${f(st[3].score, 2)}). Les regles fixes per hores en treuen ${f(st[1].score, 2)}.` },
+        c: `Evita ${f(tons(st[2]))} t de CO₂ i ${eur(y.eur_year)} l'any, el ${f(100 * st[2].co2_pct / st[3].co2_pct)} % del que s'evitaria coneixent el futur. Un horari fix per hores només n'evita ${f(tons(st[1]))} t.` },
       { d: "Carregar a les hores de sol, descarregar al matí i al vespre", view: "strategy",
         c: `Les hores amb més càrrega (${top.join(", ")} h) són les de menys CO₂; les de descàrrega (${bot.join(", ")} h), les de més CO₂ i preu.` },
       { d: `Ampliar la bateria a ${f(best.capacity_kwh)} kWh amb el mateix inversor`, view: "sizing",
         c: `Passaria de ${f(now.co2_t_year)} a ${f(best.co2_t_year)} t de CO₂ l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh). Per sobre de 6.000 kWh el CO₂ gairebé no baixa.` },
       { d: "Posar-la en marxa amb les previsions públiques de REE", view: "trust",
-        c: `Amb un 50 % d'error a les previsions la puntuació passa de ${f(r[0].score, 2)} a ${f(r[r.length - 1].score, 2)}: no cal una previsió perfecta.` },
+        c: `Amb un 50 % d'error a les previsions de preu i CO₂ encara conserva el ${f(100 * r[r.length - 1].score / r[0].score)} % de l'estalvi: no cal una previsió perfecta.` },
       { d: "Mantenir el límit de 500 kW de consum net", view: "trust",
-        c: `El consum mínim del campus és de ${f(low)} kW i la bateria mai el baixa del límit: ${f(D.result.infraccions)} infraccions a validació i ${f(D.official.violations)} al test públic.` },
+        c: `El consum mínim del campus és de ${f(low)} kW i la bateria no baixa mai del límit en les 11 setmanes. Un horari fix l'hauria superat ${f(st[1].violations)} vegades.` },
     ];
     $("decisions").innerHTML = rows.map((r, i) => `<div class="decision"><div class="n">${String(i + 1).padStart(2, "0")}</div>
       <div><b>${r.d}</b><p>${r.c}</p></div>
@@ -85,22 +87,23 @@
 
   // ---------------------------------------------------------------- estratègies
   function strategyBars(id, h) {
-    const st = D.strategies, rows = st.slice(0, 3);
-    const { g, iw, ih } = frame(id, h, { t: 22, r: 50, b: 26, l: 170 });
-    const x = d3.scaleLinear().domain([0, 7]).range([0, iw]);
+    const st = D.strategies, rows = st.slice(0, 3), y0 = D.yearly;
+    const tons = s => s.co2_pct / y0.co2_pct * y0.co2_t_year, euros = s => s.cost_pct / y0.cost_pct * y0.eur_year;
+    const { g, iw, ih } = frame(id, h, { t: 22, r: 96, b: 26, l: 170 });
+    const x = d3.scaleLinear().domain([0, tons(st[3]) * 1.1]).range([0, iw]);
     const y = d3.scaleBand().domain(rows.map(r => r.strategy)).range([0, ih]).padding(0.35);
-    axisX(g, x, ih, s => d3.axisBottom(s).ticks(7));
+    axisX(g, x, ih, s => d3.axisBottom(s).ticks(5).tickFormat(v => v + " t"));
     g.selectAll("text.n").data(rows).join("text").attr("x", -12).attr("y", r => y(r.strategy) + y.bandwidth() / 2 + 4)
       .attr("text-anchor", "end").style("font-size", "12.5px").style("fill", r => (r.strategy.startsWith("MPC") ? C.text : C.muted)).text(r => r.strategy);
     g.selectAll("rect").data(rows).join("rect").attr("y", r => y(r.strategy)).attr("height", y.bandwidth()).attr("rx", y.bandwidth() / 2)
       .attr("fill", r => (r.strategy.startsWith("MPC") ? C.accent : C.ref)).attr("width", 0)
-      .transition().duration(T).ease(ease).delay((_, i) => i * 90).attr("width", r => (r.score < 0.01 ? 0 : Math.max(y.bandwidth(), x(r.score))));
-    g.selectAll("text.v").data(rows).join("text").attr("class", "lab").attr("x", r => Math.max(y.bandwidth(), x(r.score)) + 8)
-      .attr("y", r => y(r.strategy) + y.bandwidth() / 2 + 4).text(r => f(r.score, 2)).style("opacity", 0)
+      .transition().duration(T).ease(ease).delay((_, i) => i * 90).attr("width", r => (tons(r) < 0.01 ? 0 : Math.max(y.bandwidth(), x(tons(r)))));
+    g.selectAll("text.v").data(rows).join("text").attr("class", "lab").attr("x", r => Math.max(y.bandwidth(), x(tons(r))) + 8)
+      .attr("y", r => y(r.strategy) + y.bandwidth() / 2 + 4).text(r => `${f(tons(r))} t, ${eur(euros(r))}`).style("opacity", 0)
       .transition().delay(T).style("opacity", 1);
-    const ox = x(st[3].score);
+    const ox = x(tons(st[3]));
     g.append("line").attr("x1", ox).attr("x2", ox).attr("y1", -10).attr("y2", ih).attr("stroke", C.text).attr("stroke-dasharray", "3 4");
-    g.append("text").attr("x", ox).attr("y", -12).attr("text-anchor", "middle").text("òptim teòric " + f(st[3].score, 2));
+    g.append("text").attr("x", ox).attr("y", -12).attr("text-anchor", "middle").text("màxim si es conegués el futur");
   }
 
   // ---------------------------------------------------------------- perfil horari
@@ -387,24 +390,22 @@
   // ---------------------------------------------------------------- fiabilitat
   function robust() {
     const r = D.robustness, m = D.monthly;
-    $("a-robust").innerHTML = `Sí. Amb un <b>50 % d'error</b> a les previsions de preu i CO₂, la puntuació només baixa de ${f(r[0].score, 2)} ` +
-      `a ${f(r[r.length - 1].score, 2)}, i estalvia CO₂ <b>totes les setmanes</b> (entre un ${f(d3.min(m, d => d.co2_pct), 1)} % i un ` +
-      `${f(d3.max(m, d => d.co2_pct), 1)} %). Al test oficial, amb dades que no havia vist mai, en treu <b>${f(D.official.score, 2)}</b>.`;
     let { g, iw, ih } = frame("c-robust", 250, { t: 22, r: 20, b: 30, l: 40 });
     const x = d3.scaleLinear().domain([0, 50]).range([0, iw]);
-    const y = d3.scaleLinear().domain([0, 7]).range([ih, 0]);
-    gridY(g, y, iw, 4);
+    const keep = d => 100 * d.score / r[0].score;   // part de l'estalvi (CO₂ i factura) que es conserva
+    const y = d3.scaleLinear().domain([0, 100]).range([ih, 0]);
+    gridY(g, y, iw, 4, v => v + " %");
     axisX(g, x, ih, s => d3.axisBottom(s).ticks(5).tickFormat(v => v + " %"));
     g.append("path").datum(r).attr("fill", C.accent).attr("opacity", 0.08)
-      .attr("d", d3.area().x(d => x(d.error_pct)).y0(ih).y1(d => y(d.score)).curve(d3.curveMonotoneX));
+      .attr("d", d3.area().x(d => x(d.error_pct)).y0(ih).y1(d => y(keep(d))).curve(d3.curveMonotoneX));
     const path = g.append("path").datum(r).attr("fill", "none").attr("stroke", C.accent).attr("stroke-width", 3).attr("stroke-linecap", "round")
-      .attr("d", d3.line().x(d => x(d.error_pct)).y(d => y(d.score)).curve(d3.curveMonotoneX));
+      .attr("d", d3.line().x(d => x(d.error_pct)).y(d => y(keep(d))).curve(d3.curveMonotoneX));
     const L = path.node().getTotalLength();
     path.attr("stroke-dasharray", L).attr("stroke-dashoffset", L).transition().duration(1000).ease(ease).attr("stroke-dashoffset", 0);
-    g.selectAll("circle").data(r).join("circle").attr("cx", d => x(d.error_pct)).attr("cy", d => y(d.score)).attr("r", 4.5)
+    g.selectAll("circle").data(r).join("circle").attr("cx", d => x(d.error_pct)).attr("cy", d => y(keep(d))).attr("r", 4.5)
       .attr("fill", "#fff").attr("stroke", C.accent).attr("stroke-width", 2);
-    g.selectAll("text.lab").data(r).join("text").attr("class", "lab").attr("x", d => x(d.error_pct)).attr("y", d => y(d.score) - 12)
-      .attr("text-anchor", "middle").text(d => f(d.score, 2));
+    g.selectAll("text.lab").data(r).join("text").attr("class", "lab").attr("x", d => x(d.error_pct)).attr("y", d => y(keep(d)) - 12)
+      .attr("text-anchor", "middle").text(d => f(keep(d)) + " %");
 
     ({ g, iw, ih } = frame("c-month", 250, { t: 12, r: 12, b: 30, l: 40 }));
     const xm = d3.scaleBand().domain(m.map(d => d.month)).range([0, iw]).padding(0.3);
@@ -417,16 +418,6 @@
       .transition().duration(T).ease(ease).delay(i * 40).attr("y", ym(d[key])).attr("height", ih - ym(d[key]))));
   }
 
-  // ---------------------------------------------------------------- respostes de text
-  function answers() {
-    const st = D.strategies, p = D.profile;
-    const top = [...p].sort((a, b) => b.battery_kw - a.battery_kw).slice(0, 3).map(r => r.hour).sort((a, b) => a - b);
-    const bot = [...p].sort((a, b) => a.battery_kw - b.battery_kw).slice(0, 3).map(r => r.hour).sort((a, b) => a - b);
-    $("a-strategy").innerHTML = `Control predictiu amb <b>programació lineal</b>: cada hora planifica les properes 24 h amb el preu i el CO₂ coneguts ` +
-      `i aplica només la primera decisió. Treu <b>${f(st[2].score, 2)}</b> punts, el mateix que un agent que conegués tot el futur; ` +
-      `les regles fixes per hores en treuen ${f(st[1].score, 2)}. Carrega sobretot a les ${top.join(", ")} h i descarrega a les ${bot.join(", ")} h.`;
-  }
-
   // ---------------------------------------------------------------- API
   const drawn = {};
   const draw = {
@@ -437,9 +428,9 @@
     live: () => {},
     planner: () => {},
   };
-  let current = "overview";
+  let current = "live";
   window.Charts = {
-    init(data) { D = data; answers(); sizingSetup(); },
+    init(data) { D = data; sizingSetup(); },
     setWeek(w) { wk = w; if (current === "overview") counterfactual(); },
     show(view) {
       current = view;

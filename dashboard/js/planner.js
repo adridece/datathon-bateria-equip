@@ -137,5 +137,6 @@
     init() { bind(); },
     update(c) { ctx = c; if (document.getElementById("v-planner").classList.contains("on")) render(); },
     render,
+    solve,
   };
 })();

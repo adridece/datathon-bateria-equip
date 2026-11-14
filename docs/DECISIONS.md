@@ -161,3 +161,16 @@ amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, a
   reals surt 18 % hora, 46 % nivell del dia i 36 % forma del dia, coherent amb la resta.
 - Traiem de la visió general els dos gràfics petits que repetien Estratègia.
 - No hi posem: més 3D amb valors, més KPI, pastissos, xat amb IA, dades en directe d'APIs ni pàgines noves.
+
+### D-023 · 14/11 · Adrià — El 3D en temps real és el centre, sense repeticions ni competició
+- **El dashboard és per a UPC Sostenible, no per a la competició.** Traiem el leaderboard, la puntuació, el test públic i
+  les infraccions del concurs. Tot es diu en tones de CO₂ i euros; la robustesa és "part de l'estalvi que es conserva" i les
+  estratègies es comparen en t/any i €/any.
+- **El 3D en temps real és la secció principal** i s'obre primer, reproduint-se sol (si el navegador no demana menys
+  animació). A sota hi ha el pla de 24 h i els avisos, que segueixen l'hora que es reprodueix.
+- **Cada hora del pla explica el seu motiu** en passar-hi el ratolí, i una franja diu com de segura és la decisió:
+  refem el pla 20 vegades amb el mateix model d'error que a Fiabilitat (l'error creix amb l'horitzó) i comptem quantes
+  vegades es manté (carregar, descarregar o esperar). Sense error coincideix amb l'agent en un 83-100 % de les hores.
+- **Res repetit:** fora el 3D petit i la targeta Bateria de la visió general (repetien el panell del 3D), fora les respostes
+  de dalt d'Estratègia i Fiabilitat (repetien les decisions) i fora els petits múltiples de setmanes (repetien el calendari).
+  La visió general passa a dir-se Conclusions. Els KPI de puntuació i infraccions es canvien per energia moguda i cicles per any.

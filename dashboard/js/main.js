@@ -16,8 +16,8 @@ const loadExt = d3.extent(H.load);
 
 // ---------------------------------------------------------------- vistes
 const VIEWS = {
-  overview: ["Visió general", "Com està anant la bateria i què decideix a cada hora"],
-  live: ["Campus en directe", "El Campus Nord real en 3D, hora a hora"],
+  live: ["Campus en directe", "El Campus Nord real en 3D: què fa la bateria a cada hora i per què"],
+  overview: ["Conclusions", "Què n'hem après i què li recomanem a UPC Sostenible"],
   strategy: ["Estratègia", "Com s'ha de controlar la bateria i per què"],
   sizing: ["Mida de la bateria", "Quina bateria li convé comprar a la UPC"],
   trust: ["Fiabilitat", "Fins a quin punt ens en podem refiar"],
@@ -31,8 +31,8 @@ function go(name) {
   document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false));
   $("title").textContent = VIEWS[name][0];
   $("subtitle").textContent = VIEWS[name][1];
-  if (name === "overview") { scene.mount($("stage-small")); setTimeout(() => { drawPlan(); drawCalendar(); }, 60); }
-  if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(drawStrip, 450); }   // es torna a dibuixar quan la vista ja és oberta
+  if (name === "overview") setTimeout(drawCalendar, 60);
+  if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(() => { drawStrip(); drawPlan(); }, 450); }   // es torna a dibuixar quan la vista ja és oberta
   window.Charts.show(name);
   if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color }), 30);
 }
@@ -171,6 +171,25 @@ function weekCycles() {
 
 // ---------------------------------------------------------------- pla de les properes 24 h
 function next24() { return d3.range(k, Math.min(k + 24, H.t.length)); }
+// incertesa: refem el pla amb previsions amb error i mirem quantes vegades es manté la decisió de cada hora
+const agreeCache = new Map();
+function planAgreement(idx) {
+  if (agreeCache.has(k)) return agreeCache.get(k);
+  // mateix model d'error que a Fiabilitat: l'hora actual es coneix i l'error creix com més lluny mirem
+  const N = 20, rnd = d3.randomNormal.source(d3.randomLcg(0.42))(0, 1);
+  const err = j => 1 + 0.2 * Math.sqrt(j / 23) * rnd();
+  const net = idx.map(i => Math.max(0, H.load[i] - H.pv[i]));
+  const soc0 = (k === week.start ? 0.5 : H.soc[k - 1]) * 2000;
+  const kind = p => (p > 20 ? 1 : p < -20 ? -1 : 0);
+  const hits = idx.map(() => 0);
+  for (let s = 0; s < N; s++) {
+    const w = idx.map((i, j) => 0.7 * H.co2[i] * err(j) / 0.0921 + 0.3 * H.price[i] * err(j) / 0.1568);
+    window.Planner.solve(w, net, soc0, 500, 0).plan.forEach((p, j) => { if (kind(p) === kind(H.bat[idx[j]])) hits[j]++; });
+  }
+  const out = hits.map(h => h / N);
+  agreeCache.set(k, out);
+  return out;
+}
 function drawPlan() {
   const el = $("c-plan");
   if (!el || !el.clientWidth) return;
@@ -185,7 +204,7 @@ function drawPlan() {
   $("plan-sum").innerHTML = `<div><b class="good">${f(co2)} kg</b>CO₂ evitat</div><div><b class="good">${f(eur)} €</b>estalviats</div>` +
     `<div><b>${f(cin)} kWh</b>carregats</div><div><b>${f(cout)} kWh</b>descarregats</div>`;
 
-  const w = el.clientWidth, h = 170, m = { t: 8, r: 46, b: 22, l: 40 };
+  const w = el.clientWidth, h = 196, m = { t: 8, r: 46, b: 48, l: 40 };
   const iw = w - m.l - m.r, ih = h - m.t - m.b;
   el.innerHTML = "";
   const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${w} ${h}`).attr("width", "100%");
@@ -199,6 +218,21 @@ function drawPlan() {
     .attr("y", i => y(Math.max(0, H.bat[i]))).attr("height", i => Math.abs(y(H.bat[i]) - y(0)))
     .attr("fill", i => (H.bat[i] > 0 ? COLORS.charge : COLORS.discharge));
   g.append("line").attr("x1", 0).attr("x2", iw).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", "#E6E2DA");
+  // franja d'acord: com més fosca, més segura és la decisió d'aquella hora
+  const agree = planAgreement(idx);
+  g.selectAll("rect.a").data(idx).join("rect").attr("x", i => x(i)).attr("y", ih + 24).attr("width", x.bandwidth()).attr("height", 10).attr("rx", 3)
+    .attr("fill", COLORS.accent).attr("fill-opacity", (_, j) => 0.1 + 0.9 * agree[j]);
+  g.append("text").attr("x", -6).attr("y", ih + 33).attr("text-anchor", "end").style("font-size", "10px").text("segur");
+  // zona invisible per hora amb el motiu de la decisió
+  g.selectAll("rect.hit").data(idx).join("rect").attr("x", i => x(i) - x.step() * x.paddingInner() / 2).attr("y", 0)
+    .attr("width", x.step()).attr("height", ih + 34).attr("fill", "transparent")
+    .attr("data-tip", (i, j) => `<b>${H.t[i].slice(11, 13)} h: ${H.bat[i] > 20 ? "carrega " + f(H.bat[i]) + " kW" : H.bat[i] < -20 ? "descarrega " + f(-H.bat[i]) + " kW" : "espera"}</b><br>` +
+      `${H.why[i]}<br>CO₂ ${f(H.co2[i] * 1000)} g/kWh, preu ${f(H.price[i] * 1000)} €/MWh.<br>` +
+      `Amb un 20 % d'error a les previsions, la decisió es manté en ${f(agree[j] * 100)} % dels escenaris.`);
+  const firstHours = d3.mean(agree.slice(0, 6));
+  $("plan-take").innerHTML = `Amb previsions de preu i CO₂ que fallen fins a un 20 % (20 escenaris, el mateix model d'error que a Fiabilitat), la decisió d'ara es manté en un <b>${f(agree[0] * 100)} %</b> dels casos, ` +
+    `les de les properes 6 hores en un ${f(firstHours * 100)} % i les de tot el dia en un ${f(d3.mean(agree) * 100)} %. ` +
+    `Com que el pla es refà cada hora, el que compta és que la decisió d'ara sigui sòlida. Passa el ratolí per una hora per veure'n el motiu.`;
   // preu com a línia fina amb el seu propi eix
   const yp = d3.scaleLinear().domain(d3.extent(idx, i => H.price[i])).nice().range([ih, 14]);
   g.append("path").datum(idx).attr("fill", "none").attr("stroke", "#7A5195").attr("stroke-width", 1.6).attr("stroke-dasharray", "3 3")
@@ -410,6 +444,14 @@ addEventListener("keydown", e => {
 // ---------------------------------------------------------------- informació en passar el ratolí pel 3D
 document.addEventListener("pointermove", e => {
   const tip = $("tip");
+  const own = e.target.closest("[data-tip]");
+  if (own) {
+    tip.innerHTML = own.dataset.tip;
+    tip.style.display = "block";
+    tip.style.left = Math.min(e.clientX + 14, innerWidth - 300) + "px";
+    tip.style.top = e.clientY + 14 + "px";
+    return;
+  }
   if (!e.target.closest(".stage") || e.target.tagName !== "CANVAS") { tip.style.display = "none"; return; }
   const u = scene.pick(e.clientX, e.clientY);
   scene.highlight(u && u.kind === "ct" ? u.info.feeds : null);
@@ -439,11 +481,12 @@ document.addEventListener("change", e => {
   }
 });
 addEventListener("resize", () => { drawPlan(); drawCalendar(); });
-$("chip-score").textContent = f(D.official.score, 2);
 
-scene = createScene($("stage-small"), window.CAMPUS, COLORS);
+scene = createScene($("stage-big"), window.CAMPUS, COLORS);
 window.Charts.init(D, { co2Color });
 window.Planner.init();
 setWeek(0);
-go("overview");
+go("live");
+// en obrir el tauler el campus ja funciona sol, hora a hora (si no s'han demanat menys animacions)
+if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setTimeout(start, 1200);
 setTimeout(() => { drawPlan(); drawCalendar(); }, 60);
