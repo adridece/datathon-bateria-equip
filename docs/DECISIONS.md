@@ -305,3 +305,19 @@ Banc honest (F0 / F1 / F2): si la web dona l'hora passada, igual que abans (18,8
 si dona l'hora actual, 19,02 / 17,55 / 18,20 (+0,14 / +0,13 / +0,28).
 També provat i descartat (no milloren totes les validacions): valor de l'energia al final del pla, decisió amb escenaris,
 variables d'ahir i de fa una setmana a l'hora objectiu per al CO₂.
+
+### D-038 · 14/11 · Adrià — Revisió crítica: errors trobats a les dades, a l'agent i a una decisió nostra
+- **Error nostre (D-026):** vam fer que cada setmana del dashboard comencés al 50 %. Les FAQ oficials diuen el contrari: la
+  bateria comença al 50 % només a l'inici de tota la simulació i **no es reinicia mai** (ni cada dia ni cada setmana).
+  Es desfà: el dashboard torna a la simulació contínua. El 6,41 que "s'acostava més al test públic" era casualitat.
+- **El comptador es congela de nit:** de ~22 h a ~6 h el comptador repeteix el mateix valor cada 5 minuts (el 29,5 % de les
+  hores del train són trams plans de 6 h o més; l'85 % de les hores de nit tenen el mateix consum que l'anterior).
+  El consum real de nit no el coneixem. L'agent ja en treu profit sense trampes (marge de nit de 2,5 kW).
+- **Canvi d'hora:** les dades són en hora local (el migdia solar passa de 12,3 h a l'hivern a 13,0 h a l'estiu) i els canvis
+  d'hora (26/10 i 29/03) cauen a setmanes de test. Abans, una hora que falta feia esborrar l'historic. Hem provat les
+  tres opcions simulant-ho: esborrar 18,96 · mantenir-lo desalineat 18,90 (pitjor!) · **repetir l'hora que falta 19,00**.
+  `hard_v3` ara repeteix l'hora que falta i, si una hora arriba dues vegades, substitueix el valor. Sense canvi d'hora no canvia res.
+  Els agents ja enviats (`hard_final`, `hard_ml`) no es toquen.
+- **Penalització:** les FAQ diuen −1 punt per infracció; el simulador del starter kit en resta 0,2. Tots els nostres agents en fan 0.
+- **Banc de proves:** alguns paràmetres de l'Ivan es van triar mirant F0 i F1, així que aquestes dues validacions són una mica
+  optimistes. La més honesta és F2: `hard_v3` hi és al 88,6 % de l'òptim (F0 93,1 %, F1 92,9 %).

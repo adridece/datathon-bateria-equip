@@ -409,7 +409,18 @@ class BatteryAgent:
         prices, co2 = prices[:n_known], co2[:n_known]
 
         # entre setmanes de test hi ha un salt d'un mes: l'historic vell ja no serveix
-        jump = now is not None and self.prev_time is not None and abs((now - self.prev_time).total_seconds()) > 5400
+        gap = abs((now - self.prev_time).total_seconds()) if now is not None and self.prev_time is not None else 0.0
+        jump = gap > 3 * 3600   # entre setmanes de test hi ha dies de salt
+        if 5400 < gap <= 3 * 3600:
+            # falta una hora (canvi d'hora de marc): la repetim perque "ahir a la mateixa hora" segueixi alineat
+            for series in (self.price, self.co2, self.load, self.pv, self.irr, self.temp):
+                if series:
+                    series.append(series[-1])
+        elif self.started and now is not None and self.prev_time is not None and gap < 1800:
+            # la mateixa hora dues vegades (canvi d'hora d'octubre): substituim el valor en lloc d'afegir-ne un
+            for series in (self.price, self.co2, self.load, self.pv, self.irr, self.temp):
+                if series:
+                    series.pop()
         if jump or not self.started:
             self.reset_history()
             # si el train acaba just l'hora abans, en recuperem els ultims dies
