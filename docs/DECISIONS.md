@@ -146,3 +146,18 @@ i perseguir el públic seria sobreajustar. Com que el jurat puntua al test priva
   a les 7 h el CO₂ va de 40 a 209 g/kWh i el 83 % dels dies l'hora més neta no és la de sempre.
 - Justifica la decisió 01 (control predictiu i no un horari fix). És la gràfica que va inventar Tukey.
 - Vista inicial del 3D: la càmera mira cap al punt durant el vol i no fa cap salt en acabar.
+
+### D-022 · 14/11 · Adrià — Recerca per a la Tukey i què hi posem (i què no)
+Hem fet una recerca sobre què guanya concursos de visualització (Iron Viz, Information is Beautiful) i quines eines
+de Tukey té sentit fer servir. Els tres criteris del jurat (útil per decidir, gràfics adequats, coherència) coincideixen
+amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, amb tots els números iguals a tot arreu.
+- **Amb bateria i sense** (visió general): compra a la xarxa amb i sense bateria i CO₂ evitat acumulat de la setmana.
+  És la pregunta que es fa UPC Sostenible: què hi guanyem? Mateixa fórmula que el calendari i el HUD.
+- **Caixes amb osca** (McGill, Tukey i Larsen, 1978) i resum de cinc nombres a cada hora.
+- **Quan compensa més**: CO₂ evitat de cada dia contra la diferència de CO₂ dins del dia, amb la recta resistent de
+  Tukey. Conclusió: com més variable sigui la xarxa (més renovables), més val la bateria.
+- **Polit de medianes** (Tukey, EDA cap. 11) de la taula dia × hora amb els 77 dies reals. Primer el vam fer amb mitjanes
+  per dia de la setmana i deia que l'hora ho explicava gairebé tot, cosa que contradeia el diagrama de caixa; amb els dies
+  reals surt 18 % hora, 46 % nivell del dia i 36 % forma del dia, coherent amb la resta.
+- Traiem de la visió general els dos gràfics petits que repetien Estratègia.
+- No hi posem: més 3D amb valors, més KPI, pastissos, xat amb IA, dades en directe d'APIs ni pàgines noves.

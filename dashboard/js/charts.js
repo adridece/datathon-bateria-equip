@@ -147,7 +147,7 @@
       const q1 = d3.quantileSorted(v, 0.25), med = d3.quantileSorted(v, 0.5), q3 = d3.quantileSorted(v, 0.75), iqr = q3 - q1;
       // bigotis fins a l'últim valor dins d'1,5 vegades el rang interquartílic, com ho feia Tukey
       const lo = d3.min(v.filter(x => x >= q1 - 1.5 * iqr)), hi = d3.max(v.filter(x => x <= q3 + 1.5 * iqr));
-      return { h: b.h, q1, med, q3, lo, hi, out: v.filter(x => x < lo || x > hi), bat: d3.mean(b.bat) };
+      return { h: b.h, n: v.length, q1, med, q3, lo, hi, out: v.filter(x => x < lo || x > hi), bat: d3.mean(b.bat) };
     });
 
     const { g, iw, ih } = frame("c-box", 260, { t: 10, r: 16, b: 28, l: 44 });
@@ -160,13 +160,19 @@
     const cx = s => x(s.h) + x.bandwidth() / 2;
     const box = g.selectAll("g.box").data(stats).join("g").attr("class", "box").style("opacity", 0);
     box.append("line").attr("x1", cx).attr("x2", cx).attr("y1", s => y(s.lo)).attr("y2", s => y(s.hi)).attr("stroke", C.dim);
-    box.append("rect").attr("x", s => x(s.h)).attr("width", x.bandwidth()).attr("rx", 3)
-      .attr("y", s => y(s.q3)).attr("height", s => Math.max(1, y(s.q1) - y(s.q3))).attr("fill", s => col(s.bat));
+    // caixa amb osca: mediana ± 1,58·IQR/√n (McGill, Tukey i Larsen, 1978)
+    const notched = s => {
+      const k = 1.58 * (s.q3 - s.q1) / Math.sqrt(s.n), bw = x.bandwidth(), x0 = x(s.h), x1 = x0 + bw, xi = bw * 0.22;
+      const top = y(s.q3), bot = y(s.q1), nt = Math.max(top, y(s.med + k)), nb = Math.min(bot, y(s.med - k)), m = y(s.med);
+      return `M${x0},${top}H${x1}V${nt}L${x1 - xi},${m}L${x1},${nb}V${bot}H${x0}V${nb}L${x0 + xi},${m}L${x0},${nt}Z`;
+    };
+    box.append("path").attr("d", notched).attr("fill", s => col(s.bat));
     box.append("line").attr("x1", s => x(s.h)).attr("x2", s => x(s.h) + x.bandwidth())
-      .attr("y1", s => y(s.med)).attr("y2", s => y(s.med)).attr("stroke", C.text).attr("stroke-width", 1.6);
+      .attr("y1", s => y(s.med)).attr("y2", s => y(s.med)).attr("stroke", C.text).attr("stroke-width", 1.6)
+      .attr("transform", s => `translate(${x.bandwidth() * 0.22},0)`).attr("x2", s => x(s.h) + x.bandwidth() * 0.56);
     box.selectAll("circle").data(s => s.out.map(v => [s, v])).join("circle")
       .attr("cx", d => cx(d[0])).attr("cy", d => y(d[1])).attr("r", 1.8).attr("fill", "none").attr("stroke", C.dim);
-    box.append("title").text(s => `${s.h} h: mediana ${f(s.med)} g/kWh, caixa ${f(s.q1)}-${f(s.q3)}. Bateria de mitjana ${f(s.bat)} kW`);
+    box.append("title").text(s => `${s.h} h. Resum de cinc nombres: ${f(s.lo)}, ${f(s.q1)}, ${f(s.med)}, ${f(s.q3)}, ${f(s.hi)} g/kWh. Bateria de mitjana ${f(s.bat)} kW`);
     box.transition().duration(T).delay(s => s.h * 20).style("opacity", 1);
 
     // conclusió: quants dies l'hora més neta no és la de sempre
@@ -177,6 +183,121 @@
     $("box-take").innerHTML = `A les ${wide.h} h el CO₂ va de ${f(wide.lo)} a ${f(wide.hi)} g/kWh segons el dia, i ` +
       `<b>${f(other * 100)} % dels dies</b> l'hora més neta no és la de sempre (les ${usual[0]} h). ` +
       `Per això la bateria decideix amb la previsió de cada dia i no amb un horari fix.`;
+  }
+
+  // ---------------------------------------------------------------- amb bateria i sense (setmana triada)
+  let wk = null;
+  function counterfactual() {
+    const H = D.hours, w = wk || D.weeks[0], idx = d3.range(w.start, w.end);
+    let acc = 0, eur = 0;
+    const rows = idx.map(i => {
+      acc += (H.base[i] - H.grid[i]) * H.co2[i];
+      eur += (H.base[i] - H.grid[i]) * H.price[i];
+      return { i, base: H.base[i], grid: H.grid[i], acc };
+    });
+    const { g, iw } = frame("c-counter", 300, { t: 10, r: 70, b: 26, l: 52 });
+    const x = d3.scaleLinear().domain([w.start, w.end - 1]).range([0, iw]);
+    const top = 170, gap = 26, low = 70;
+    const y = d3.scaleLinear().domain([0, d3.max(rows, r => Math.max(r.base, r.grid)) * 1.05]).nice().range([top, 0]);
+    gridY(g, y, iw, 4, d => f(d) + " kW");
+    // zona entre les dues corbes: verd si la bateria fa comprar menys, blau si en fa comprar més (carrega)
+    const between = (cond) => d3.area().defined(r => cond(r)).x(r => x(r.i)).y0(r => y(r.base)).y1(r => y(r.grid)).curve(d3.curveStepAfter);
+    g.append("path").datum(rows).attr("fill", C.accent).attr("opacity", 0.28).attr("d", between(r => r.grid <= r.base));
+    g.append("path").datum(rows).attr("fill", C.charge).attr("opacity", 0.22).attr("d", between(r => r.grid >= r.base));
+    const line = k => d3.line().x(r => x(r.i)).y(r => y(r[k])).curve(d3.curveStepAfter);
+    g.append("path").datum(rows).attr("fill", "none").attr("stroke", C.dim).attr("stroke-dasharray", "4 3").attr("d", line("base"));
+    g.append("path").datum(rows).attr("fill", "none").attr("stroke", C.text).attr("stroke-width", 1.4).attr("d", line("grid"));
+    // CO₂ evitat acumulat: baixa quan carrega i puja quan descarrega
+    const g2 = g.append("g").attr("transform", `translate(0,${top + gap})`);
+    const y2 = d3.scaleLinear().domain(d3.extent([0, ...rows.map(r => r.acc)])).nice().range([low, 0]);
+    gridY(g2, y2, iw, 2, d => f(d) + " kg");
+    g2.append("path").datum(rows).attr("fill", "none").attr("stroke", C.accent).attr("stroke-width", 2).attr("d", d3.line().x(r => x(r.i)).y(r => y2(r.acc)));
+    g2.append("text").attr("x", iw + 8).attr("y", y2(acc) + 4).attr("fill", C.accent).text(f(acc) + " kg");
+    const days = d3.range(w.start, w.end, 24);
+    g2.append("g").attr("class", "axis").attr("transform", `translate(0,${low})`)
+      .call(d3.axisBottom(x).tickValues(days).tickFormat(i => H.t[i].slice(8, 10) + "/" + H.t[i].slice(5, 7)).tickSize(0).tickPadding(8))
+      .call(s => s.select(".domain").remove());
+    $("counter-take").innerHTML = `Aquesta setmana la bateria evita <b>${f(acc)} kg de CO₂</b> i <b>${f(eur)} €</b>. ` +
+      `Compra més a la xarxa al migdia, quan és neta (zona blava), i menys al vespre, quan és bruta (zona verda): ` +
+      `el consum total gairebé no canvia, el que canvia és <b>quan</b> es compra.`;
+  }
+
+  // ---------------------------------------------------------------- dia a dia: quan compensa més
+  function dailyRows() {
+    const H = D.hours, out = [];
+    for (let d0 = 0; d0 + 24 <= H.t.length; d0 += 24) {
+      const c = d3.range(d0, d0 + 24).map(i => H.co2[i] * 1000);
+      out.push({ d0, spread: d3.max(c) - d3.min(c), saved: d3.sum(d3.range(d0, d0 + 24), i => (H.base[i] - H.grid[i]) * H.co2[i]) });
+    }
+    return out;
+  }
+  // recta resistent de Tukey: medianes dels terços esquerre i dret per al pendent
+  function resistantLine(pts) {
+    const s = pts.slice().sort((a, b) => a.x - b.x), k = Math.floor(s.length / 3);
+    const L = s.slice(0, k), M = s.slice(k, s.length - k), R = s.slice(s.length - k);
+    const med = (a, key) => d3.median(a, p => p[key]);
+    const b = (med(R, "y") - med(L, "y")) / (med(R, "x") - med(L, "x"));
+    const a = d3.mean([L, M, R], grp => med(grp, "y") - b * med(grp, "x"));
+    return { a, b };
+  }
+  function scatter() {
+    const rows = dailyRows(), pts = rows.map(r => ({ x: r.spread, y: r.saved, d0: r.d0 }));
+    const { g, iw, ih } = frame("c-scatter", 250, { t: 10, r: 16, b: 34, l: 52 });
+    const x = d3.scaleLinear().domain([0, d3.max(pts, p => p.x) * 1.05]).nice().range([0, iw]);
+    const y = d3.scaleLinear().domain([Math.min(0, d3.min(pts, p => p.y)), d3.max(pts, p => p.y) * 1.08]).nice().range([ih, 0]);
+    gridY(g, y, iw, 4, d => f(d) + " kg");
+    axisX(g, x, ih, s => d3.axisBottom(s).ticks(5).tickFormat(d => f(d)));
+    g.append("text").attr("x", iw).attr("y", ih + 30).attr("text-anchor", "end").attr("fill", C.muted).text("diferència de CO₂ dins del dia (g/kWh)");
+    const { a, b } = resistantLine(pts);
+    const xs = x.domain();
+    g.append("line").attr("x1", x(xs[0])).attr("x2", x(xs[1])).attr("y1", y(a + b * xs[0])).attr("y2", y(a + b * xs[1]))
+      .attr("stroke", C.text).attr("stroke-dasharray", "5 4");
+    g.selectAll("circle").data(pts).join("circle").attr("cx", p => x(p.x)).attr("cy", p => y(p.y)).attr("r", 4)
+      .attr("fill", C.accent).attr("fill-opacity", 0.55).attr("stroke", "#fff")
+      .append("title").text(p => `${D.hours.t[p.d0].slice(0, 10)}: ${f(p.x)} g/kWh de diferència, ${f(p.y)} kg evitats`);
+    const lo = d3.quantile(pts.map(p => p.x).sort(d3.ascending), 0.25), hi = d3.quantile(pts.map(p => p.x).sort(d3.ascending), 0.75);
+    const yLo = d3.median(pts.filter(p => p.x <= lo), p => p.y), yHi = d3.median(pts.filter(p => p.x >= hi), p => p.y);
+    $("scatter-take").innerHTML = `Cada 10 g/kWh més de diferència dins del dia, la bateria evita uns <b>${f(b * 10)} kg</b> més. ` +
+      `Els dies més variables n'evita ${f(yHi)} kg i els més plans ${f(yLo)} kg (medianes): ` +
+      `com més renovables hi hagi a la xarxa, més valdrà la bateria.`;
+  }
+
+  // ---------------------------------------------------------------- polit de medianes (dia de la setmana × hora)
+  function medianPolish(m, iters = 10) {
+    const r = m.map(row => row.slice()), R = m.length, Cn = m[0].length;
+    let all = 0; const row = Array(R).fill(0), col = Array(Cn).fill(0);
+    for (let it = 0; it < iters; it++) {
+      for (let i = 0; i < R; i++) { const md = d3.median(r[i]); row[i] += md; for (let j = 0; j < Cn; j++) r[i][j] -= md; }
+      const dc = d3.median(col); all += dc; for (let j = 0; j < Cn; j++) col[j] -= dc;
+      for (let j = 0; j < Cn; j++) { const md = d3.median(r, rr => rr[j]); col[j] += md; for (let i = 0; i < R; i++) r[i][j] -= md; }
+      const dr = d3.median(row); all += dr; for (let i = 0; i < R; i++) row[i] -= dr;
+    }
+    return { all, row, col, res: r };
+  }
+  function polish() {
+    // taula dia × hora amb els 77 dies reals (sense fer mitjanes, per no amagar la variació entre dies)
+    const H = D.hours, m = [];
+    for (let d0 = 0; d0 + 24 <= H.t.length; d0 += 24) m.push(d3.range(24).map(h => H.co2[d0 + h] * 1000));
+    const P = medianPolish(m);
+    const ssH = m.length * d3.sum(P.col, v => v * v), ssD = 24 * d3.sum(P.row, v => v * v), ssR = d3.sum(P.res.flat(), v => v * v), tot = ssH + ssD + ssR;
+    const { g, iw } = frame("c-polish", 250, { t: 10, r: 12, b: 0, l: 52 });
+    const lim = d3.max([...P.col, ...P.row].map(Math.abs)) * 1.1;
+    const panel = (y0, h, keys, vals, lab, every) => {
+      const gg = g.append("g").attr("transform", `translate(0,${y0})`);
+      const x = d3.scaleBand().domain(keys).range([0, iw]).padding(0.2), y = d3.scaleLinear().domain([-lim, lim]).range([h, 0]);
+      gridY(gg, y, iw, 2, d => (d > 0 ? "+" : "") + f(d));
+      gg.selectAll("rect").data(vals).join("rect").attr("x", (_, i) => x(keys[i])).attr("width", x.bandwidth()).attr("rx", 1.5)
+        .attr("y", v => y(Math.max(0, v))).attr("height", v => Math.abs(y(v) - y(0))).attr("fill", v => (v < 0 ? C.accent : C.co2))
+        .append("title").text((v, i) => `${lab(keys[i])}: ${v > 0 ? "+" : ""}${f(v)} g/kWh`);
+      gg.append("g").attr("class", "axis").attr("transform", `translate(0,${h})`)
+        .call(d3.axisBottom(x).tickValues(keys.filter((_, i) => i % every === 0)).tickFormat(lab).tickSize(0).tickPadding(6))
+        .call(s => s.select(".domain").remove());
+    };
+    panel(0, 110, d3.range(24), P.col, h => h + " h", 3);
+    panel(145, 75, d3.range(m.length), P.row, i => H.t[i * 24].slice(8, 10) + "/" + H.t[i * 24].slice(5, 7), 14);
+    $("polish-take").innerHTML = `Nivell típic ${f(P.all)} g/kWh. L'hora explica el <b>${f(ssH / tot * 100)} %</b> de la variació, ` +
+      `el nivell de cada dia el ${f(ssD / tot * 100)} % i la forma pròpia de cada dia el ${f(ssR / tot * 100)} %. ` +
+      `Un horari fix només aprofita la part de l'hora; la previsió diària aprofita també la resta.`;
   }
 
   // ---------------------------------------------------------------- mapa de calor
@@ -309,8 +430,8 @@
   // ---------------------------------------------------------------- API
   const drawn = {};
   const draw = {
-    overview: () => { kpis(); decisions(); profile("c-mini-profile", true); strategyBars("c-mini-strategy", 190); },
-    strategy: () => { strategyBars("c-strategy", 200); profile("c-profile", false); hourBoxes(); heat(); },
+    overview: () => { kpis(); decisions(); counterfactual(); },
+    strategy: () => { strategyBars("c-strategy", 200); profile("c-profile", false); hourBoxes(); scatter(); polish(); heat(); },
     sizing: () => sizing(),
     trust: () => robust(),
     live: () => {},
@@ -319,6 +440,7 @@
   let current = "overview";
   window.Charts = {
     init(data) { D = data; answers(); sizingSetup(); },
+    setWeek(w) { wk = w; if (current === "overview") counterfactual(); },
     show(view) {
       current = view;
       // es redibuixen en entrar, perquè l'animació es vegi i la mida sigui la bona

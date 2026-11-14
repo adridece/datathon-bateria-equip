@@ -57,6 +57,11 @@
             <div class="sub">Cada decisió per a UPC Sostenible, la conclusió de les dades que la justifica i on és l'evidència</div></div></div>
           <div class="decisions" id="decisions"></div>
         </div>
+        <div class="card" style="margin-top:16px">
+          <div class="head"><div><h2>Què guanya el campus amb la bateria</h2>
+            <div class="sub">Compra a la xarxa hora a hora de la setmana triada: línia contínua amb bateria, discontínua sense. A sota, el CO₂ evitat acumulat</div></div></div>
+          <div class="chart" id="c-counter"></div><p class="take" id="counter-take"></p>
+        </div>
         <div class="grid" style="margin-top:16px">
           <div class="card s8">
             <h2>El campus ara mateix</h2>
@@ -121,12 +126,6 @@
             <div class="chart" id="c-calendar"></div>
           </div>
         </div>
-        <div class="grid" style="margin-top:16px">
-          <div class="card s6"><h2>Carrega quan la xarxa és neta, descarrega quan és bruta</h2>
-            <div class="sub">Potència mitjana de la bateria per hora del dia (kW) i CO₂ de la xarxa</div><div class="chart" id="c-mini-profile"></div></div>
-          <div class="card s6"><h2>El nostre control arriba al màxim teòric</h2>
-            <div class="sub">Puntuació oficial del repte, validació d'11 setmanes</div><div class="chart" id="c-mini-strategy"></div></div>
-        </div>
       </section>
 
       <!-- 2. campus en directe -->
@@ -171,9 +170,17 @@
           <div class="card s7"><h2>Què fa a cada hora del dia</h2><div class="sub">Bateria, CO₂ i preu amb el mateix eix horari</div><div class="chart" id="c-profile"></div></div>
           <div class="card s12"><div class="head"><div><h2>Per què no n'hi ha prou amb un horari fix</h2>
             <div class="sub">CO₂ de la xarxa (g/kWh) a cada hora del dia en diagrames de caixa de Tukey, amb els 77 dies de validació. La caixa conté
-            la meitat central dels dies, la línia és la mediana i els punts són dies atípics. Color: <span style="color:#0072B2">la bateria carrega</span>,
+            la meitat central dels dies, la línia és la mediana i els punts són dies atípics. Si les osques de dues hores no se solapen, les seves medianes són diferents de debò. Color: <span style="color:#0072B2">la bateria carrega</span>,
             <span style="color:#D55E00">descarrega</span> o gris si gairebé no fa res.</div></div></div>
             <div class="chart" id="c-box"></div><p class="take" id="box-take"></p></div>
+          <div class="card s6"><h2>Quan compensa més la bateria</h2>
+            <div class="sub">Cada punt és un dia: diferència entre l'hora més bruta i la més neta de la xarxa, i CO₂ evitat.
+            La recta és la recta resistent de Tukey (medianes de tres grups), que no es deixa enganyar pels dies extrems.</div>
+            <div class="chart" id="c-scatter"></div><p class="take" id="scatter-take"></p></div>
+          <div class="card s6"><h2>Què depèn de l'hora i què del dia</h2>
+            <div class="sub">Polit de medianes de Tukey sobre la taula dia × hora del CO₂ de la xarxa (77 dies): separa l'efecte
+            de l'hora (a dalt) del nivell de cada dia (a baix), en g/kWh respecte del nivell típic.</div>
+            <div class="chart" id="c-polish"></div><p class="take" id="polish-take"></p></div>
           <div class="card s12"><h2>Cada hora de cada dia de validació</h2><div class="sub">Blau és càrrega i vermelló descàrrega. El patró es repeteix tot l'any</div><div class="chart" id="c-heat"></div></div>
         </div>
       </section>

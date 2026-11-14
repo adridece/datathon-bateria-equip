@@ -120,6 +120,7 @@ addEventListener("resize", drawStrip);
 
 function setWeek(i) {
   week = D.weeks[i];
+  Charts.setWeek(week);
   drawStrip();
   events();
   show(week.start);
