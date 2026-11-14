@@ -136,6 +136,49 @@
     axisX(g, x, y0 - 18, s => d3.axisBottom(s).tickValues(d3.range(0, 24, 3)).tickFormat(h => h + " h"));
   }
 
+  // ---------------------------------------------------------------- diagrama de caixa (Tukey) del CO₂ per hora
+  function hourBoxes() {
+    const H = D.hours, n = H.t.length;
+    const hourOf = i => +H.t[i].slice(11, 13);
+    const byHour = d3.range(24).map(h => ({ h, co2: [], bat: [] }));
+    for (let i = 0; i < n; i++) { byHour[hourOf(i)].co2.push(H.co2[i] * 1000); byHour[hourOf(i)].bat.push(H.bat[i]); }
+    const stats = byHour.map(b => {
+      const v = b.co2.slice().sort(d3.ascending);
+      const q1 = d3.quantileSorted(v, 0.25), med = d3.quantileSorted(v, 0.5), q3 = d3.quantileSorted(v, 0.75), iqr = q3 - q1;
+      // bigotis fins a l'últim valor dins d'1,5 vegades el rang interquartílic, com ho feia Tukey
+      const lo = d3.min(v.filter(x => x >= q1 - 1.5 * iqr)), hi = d3.max(v.filter(x => x <= q3 + 1.5 * iqr));
+      return { h: b.h, q1, med, q3, lo, hi, out: v.filter(x => x < lo || x > hi), bat: d3.mean(b.bat) };
+    });
+
+    const { g, iw, ih } = frame("c-box", 260, { t: 10, r: 16, b: 28, l: 44 });
+    const x = d3.scaleBand().domain(d3.range(24)).range([0, iw]).padding(0.3);
+    const y = d3.scaleLinear().domain([0, d3.max(H.co2) * 1040]).nice().range([ih, 0]);   // kg/kWh a g/kWh
+    const col = d3.scaleLinear().domain([-500, 0, 500]).range([C.discharge, "#DDD8CF", C.charge]).clamp(true);
+    gridY(g, y, iw, 4, d => d + " g");
+    axisX(g, x, ih, s => d3.axisBottom(s).tickValues(d3.range(0, 24, 3)).tickFormat(h => h + " h"));
+
+    const cx = s => x(s.h) + x.bandwidth() / 2;
+    const box = g.selectAll("g.box").data(stats).join("g").attr("class", "box").style("opacity", 0);
+    box.append("line").attr("x1", cx).attr("x2", cx).attr("y1", s => y(s.lo)).attr("y2", s => y(s.hi)).attr("stroke", C.dim);
+    box.append("rect").attr("x", s => x(s.h)).attr("width", x.bandwidth()).attr("rx", 3)
+      .attr("y", s => y(s.q3)).attr("height", s => Math.max(1, y(s.q1) - y(s.q3))).attr("fill", s => col(s.bat));
+    box.append("line").attr("x1", s => x(s.h)).attr("x2", s => x(s.h) + x.bandwidth())
+      .attr("y1", s => y(s.med)).attr("y2", s => y(s.med)).attr("stroke", C.text).attr("stroke-width", 1.6);
+    box.selectAll("circle").data(s => s.out.map(v => [s, v])).join("circle")
+      .attr("cx", d => cx(d[0])).attr("cy", d => y(d[1])).attr("r", 1.8).attr("fill", "none").attr("stroke", C.dim);
+    box.append("title").text(s => `${s.h} h: mediana ${f(s.med)} g/kWh, caixa ${f(s.q1)}-${f(s.q3)}. Bateria de mitjana ${f(s.bat)} kW`);
+    box.transition().duration(T).delay(s => s.h * 20).style("opacity", 1);
+
+    // conclusió: quants dies l'hora més neta no és la de sempre
+    const days = d3.range(0, n - 23, 24).map(d0 => d3.minIndex(d3.range(24), h => H.co2[d0 + h]));
+    const usual = d3.greatest(d3.rollups(days, v => v.length, h => h), r => r[1]);
+    const other = days.filter(h => h !== usual[0]).length / days.length;
+    const wide = d3.greatest(stats, s => s.hi - s.lo);
+    $("box-take").innerHTML = `A les ${wide.h} h el CO₂ va de ${f(wide.lo)} a ${f(wide.hi)} g/kWh segons el dia, i ` +
+      `<b>${f(other * 100)} % dels dies</b> l'hora més neta no és la de sempre (les ${usual[0]} h). ` +
+      `Per això la bateria decideix amb la previsió de cada dia i no amb un horari fix.`;
+  }
+
   // ---------------------------------------------------------------- mapa de calor
   function heat() {
     const H = D.hours, n = H.t.length, days = d3.range(0, n, 24);
@@ -267,7 +310,7 @@
   const drawn = {};
   const draw = {
     overview: () => { kpis(); decisions(); profile("c-mini-profile", true); strategyBars("c-mini-strategy", 190); },
-    strategy: () => { strategyBars("c-strategy", 200); profile("c-profile", false); heat(); },
+    strategy: () => { strategyBars("c-strategy", 200); profile("c-profile", false); hourBoxes(); heat(); },
     sizing: () => sizing(),
     trust: () => robust(),
     live: () => {},

@@ -280,3 +280,6 @@ body.demo-on .view.on .grid > .card { animation: none; }
 .decision b { font-size: 14.5px; }
 .decision p { margin: 2px 0 0; color: var(--dt-muted); font-size: 13px; }
 @media (max-width: 700px) { .decision { grid-template-columns: 28px 1fr; } .decision button { grid-column: 2; justify-self: start; } }
+
+/* ---------- conclusió sota un gràfic ---------- */
+.take { margin: 10px 0 0; padding: 10px 12px; border-left: 3px solid var(--dt-accent); background: var(--dt-soft, #F0EDE7); border-radius: 0 10px 10px 0; font-size: 13.5px; }

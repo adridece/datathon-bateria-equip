@@ -139,3 +139,10 @@ i perseguir el públic seria sobreajustar. Com que el jurat puntua al test priva
 - Les xifres es calculen de les mateixes dades del dashboard (no hi ha cap número escrit a mà).
 - Decisions: control predictiu, horari de càrrega i descàrrega, ampliar a 3.000 kWh (retorn 9,4 anys),
   posar-la en marxa amb previsions de REE, i mantenir el límit de 500 kW (0 infraccions).
+
+### D-021 · 14/11 · Adrià — Diagrama de caixa del CO₂ per hora (homenatge a Tukey)
+- La mitjana per hora amagava la clau: a la mateixa hora el CO₂ canvia molt d'un dia a l'altre. A Estratègia hi ha
+  un diagrama de caixa de Tukey per hora (77 dies), pintat segons què fa la bateria, i una conclusió calculada:
+  a les 7 h el CO₂ va de 40 a 209 g/kWh i el 83 % dels dies l'hora més neta no és la de sempre.
+- Justifica la decisió 01 (control predictiu i no un horari fix). És la gràfica que va inventar Tukey.
+- Vista inicial del 3D: la càmera mira cap al punt durant el vol i no fa cap salt en acabar.
