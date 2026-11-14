@@ -208,3 +208,27 @@ amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, a
 - La càrrega passa a ser protagonista: bateria gran a dalt del panell "Ara mateix" (percentatge, kWh, si carrega o
   descarrega i en quant de temps s'omplirà o es buidarà) i corba de càrrega a sota del pla de 24 h.
   El centre del rellotge ara mostra l'hora.
+
+### D-027 · 14/11 · Adrià — Sense reproducció automàtica, mides fixes i gràfic de Conclusions més clar
+- En obrir la pàgina no es reprodueix sol: l'usuari decideix quan començar.
+- Res canvia de mida quan canvia el text en directe: el panell "Ara mateix" té cada bloc d'alçada fixa (sense barra de
+  desplaçament), els números fan servir xifres d'amplada fixa i el rellotge de dalt té amplada fixa. Comprovat reproduint:
+  cap bloc canvia de mida.
+- El gràfic "Què guanya el campus amb la bateria" ara mostra directament la diferència: cada hora, quant més (amunt) o
+  menys (avall) compra el campus per tenir la bateria, pintat amb el CO₂ de la xarxa. Les dues línies d'abans gairebé es
+  tapaven i les etiquetes es tallaven.
+
+### D-028 · 14/11 · Adrià — Vista Rendiment, historial, informe de 2 pàgines i nom del repte
+- **Rendiment** (abans Fiabilitat): taula setmana a setmana amb CO₂ i € estalviats, % de CO₂ i de factura, part de
+  l'òptim (mateixa ponderació 70/30 i òptim calculat setmana a setmana), el que faria un horari fix i els cicles.
+  Es pot descarregar en CSV i un clic obre la setmana al 3D. La conclusió diu per què unes setmanes rendeixen més
+  (la variació del CO₂ dins del dia), amb la xifra.
+- **Historial**: `python scripts/build_dashboard_data.py` afegeix una línia a `dashboard/data/history.json` cada cop que
+  canvien els resultats (CO₂ i € per any, part de l'òptim, pitjor setmana, infraccions). Serveix per seguir el sistema
+  al llarg del temps i entre versions de l'agent.
+- **Decisió 05 corregida**: la infracció del simulador és demanar més de 500 kW o més energia de la que hi cap o en queda,
+  no un límit de consum a la xarxa. Ara ho diu així.
+- **Informe** en 2 pàgines A4: resum, 6 decisions amb la xifra que les justifica i 4 gràfics; i rendiment setmanal,
+  historial, com funciona el control, com seguir-lo i supòsits. S'ha arreglat el gràfic d'estratègies (sortia buit).
+- El nom que surt és el del repte, **UPC Sostenible**, amb "Bateria del Campus Nord" a sota.
+- El semàfor queda centrat a la seva caixa.

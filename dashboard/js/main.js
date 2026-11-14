@@ -20,7 +20,7 @@ const VIEWS = {
   overview: ["Conclusions", "Què n'hem après i què li recomanem a UPC Sostenible"],
   strategy: ["Estratègia", "Com s'ha de controlar la bateria i per què"],
   sizing: ["Mida de la bateria", "Quina bateria li convé comprar a la UPC"],
-  trust: ["Fiabilitat", "Fins a quin punt ens en podem refiar"],
+  trust: ["Rendiment", "Com rendeix setmana a setmana, com aguanta i com evoluciona"],
   planner: ["Planificador", "Prova escenaris i mira com canviaria el pla de la bateria"],
 };
 let scene;
@@ -446,6 +446,8 @@ function stop() { cancelAnimationFrame(timer); timer = null; scene.setPlaying(fa
 function start() { last = performance.now(); scene.setPlaying(true); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
 const next = test => { for (let i = k + 1; i < week.end; i++) if (test(i)) return i; return k; };
 document.addEventListener("click", e => {
+  const row = e.target.closest("[data-row-week]");
+  if (row) { $("week").value = row.dataset.rowWeek; setWeek(+row.dataset.rowWeek); go("live"); return; }
   const ev = e.target.closest("[data-goto]");
   if (ev) {
     go(ev.dataset.goto);
@@ -474,6 +476,7 @@ document.addEventListener("click", e => {
   if (act === "zoom-out") scene.zoom(0.8);
   if (act === "full") toggleExpand(b.closest(".stage"));
   if (act === "csv") downloadPlan();
+  if (act === "csv-weeks") window.Charts.downloadWeeks();
   if (act === "report") window.Report.open(D);
   if (act === "tour") step >= 0 ? endTour() : runTour();
 });
@@ -598,6 +601,4 @@ window.Charts.init(D, { co2Color });
 window.Planner.init();
 setWeek(0);
 go("live");
-// en obrir el tauler el campus ja funciona sol, hora a hora (si no s'han demanat menys animacions)
-if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setTimeout(start, 1200);
 setTimeout(() => { drawPlan(); drawCalendar(); }, 60);

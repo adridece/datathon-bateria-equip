@@ -6,6 +6,7 @@ Tot surt del simulador oficial, aixi les xifres quadren amb el leaderboard i ent
 """
 import json
 import sys
+from datetime import datetime
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -37,6 +38,42 @@ def why_text(d, ends):
         else:
             out.append("Espera: moure energia ara perdria més (10 % per cicle) del que estalviaria.")
     return out
+
+
+def weekly(d, rules, weeks, oracle_weeks):
+    """Rendiment de cada setmana: el que estalvia, el que treu respecte de l'òptim i el desgast de la bateria."""
+    rows = []
+    for w, o in zip(weeks, oracle_weeks):
+        p, r = d.iloc[w["start"]:w["end"]], rules.iloc[w["start"]:w["end"]]
+        co2_base, eur_base = p.co2_base_kg.sum(), p.cost_base_eur.sum()
+        co2_s, eur_s = co2_base - p.co2_kg.sum(), eur_base - p.cost_eur.sum()
+        mix = lambda c, e: 0.7 * c / co2_base + 0.3 * e / eur_base   # mateixa ponderació 70/30
+        rows.append({
+            "label": w["label"], "co2_kg": round(co2_s, 1), "eur": round(eur_s, 1),
+            "co2_pct": round(100 * co2_s / co2_base, 2), "cost_pct": round(100 * eur_s / eur_base, 2),
+            "of_best_pct": round(100 * mix(co2_s, eur_s) / mix(o["co2_saved_kg"], o["eur_saved"]), 1),
+            "rules_co2_kg": round(co2_base - r.co2_kg.sum(), 1),
+            "cycles": round(float(p.bat_kw.clip(upper=0).abs().sum()) / 2000, 2),
+            "min_net_kw": round(float(p.grid_kw.min()), 0),
+        })
+    return rows
+
+
+def save_history(data):
+    """Guarda una línia per cada versió de les dades, per seguir el rendiment al llarg del temps."""
+    path = ROOT / "dashboard" / "data" / "history.json"
+    hist = json.loads(path.read_text(encoding="utf-8")) if path.exists() else []
+    y, wk = data["yearly"], data["weekly"]
+    row = {"date": datetime.now().strftime("%Y-%m-%d %H:%M"), "agent": "mpc_robust",
+           "co2_t_year": round(y["co2_t_year"], 1), "eur_year": round(y["eur_year"]),
+           "co2_pct": y["co2_pct"], "cost_pct": y["cost_pct"],
+           "of_best_pct": round(sum(w["of_best_pct"] for w in wk) / len(wk), 1),
+           "worst_week_co2_pct": min(w["co2_pct"] for w in wk), "violations": y["violations"]}
+    same = lambda a, b: all(a[k] == b[k] for k in row if k != "date")
+    if not hist or not same(hist[-1], row):   # només si ha canviat alguna cosa
+        hist.append(row)
+        path.write_text(json.dumps(hist, ensure_ascii=False, indent=1), encoding="utf-8")
+    return hist
 
 
 def main():
@@ -71,9 +108,9 @@ def main():
         "robustness": an.robustness().to_dict("records"),
         "monthly": an.monthly(d).to_dict("records"),
         "profile": an.hourly_profile(d).to_dict("records"),
-        "official": {"score": 6.43, "co2_pct": 5.97, "cost_pct": 7.50, "co2_kg": 4289.4, "eur": 8907.86,
-                     "violations": 0},
     }
+    data["weekly"] = weekly(d, rules, weeks, an.oracle_weeks(an.valid_data())["weeks"])
+    data["history"] = save_history(data)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("window.DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n",
                    encoding="utf-8")
