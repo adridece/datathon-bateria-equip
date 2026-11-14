@@ -106,7 +106,7 @@
       .attr("stroke", "#D55E00").attr("stroke-dasharray", "4 3");
     const line = arr => d3.line().x((_, j) => x(j) + x.bandwidth() / 2).y(v => ys(v * 100)).curve(d3.curveMonotoneX)(arr);
     g.append("path").attr("d", line(agentPlan.map((_, j) => H.soc[idx[j]]))).attr("fill", "none").attr("stroke", "#A19C93").attr("stroke-width", 2).attr("stroke-dasharray", "4 3");
-    g.append("path").attr("d", line(res.socs)).attr("fill", "none").attr("stroke", "#2F7A74").attr("stroke-width", 2.5);
+    g.append("path").attr("d", line(res.socs)).attr("fill", "none").attr("stroke", "#47908B").attr("stroke-width", 2.5);
     g.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(4).tickSize(0).tickPadding(6)).call(s => s.select(".domain").remove());
     g.append("g").attr("class", "axis").call(d3.axisLeft(ys).ticks(2).tickFormat(v => v + " %").tickSize(0).tickPadding(6)).call(s => s.select(".domain").remove());
     g.append("g").attr("class", "axis").attr("transform", `translate(0,${ih})`)

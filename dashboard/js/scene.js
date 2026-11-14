@@ -169,8 +169,41 @@ export function createScene(container, campus, colors) {
   const insulatorMat = new THREE.MeshStandardMaterial({ color: "#E9E6DF", roughness: 0.3 });
   const POLE_H = 2.4;
   const poleTop = {};
+  // els pals no poden quedar dins ni enganxats a cap edifici: busquem el punt lliure més proper (≥ 10 m)
+  const rings = [...campus.buildings.map(b => b.polygon), ...campus.context_buildings.map(b => b.ring)];
+  const inside = (x, z, r) => {
+    let c = false;
+    for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+      const [xi, zi] = r[i], [xj, zj] = r[j];
+      if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c;
+    }
+    return c;
+  };
+  const segDist = (x, z, [ax, az], [bx, bz]) => {
+    const dx = bx - ax, dz = bz - az, len = dx * dx + dz * dz || 1;
+    const u = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len));
+    return Math.hypot(x - ax - u * dx, z - az - u * dz);
+  };
+  const clearance = (x, z) => {
+    let best = Infinity;
+    for (const r of rings) {
+      if (inside(x, z, r)) return -1;
+      for (let i = 0; i < r.length; i++) best = Math.min(best, segDist(x, z, r[i], r[(i + 1) % r.length]));
+    }
+    return best;
+  };
+  const freeSpot = ([x, y, z]) => {
+    if (clearance(x, z) >= 10) return [x, y, z];
+    for (let rad = 5; rad <= 80; rad += 5)
+      for (let k = 0; k < 24; k++) {
+        const a = k / 24 * Math.PI * 2, nx = x + Math.cos(a) * rad, nz = z + Math.sin(a) * rad;
+        if (clearance(nx, nz) >= 10) return [nx, y, nz];
+      }
+    return [x, y, z];
+  };
+
   conns.forEach(c => {
-    const p = at(c.pos);
+    const p = at(freeSpot(c.pos));
     connPos[c.id] = c.main ? mainCT.clone() : p;
     if (c.underground) {
       const disc = new THREE.Mesh(new THREE.CylinderGeometry(1.4, 1.4, 0.08, 40), new THREE.MeshStandardMaterial({ color: "#B9B4AA" }));
@@ -295,7 +328,10 @@ export function createScene(container, campus, colors) {
     streams[name] = { curve: c, geo, mat, guide, min: small ? 1 : 3, seed: Float32Array.from({ length: MAX_P }, Math.random), kw: 0, dir: 1, phase: 0 };
   }
 
+  let moving = false;   // només es mouen mentre es reprodueix
+  function setPlaying(on) { moving = on; }
   function stepStreams(dt) {
+    if (!moving) dt = 0;
     for (const s of Object.values(streams)) {
       const share = Math.min(1, s.kw / 1400);
       const n = s.kw < 1 ? 0 : Math.max(s.min, Math.round(MAX_P * share));
@@ -324,7 +360,7 @@ export function createScene(container, campus, colors) {
   addTag("load", lift(loadPos, loadPos.y + 1.6), 50, -18);
   addTag("solar", at(A.pv_inverters[0].pos).setY(17.5 * S * VX + 1.6), -50, -18);
   conns.forEach(c => {
-    const short = c.main ? "Escomesa principal" : c.underground ? "Subestació BSC" : c.name.replace("CT ", "Centre ").replace(" (CPD)", "");
+    const short = c.main ? "Escomesa principal" : c.underground ? "Subestació BSC (no és de la UPC)" : c.name.replace("CT ", "Centre ").replace(" (CPD)", "");
     addTag("ct_" + c.id, lift(connPos[c.id], c.underground ? 0.6 : POLE_H + 0.5), 0, -4);
     tags["ct_" + c.id].el.classList.add("small");
     tags["ct_" + c.id].el.textContent = short;
@@ -448,5 +484,5 @@ export function createScene(container, campus, colors) {
     camera.updateProjectionMatrix();
   }
 
-  return { setHour, flyTo, views, pick, controls, mount, zoom, highlight, canvas: renderer.domElement };
+  return { setHour, flyTo, views, pick, controls, mount, zoom, highlight, setPlaying, canvas: renderer.domElement };
 }

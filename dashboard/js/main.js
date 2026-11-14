@@ -2,7 +2,7 @@
 import { createScene } from "./scene.js";
 
 const D = window.DATA, H = D.hours;
-const COLORS = { accent: "#2F7A74", solar: "#E69F00", charge: "#0072B2", discharge: "#D55E00", muted: "#6E6A63" };
+const COLORS = { accent: "#47908B", solar: "#E69F00", charge: "#0072B2", discharge: "#D55E00", muted: "#6E6A63" };
 const CO2_RAMP = ["#C9D6CF", "#C9B48A", "#A9824F", "#7A5532", "#4A3220"];
 const DAYS = ["dg", "dl", "dt", "dc", "dj", "dv", "ds"];
 const MONTHS = ["gener", "febrer", "març", "abril", "maig", "juny", "juliol", "agost", "setembre", "octubre", "novembre", "desembre"];
@@ -242,7 +242,7 @@ function events() {
     for (let i = d; i < Math.min(d + 24, week.end); i++) s += (H.base[i] - H.grid[i]) * H.co2[i];
     if (!best || s > best.s) best = { d, s };
   }
-  list.push({ i: best.d + 20, color: "#2F7A74", title: "Millor dia", text: `${f(best.s)} kg de CO₂ evitats en un sol dia.` });
+  list.push({ i: best.d + 20, color: "#47908B", title: "Millor dia", text: `${f(best.s)} kg de CO₂ evitats en un sol dia.` });
   $("events").innerHTML = list.map(e => `<button class="event" data-go="${e.i}"><i style="background:${e.color}"></i><div><b>${e.title}</b><span>${label(e.i)}</span><span>${e.text}</span></div></button>`).join("");
 }
 
@@ -296,8 +296,8 @@ function frame(now) {
   setAll("[data-clock]", e => (e.textContent = $("chip-time").textContent));
   timer = requestAnimationFrame(frame);
 }
-function stop() { cancelAnimationFrame(timer); timer = null; $("chip-time").classList.remove("live"); setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }
-function start() { last = performance.now(); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
+function stop() { cancelAnimationFrame(timer); timer = null; scene.setPlaying(false); $("chip-time").classList.remove("live"); setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }
+function start() { last = performance.now(); scene.setPlaying(true); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
 const next = test => { for (let i = k + 1; i < week.end; i++) if (test(i)) return i; return k; };
 document.addEventListener("click", e => {
   const jump = e.target.closest("[data-go]");

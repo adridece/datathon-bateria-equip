@@ -4,12 +4,12 @@
 <meta charset="utf-8">
 <meta name="color-scheme" content="light only">
 <title>Informe La Datoneta | Bateria del Campus Nord</title>
-<link rel="icon" href="static/icon.svg">
+<link rel="icon" type="image/png" href="static/logo-datathon.png">
 <style>
   @font-face { font-family: "Plex Sans"; src: url(fonts/IBMPlexSans-Regular.woff2) format("woff2"); font-weight: 400; }
   @font-face { font-family: "Plex Sans"; src: url(fonts/IBMPlexSans-SemiBold.woff2) format("woff2"); font-weight: 600; }
   @font-face { font-family: "Plex Mono"; src: url(fonts/IBMPlexMono-Medium.woff2) format("woff2"); font-weight: 500; }
-  :root { --ink: #1F2326; --muted: #6E6A63; --line: #E6E2DA; --soft: #F7F5F1; --accent: #2F7A74; --accent-soft: #E4F1EF;
+  :root { --ink: #1F2326; --muted: #6E6A63; --line: #E6E2DA; --soft: #F7F5F1; --accent: #47908B; --accent-soft: #E4F1EF;
           --charge: #0072B2; --discharge: #D55E00; --co2: #A9824F; }
   * { box-sizing: border-box; }
   body { margin: 0; background: #E9E6E0; font: 10.5px/1.5 "Plex Sans", system-ui, sans-serif; color: var(--ink); }
@@ -20,7 +20,7 @@
            box-shadow: 0 10px 40px rgba(0,0,0,.12); overflow: hidden; display: flex; flex-direction: column; }
   header { display: flex; align-items: center; gap: 14px; padding-bottom: 10px; border-bottom: 2px solid var(--accent); }
   header img { width: 68px; }
-  header .team { font-weight: 600; letter-spacing: .16em; color: #111; font-size: 11px; }
+  header .team { font-weight: 600; letter-spacing: .16em; color: #4A4F54; font-size: 11px; }
   header .meta { margin-left: auto; text-align: right; color: var(--muted); }
   h1 { font-size: 21px; line-height: 1.2; margin: 14px 0 6px; font-weight: 600; }
   .lead { font-size: 12.5px; color: #3B3F42; margin: 0 0 12px; max-width: 165mm; }
@@ -121,12 +121,12 @@
     const y = d3.scaleLinear().domain([0, d3.max(rows, d => d.co2_t_year) * 1.08]).range([ih, 0]);
     [250, 500, 1000].forEach(p => {
       const pr = rows.filter(d => d.power_kw === p), on = p === 500;
-      g.append("path").datum(pr).attr("fill", "none").attr("stroke", on ? "#2F7A74" : "#CFC9BD").attr("stroke-width", on ? 2 : 1.4)
+      g.append("path").datum(pr).attr("fill", "none").attr("stroke", on ? "#47908B" : "#CFC9BD").attr("stroke-width", on ? 2 : 1.4)
         .attr("d", d3.line().x(d => x(d.capacity_kwh)).y(d => y(d.co2_t_year)).curve(d3.curveMonotoneX));
       const l = pr[pr.length - 1];
       g.append("text").attr("x", x(l.capacity_kwh) + 3).attr("y", y(l.co2_t_year) + 3).text(p + " kW");
     });
-    g.append("circle").attr("cx", x(best.capacity_kwh)).attr("cy", y(best.co2_t_year)).attr("r", 4).attr("fill", "#2F7A74");
+    g.append("circle").attr("cx", x(best.capacity_kwh)).attr("cy", y(best.co2_t_year)).attr("r", 4).attr("fill", "#47908B");
     g.append("text").attr("class", "lab").attr("x", x(best.capacity_kwh) - 4).attr("y", y(best.co2_t_year) - 7).attr("text-anchor", "end")
       .text(`recomanada: ${f(best.capacity_kwh)} kWh`);
     axis(g, d3.axisLeft(y).ticks(4));
@@ -137,7 +137,7 @@
     const x = d3.scaleLinear().domain([0, 7]).range([0, iw]);
     const y = d3.scaleBand().domain(rows.map(d => d.strategy)).range([0, ih]).padding(0.35);
     g.selectAll("rect").data(rows).join("rect").attr("y", d => y(d.strategy)).attr("height", y.bandwidth()).attr("rx", y.bandwidth() / 2)
-      .attr("width", d => (d.score < 0.01 ? 0 : Math.max(y.bandwidth(), x(d.score)))).attr("fill", d => (d.strategy.startsWith("MPC") ? "#2F7A74" : "#CFC9BD"));
+      .attr("width", d => (d.score < 0.01 ? 0 : Math.max(y.bandwidth(), x(d.score)))).attr("fill", d => (d.strategy.startsWith("MPC") ? "#47908B" : "#CFC9BD"));
     g.selectAll("text.l").data(rows).join("text").attr("x", -6).attr("y", d => y(d.strategy) + y.bandwidth() / 2 + 3).attr("text-anchor", "end").text(d => d.strategy);
     g.selectAll("text.v").data(rows).join("text").attr("class", "lab").attr("x", d => x(d.score) + 5).attr("y", d => y(d.strategy) + y.bandwidth() / 2 + 3).text(d => f(d.score, 2));
     g.append("line").attr("x1", x(st[3].score)).attr("x2", x(st[3].score)).attr("y1", 0).attr("y2", ih).attr("stroke", "#1F2326").attr("stroke-dasharray", "2 2"); }
@@ -148,7 +148,7 @@
     const xi = d3.scaleBand().domain(["co2_pct", "cost_pct"]).range([0, x.bandwidth()]).padding(0.1);
     const y = d3.scaleLinear().domain([0, d3.max(m, d => Math.max(d.co2_pct, d.cost_pct)) * 1.1]).range([ih, 0]);
     m.forEach(d => ["co2_pct", "cost_pct"].forEach(k => g.append("rect").attr("x", x(d.month) + xi(k)).attr("width", xi.bandwidth()).attr("rx", 1.5)
-      .attr("y", y(d[k])).attr("height", ih - y(d[k])).attr("fill", k === "co2_pct" ? "#2F7A74" : "#CFC9BD")));
+      .attr("y", y(d[k])).attr("height", ih - y(d[k])).attr("fill", k === "co2_pct" ? "#47908B" : "#CFC9BD")));
     axis(g, d3.axisLeft(y).ticks(3).tickFormat(v => v + " %"));
     axis(g, d3.axisBottom(x).tickFormat(s => s.split(" ")[0]), `translate(0,${ih})`); }
 </script>
