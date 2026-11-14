@@ -1,0 +1,14 @@
+# Mateixes llibreries que l'entorn del servidor (no n'afegiu d'altres a agent.py!)
+numpy
+pandas
+scipy
+scikit-learn
+joblib
+lightgbm
+xgboost
+# nomes per analisi local / notebooks
+matplotlib
+seaborn
+jupyter
+ipykernel
+pyarrow

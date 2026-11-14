@@ -1,0 +1,35 @@
+# Diari de decisions
+
+Cada decisió important va aquí: **què**, **per què**, **alternatives** i **qui**.
+Format: `D-XXX · data · autor`. Les noves, a sota de tot. No esborrem decisions antigues: si en
+canviem una, n'escrivim una de nova que digui "substitueix D-XXX".
+
+---
+
+### D-001 · 14/11 · equip — Repte escollit: bateria UPC Sostenible
+Controlar una bateria de 2 MWh hora a hora per reduir CO₂ (70 %) i cost (30 %).
+
+### D-002 · 14/11 · equip — Organització del projecte
+- Un repo **privat** per treballar tots (amb tot: dades, notebooks, proves).
+- Un repo **públic** final, generat amb `scripts/export_public.py`, només amb el que s'entrega.
+- Python 3.11 (el més probable al servidor i funciona a Windows i Mac).
+- Dades de train dins del repo privat com a zip (13 MB) i `scripts/setup.py` per descomprimir-les.
+- Fer servir sempre el simulador **oficial** (`starter_kit/environment.py`) per avaluar, no un de propi.
+
+### D-003 · 14/11 · equip — Enfocament principal: MPC amb programació lineal
+**Per què:** la puntuació és lineal en l'energia importada. Si l'energia descarregada sempre es consumeix
+(consum net ≥ 500 kW el 99,5 % del temps), cada kWh importat a l'hora *t* val
+`w_t = 0,7·co2_t/CO2_ref + 0,3·preu_t/preu_ref`. Amb els 24 valors futurs coneguts, minimitzar
+`Σ w_t·(càrrega_t − descàrrega_t)` amb les restriccions de SOC és un LP petit (48 variables).
+Cada hora el resolem (`scipy.optimize.linprog`, HiGHS), apliquem només la primera hora i repetim
+(*rolling horizon*). Tècnica vista a IA (cerca/planificació) i optimització.
+**Alternatives descartades (de moment):** regles fixes per hores (la plantilla fa 0,94 punts),
+aprenentatge per reforç (massa lent d'entrenar i menys garantit que l'òptim exacte del LP).
+**Resultat:** 6,08 al VALID; l'oracle (LP de tot el període sabent-ho tot) també fa 6,08.
+
+### D-004 · 14/11 · equip — Normalització dels pesos
+`CO2_ref` i `preu_ref` = mitjanes ponderades pel consum al train (0,0921 kg/kWh i 0,1568 €/kWh).
+Al test seran una mica diferents, però només importa la proporció entre els dos.
+
+### D-005 · 14/11 · equip — Seguretat: 0 infraccions
+Sempre retallem la consigna amb el *safety clamp* oficial abans de retornar-la (amb marge 1e-4).
