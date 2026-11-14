@@ -97,8 +97,12 @@
             <div class="overlay caption" id="caption"></div>
           </div>
           <aside class="now" aria-live="polite">
-            <div class="now-head"><span>Ara mateix</span><b class="num" data-clock>-</b></div>
             <div class="signal" id="signal" title="Consell per a la gent del campus: quan convé fer servir els consums que es poden moure"><i></i><div><b></b><p></p></div></div>
+            <div class="batt" id="batt">
+              <div class="batt-top"><span>Bateria</span><b class="num" data-soc>-</b></div>
+              <div class="batt-body"><div class="batt-fill"></div><span class="num batt-kwh"></span></div>
+              <div class="batt-state"></div>
+            </div>
             <svg class="clock24" id="clock24" viewBox="0 0 220 220" role="img" aria-label="El dia en un rellotge: CO₂ de la xarxa a fora i què fa la bateria a dins"></svg>
             <div class="now-stats">
               <div><span>Compra a la xarxa</span><b class="num" data-grid>-</b></div>
@@ -118,7 +122,7 @@
               <div class="grid" style="margin-top:16px">
           <div class="card s8">
             <div class="head"><div><h2>Pla de les properes 24 hores</h2>
-              <div class="sub">El que farà la bateria a partir de l'hora triada (barres), el CO₂ de la xarxa (franja de dalt), el preu (línia) i com de segura és cada decisió (franja de baix)</div></div>
+              <div class="sub">Què farà la bateria a partir d'ara (barres), amb el CO₂ de la xarxa (franja de dalt), el preu (línia), com de segura és cada decisió i com es carrega (a baix)</div></div>
               <button data-act="csv">Descarregar CSV</button></div>
             <div class="plan-sum" id="plan-sum"></div>
             <div class="chart" id="c-plan"></div><p class="take" id="plan-take"></p>

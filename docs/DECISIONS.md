@@ -197,3 +197,14 @@ amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, a
   El 3D, el rellotge i les xifres fan servir els mateixos valors.
 - Disposició: el calendari ocupa tota l'amplada i un clic obre aquell dia al 3D; barres d'estratègia de gruix fix;
   la fiabilitat amb eix del 80 al 100 % i sense àrea (l'eix no comença a zero).
+
+### D-026 · 14/11 · Adrià — Cada setmana comença al 50 % i la càrrega de la bateria, ben visible
+- Fins ara el dashboard simulava les 11 setmanes de validació seguides: cada setmana començava amb la càrrega amb què
+  acabava l'anterior, tot i que estan separades per mesos. Ara cada setmana és una simulació a part que comença al 50 %,
+  com fa el simulador oficial (`soc_init: 0.5`), i les previsions no passen d'una setmana a la següent
+  (`src/replay.py: replay_weeks`, `dashboard/analysis.py: oracle_weeks`).
+- Resultat de validació setmana a setmana: 6,41, igual que l'òptim teòric calculat igual (6,41) i més a prop del 6,43
+  del test públic. Totes les xifres del dashboard s'han recalculat (`python scripts/build_dashboard_data.py`).
+- La càrrega passa a ser protagonista: bateria gran a dalt del panell "Ara mateix" (percentatge, kWh, si carrega o
+  descarrega i en quant de temps s'omplirà o es buidarà) i corba de càrrega a sota del pla de 24 h.
+  El centre del rellotge ara mostra l'hora.

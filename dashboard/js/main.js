@@ -35,7 +35,7 @@ function go(name) {
   if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(() => { drawStrip(); drawPlan(); }, 450); }   // es torna a dibuixar quan la vista ja és oberta
   window.Charts.show(name);
   if (name === "planner") stop();   // l'escenari no s'ha de moure mentre es prova
-  if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color }), 30);
+  if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color, w0: week.start }), 30);
 }
 all(".nav button").forEach(b => b.onclick = () => go(b.dataset.view));
 
@@ -84,7 +84,7 @@ function show(i, fromPlayer) {
   setAll("[data-cycles]", e => (e.textContent = f(weekCycles(), 1)));
   sceneAt(k);
   drawPlan();
-  window.Planner.update({ H, k, co2Color });
+  window.Planner.update({ H, k, co2Color, w0: week.start });
   if (cursor) cursor.attr("x", sx(k) - 1.5);
 }
 
@@ -167,7 +167,7 @@ function weekCycles() {
 }
 
 // ---------------------------------------------------------------- pla de les properes 24 h
-function next24() { return d3.range(k, Math.min(k + 24, H.t.length)); }
+function next24() { return d3.range(k, Math.min(k + 24, week.end)); }
 // incertesa: refem el pla amb previsions amb error i mirem quantes vegades es manté la decisió de cada hora
 const agreeCache = new Map();
 function planAgreement(idx) {
@@ -201,7 +201,7 @@ function drawPlan() {
   $("plan-sum").innerHTML = `<div><b class="good">${f(co2)} kg</b>CO₂ evitat</div><div><b class="good">${f(eur)} €</b>estalviats</div>` +
     `<div><b>${f(cin)} kWh</b>carregats</div><div><b>${f(cout)} kWh</b>descarregats</div>`;
 
-  const w = el.clientWidth, h = 196, m = { t: 8, r: 46, b: 48, l: 40 };
+  const w = el.clientWidth, h = 240, m = { t: 8, r: 46, b: 92, l: 40 };
   const iw = w - m.l - m.r, ih = h - m.t - m.b;
   el.innerHTML = "";
   const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${w} ${h}`).attr("width", "100%");
@@ -220,6 +220,17 @@ function drawPlan() {
   g.selectAll("rect.a").data(idx).join("rect").attr("x", i => x(i)).attr("y", ih + 24).attr("width", x.bandwidth()).attr("height", 10).attr("rx", 3)
     .attr("fill", COLORS.accent).attr("fill-opacity", (_, j) => 0.1 + 0.9 * agree[j]);
   g.append("text").attr("x", -6).attr("y", ih + 33).attr("text-anchor", "end").style("font-size", "10px").text("segur");
+  // càrrega de la bateria al final de cada hora: es veu com s'omple i es buida al llarg del pla
+  const ys = d3.scaleLinear().domain([0, 1]).range([ih + 82, ih + 44]);
+  const cx = i => x(i) + x.bandwidth() / 2;
+  g.append("path").datum(idx).attr("fill", COLORS.accent).attr("fill-opacity", 0.15)
+    .attr("d", d3.area().x(cx).y0(ys(0)).y1(i => ys(H.soc[i])).curve(d3.curveMonotoneX));
+  g.append("path").datum(idx).attr("fill", "none").attr("stroke", COLORS.accent).attr("stroke-width", 2)
+    .attr("d", d3.line().x(cx).y(i => ys(H.soc[i])).curve(d3.curveMonotoneX));
+  g.append("line").attr("x1", 0).attr("x2", iw).attr("y1", ys(1)).attr("y2", ys(1)).attr("stroke", "#E6E2DA").attr("stroke-dasharray", "2 3");
+  g.append("text").attr("x", -6).attr("y", ys(0.5) + 3).attr("text-anchor", "end").style("font-size", "10px").text("càrrega");
+  g.append("text").attr("x", iw + 6).attr("y", ys(1) + 3).style("font-size", "10px").text("100 %");
+  g.append("text").attr("x", iw + 6).attr("y", ys(0) + 3).style("font-size", "10px").text("0 %");
   // zona invisible per hora amb el motiu de la decisió
   g.selectAll("rect.hit").data(idx).join("rect").attr("x", i => x(i) - x.step() * x.paddingInner() / 2).attr("y", 0)
     .attr("width", x.step()).attr("height", ih + 34).attr("fill", "transparent")
@@ -330,10 +341,30 @@ const socAt = c => {
 function liveNumbers(c) {
   const v = key => hourly(key, c);
   setAll("[data-soc]", e => (e.textContent = f(100 * socAt(c)) + " %"));
+  battery(c);
   setAll("[data-grid]", e => (e.textContent = f(v("grid")) + " kW"));
   setAll("[data-co2]", e => (e.textContent = f(v("co2") * 1000) + " g/kWh"));
   setAll("[data-price]", e => (e.textContent = f(v("price") * 1000) + " €/MWh"));
   clockHand(c);
+}
+
+// bateria gran del panell: com d'plena està, què fa i quan s'omplirà o es buidarà al ritme d'ara
+function battery(c) {
+  const el = $("batt");
+  if (!el) return;
+  const soc = socAt(c), b = hourly("bat", c), eta = Math.sqrt(0.9);
+  el.querySelector(".batt-fill").style.width = (100 * soc).toFixed(1) + "%";
+  el.querySelector(".batt-fill").className = "batt-fill" + (b > 1 ? " charging" : b < -1 ? " discharging" : "");
+  el.querySelector(".batt-kwh").textContent = `${f(2000 * soc)} de 2.000 kWh`;
+  let state = "En espera";
+  if (b > 1) {
+    const hrs = (1 - soc) * 2000 / (b * eta);
+    state = `Carregant ${f(b)} kW` + (soc < 0.99 ? `: plena en ${hrs < 1 ? f(hrs * 60) + " min" : f(hrs, 1) + " h"}` : "");
+  } else if (b < -1) {
+    const hrs = soc * 2000 * eta / -b;
+    state = `Descarregant ${f(-b)} kW` + (soc > 0.01 ? `: buida en ${hrs < 1 ? f(hrs * 60) + " min" : f(hrs, 1) + " h"}` : "");
+  } else state = soc > 0.99 ? "Plena, esperant una hora bruta" : soc < 0.01 ? "Buida, esperant una hora neta" : "En espera";
+  el.querySelector(".batt-state").textContent = state;
 }
 
 const CLK = { c: 110, rOut: 104, rIn: 90, rBat: 58 };
@@ -364,8 +395,8 @@ function drawClock() {
     s.append("line").attr("y1", -CLK.rBat + 2).attr("y2", -CLK.rOut - 4);
     s.append("circle").attr("cy", -CLK.rOut - 4).attr("r", 3.5);
   });
-  g.append("text").attr("class", "soc num").attr("y", -2).attr("text-anchor", "middle").attr("data-soc", "");
-  g.append("text").attr("class", "mode").attr("y", 16).attr("text-anchor", "middle");
+  g.append("text").attr("class", "soc num").attr("y", 4).attr("text-anchor", "middle");
+  g.append("text").attr("class", "mode").attr("y", 20).attr("text-anchor", "middle");
 }
 function clockHand(c) {
   const svg = d3.select("#clock24");
@@ -375,7 +406,9 @@ function clockHand(c) {
   const h = Math.max(0, Math.min(24, c - clockDay));
   svg.select(".hand").attr("transform", `rotate(${h * 15})`);
   svg.select(".past").attr("d", arc({ innerRadius: CLK.rIn - 2, outerRadius: CLK.rOut + 2, startAngle: 0, endAngle: h / 24 * 2 * Math.PI }));
-  svg.select(".mode").text(b >= 0.5 ? `carregant ${f(b)} kW` : b <= -0.5 ? `descarregant ${f(-b)} kW` : "en espera");
+  const mins = Math.floor((c % 1) * 60);
+  svg.select(".soc").text(`${H.t[Math.min(Math.floor(c), week.end - 1)].slice(11, 13)}:${String(mins).padStart(2, "0")}`);
+  svg.select(".mode").text("avui");
 }
 
 // semàfor per al campus: és bon moment per fer servir electricitat (equips de laboratori, càrrega de cotxes...)?
