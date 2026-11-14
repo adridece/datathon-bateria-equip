@@ -6,6 +6,7 @@
 | plantilla oficial (`starter_kit`) | 0,94 | 0,00 | 3 / 46 | regles per hores |
 | **`agents/mpc_lp`** | **6,08** | **5,65** | 0 | LP 24 h, terminal = 0 |
 | `agents/mpc_robust` | 6,08 | 5,67 | 0 | mpc_lp + límit de descàrrega + neteja d'obs + regla de reserva |
+| `agents/mpc_test_weights` | 6,08 | 5,67 | 0 | mpc_robust amb la proporció CO₂/€ del test públic |
 | oracle (cota superior) | 6,08 | 5,68 | – | sap el futur sencer |
 
 ## Enviaments a la web

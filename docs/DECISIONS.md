@@ -63,3 +63,12 @@ Al leaderboard, el nostre 6,43 exacte és 0,7·4.289,4/71.816 + 0,3·8.907,86/11
 caldrien 6,435: 35 vegades més que tot el marge que queda fins a l'òptim. Tots els equips de dalt són al mateix sostre
 i el simulador arrodoneix a 2 decimals, per això l'ordre el decideix l'hora d'enviament.
 **Decisió:** l'agent queda congelat (`mpc_robust`). El temps va al dashboard, a la presentació i als side challenges.
+
+### D-016 · 14/11 · equip — El rànquing públic té soroll: triem dues versions òptimes diferents per al jurat
+Un equip ha tret 6,44 al públic. Simulant la meitat pública amb la nostra validació, variants pràcticament igual de bones
+en total (6,078–6,083) es separen fins a 0,1 punts segons quines hores compten. Per tant, el 6,44 no implica un agent millor
+i perseguir el públic seria sobreajustar. Com que el jurat puntua al test privat les 2 trameses que triem, triem dues versions
+òptimes però diferents (més opcions de quedar a dalt):
+1. `agents/mpc_robust` (gestiona fallades del comptador).
+2. `agents/mpc_test_weights`: el mateix codi amb la proporció CO₂/€ del test públic (71.816 kg / 118.746 €), que és la
+   ponderació exacta del test. Validació 6,08 · train complet 5,67 · 0 infraccions.
