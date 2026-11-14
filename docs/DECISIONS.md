@@ -112,3 +112,22 @@ Cap problema real: 0 infraccions sempre, a 0,002 de l'òptim de mitjana i establ
 `mpc_robust` i `mpc_test_weights` empaten (+0,0001), així que per al jurat són dues opcions igual de bones.
 El que més pesa al test privat són els talls del comptador: `mpc_lp` hi perdria fins a 0,2 punts, les nostres versions no.
 **Decisió:** les dues versions queden congelades tal com estan. Si el test privat té talls, `mpc_robust`/`mpc_test_weights` són clarament millors que `mpc_lp`.
+
+### D-020 · 14/11 · Ivan — Agent per al Mode Difícil (`agents/hard_mpc`)
+Al Mode Difícil ja no val la idea del mode estàndard: només sabem 3 h de mercat i la bateria (1.500 kW) pot descarregar més
+del que consumeix el campus. Mantenim LP + MPC de 24 h, amb dos canvis:
+1. **Previsions.** Preu i CO₂: mitjana dels últims 3 dies a la mateixa hora barrejada amb el perfil del train del mateix mes
+   (feiner / cap de setmana), corregida amb el nivell de les 3 h que sí sabem. Consum: perfil del train per dia de la setmana i
+   hora, escalat amb les últimes mesures. Solar: la dels últims dies a la mateixa hora, corregida segons com de clar està avui.
+2. **La xarxa dins del LP** (`xarxa ≥ consum − solar + bateria`, `xarxa ≥ 0`): el pla aprofita l'excedent solar gratuït i no
+   descarrega més del que es consumirà. A l'hora actual descarreguem com a molt el 92 % del consum net previst (marge d'error).
+**Alternatives:** adaptar `mpc_robust` sense previsions (10,50) o models LightGBM per a les previsions (més feina i risc de
+sobreajustar; queda com a millora possible: el marge fins a l'òptim és de 2,5 punts).
+Només hi ha 2 enviaments cada 4 h: validar sempre en local i amb la Validació Ràpida abans d'enviar.
+
+### D-021 · 14/11 · Ivan — Mode Difícil amb models de previsió (`agents/hard_ml`)
+Mateix LP que `hard_mpc`, però el consum i el preu els corregeix un model LightGBM entrenat amb el train: el model no prediu
+el valor sinó l'error de la previsió senzilla, així si no es pot carregar al servidor l'agent funciona igual (sense la millora).
+Els models es guarden en text (`.txt`) perquè no depenguin de la versió de LightGBM.
+El CO₂ és el que més pesa i el que pitjor es pot predir amb 3 setmanes de dades per mes: cap model millora la previsió senzilla.
+**Pendent:** enviar `hard_mpc` per saber quin score públic correspon al nostre 19,9 local abans de decidir res més.
