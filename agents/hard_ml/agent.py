@@ -2,9 +2,10 @@
 BatteryAgent per al Mode Dificil amb models de previsio (LightGBM).
 
 Mateix esquema que hard_mpc (LP de 24 h + MPC amb la xarxa dins del LP), pero les previsions
-les fan 4 models entrenats amb el train (scripts/train_hard.py):
+les corregeixen models entrenats amb el train (scripts/train_hard.py):
   - preu i CO2 de les hores +3..+23 (les 3 primeres ja les dona el mercat),
-  - consum i solar de les hores +0..+23.
+  - consum i solar de les hores +0..+23, sobretot la de l'hora actual: saber quant consumeix
+    el campus ARA diu quant podem descarregar sense llencar energia.
 Cada model corregeix una previsio senzilla (ultims dies a la mateixa hora + perfils del train).
 Si algun model no es pot carregar, es fa servir la previsio senzilla tal qual.
 """
@@ -29,6 +30,7 @@ ETA = 0.9 ** 0.5
 EPS = 1e-3
 HORIZON = 24
 KNOWN = 3
+LOAD_WINDOW = 2
 NAN = float("nan")
 FOLDER = Path(__file__).parent
 
@@ -95,9 +97,9 @@ def market_base(hist, known, hour, dow, profile):
 
 
 def load_base(load, hour, dow, profile):
-    """Consum de les 24 h: perfil del train per dia i hora, escalat amb les ultimes 6 h mesurades."""
+    """Consum de les 24 h: perfil del train per dia i hora, escalat amb les ultimes hores mesurades."""
     ratios = []
-    for k in range(1, 7):
+    for k in range(1, LOAD_WINDOW + 1):
         v = at(load, len(load) - k)
         if v == v and v > 1.0:
             h, d = (hour - k) % 24, (dow + (hour - k) // 24) % 7
@@ -143,23 +145,36 @@ def load_rows(load, temp, hour, dow, month, profile):
     """Una fila per hora (+0..+23) per predir el consum."""
     n = len(load)
     base = load_base(load, hour, dow, profile)
+    last, last2, last3 = at(load, n - 1), at(load, n - 2), at(load, n - 3)
+    prof_last = profile[(dow + (hour - 1) // 24) % 7][(hour - 1) % 24]
+    night = min([x for x in load[-24:] if x == x], default=NAN)
     rows = []
     for j in range(HORIZON):
         h, d = (hour + j) % 24, (dow + (hour + j) // 24) % 7
-        rows.append([j, h, d, int(d >= 5), month, at(load, n - 1), at(load, n + j - 24), at(load, n - 25),
-                     mean_last(load), profile[d][h], at(temp, len(temp) - 1), base[j]])
+        # dues maneres de continuar l'ultima mesura: com va canviar ahir i com canvia el perfil
+        like_yesterday = last + at(load, n + j - 24) - at(load, n - 25)
+        like_profile = last * profile[d][h] / max(prof_last, 1.0)
+        rows.append([j, h, d, int(d >= 5), month, last, last2, last3, at(load, n + j - 24), at(load, n - 25),
+                     mean_last(load), night, profile[d][h], like_yesterday, like_profile,
+                     at(temp, len(temp) - 1), base[j]])
     return rows
 
 
-def pv_rows(pv, irr, temp, hour, month):
-    """Una fila per hora (+0..+23) per predir la solar."""
+def pv_rows(pv, irr, temp, hour, month, clear):
+    """Una fila per hora (+0..+23) per predir la solar. clear = solar maxima del mes per hora (dia clar)."""
     n = len(pv)
     day_max = max([x for x in pv[-24:] if x == x], default=NAN)
     base = pv_base(pv, hour)
+    last, irr_last = at(pv, n - 1), at(irr, len(irr) - 1)
+    clear_last = clear[(hour - 1) % 24] if clear else NAN
     rows = []
     for j in range(HORIZON):
-        rows.append([j, (hour + j) % 24, month, at(pv, n - 1), at(irr, len(irr) - 1), at(pv, n + j - 24),
-                     at(pv, n - 25), day_max, at(temp, len(temp) - 1), base[j]])
+        h = (hour + j) % 24
+        clear_h = clear[h] if clear else NAN
+        # si l'ultima hora ha fet el 60 % d'un dia clar, suposem que la seguent tambe
+        like_clear = last * clear_h / clear_last if clear_last == clear_last and clear_last > 20.0 else NAN
+        rows.append([j, h, month, last, at(pv, n - 2), irr_last, at(irr, len(irr) - 2), at(pv, n + j - 24),
+                     at(pv, n - 25), day_max, clear_h, clear_last, like_clear, at(temp, len(temp) - 1), base[j]])
     return rows
 
 
@@ -185,7 +200,10 @@ class BatteryAgent:
         self.load_profile = params.get("load_profile")
         self.price_profile = params.get("price_profile") or {}
         self.co2_profile = params.get("co2_profile") or {}
-        self.models = {name: load_model(name) for name in params.get("models", ["price", "co2", "load", "pv"])}
+        self.pv_clear = params.get("pv_clear") or {}
+        self.models = {name: load_model(name) for name in ("price", "co2", "load", "pv")}
+        # fins a quina hora (+j) corregim amb cada model; mes enlla, previsio senzilla
+        self.near_hours = params.get("near_hours", {"price": 8, "co2": 8, "load": 2, "pv": 2})
         # historic de la simulacio (un valor per hora)
         self.price, self.co2, self.load, self.pv, self.irr, self.temp = [], [], [], [], [], []
         self.prev_time = None
@@ -196,16 +214,19 @@ class BatteryAgent:
 
     # ------------------------------------------------------------ previsions
     def predict(self, name, rows):
-        """Previsio senzilla (ultima columna) + la correccio del model, si el tenim."""
+        """Previsio senzilla (ultima columna) + la correccio del model a les hores mes properes,
+        que es on el model encerta mes i on mes importa (sobretot l'hora actual)."""
         rows = np.array(rows, dtype=float)
-        base = rows[:, -1]
+        out = rows[:, -1].copy()
         model = self.models.get(name)
         if model is not None:
             try:
-                return np.maximum(base + model.predict(rows), 0.0)
+                close = rows[:, 0] <= self.near_hours.get(name, 0)
+                if close.any():
+                    out[close] += model.predict(rows[close])
             except Exception:
-                pass
-        return base
+                out = rows[:, -1].copy()
+        return np.maximum(out, 0.0)
 
     def forecast_market(self, name, hist, other_hist, known, other_known, hour, dow, month, irr_last):
         profile = (self.price_profile if name == "price" else self.co2_profile).get(str(month))
@@ -214,7 +235,7 @@ class BatteryAgent:
 
     def forecast_net(self, hour, dow, month):
         load = self.predict("load", load_rows(self.load, self.temp, hour, dow, month, self.load_profile))
-        pv = self.predict("pv", pv_rows(self.pv, self.irr, self.temp, hour, month))
+        pv = self.predict("pv", pv_rows(self.pv, self.irr, self.temp, hour, month, self.pv_clear.get(str(month))))
         return load - pv
 
     # ------------------------------------------------------------ pla

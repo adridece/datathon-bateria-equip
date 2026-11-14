@@ -131,3 +131,19 @@ el valor sinó l'error de la previsió senzilla, així si no es pot carregar al 
 Els models es guarden en text (`.txt`) perquè no depenguin de la versió de LightGBM.
 El CO₂ és el que més pesa i el que pitjor es pot predir amb 3 setmanes de dades per mes: cap model millora la previsió senzilla.
 **Pendent:** enviar `hard_mpc` per saber quin score públic correspon al nostre 19,9 local abans de decidir res més.
+
+### D-022 · 14/11 · Ivan — `hard_ml`: els models només corregeixen les hores properes
+Substitueix la part de models de D-021. Hem mesurat que el que decideix el score és l'hora actual (consum i solar) i el mercat de
+les hores +3..+7; més lluny, els models no milloren la previsió senzilla. Per tant: un model per sèrie, entrenat i aplicat només a
+les hores properes (`near_hours` a params.json), i previsió senzilla per a la resta. Marge de descàrrega 0,96.
+
+### D-023 · 14/11 · Ivan — Agent final del Mode Difícil (`agents/hard_final`)
+Substitueix `hard_ml` com a candidat principal. Mateix LP + MPC, amb 5 millores validades a dues validacions independents
+(veure DIARI 14/11 vespre): previsió solar del 1r dia, marge de descàrrega per hora segons l'error real, el pla també
+compta amb aquest marge, historial del train al principi de cada setmana, i previsió de CO₂/preu a +3/+4 h amb la forma
+d'ahir ancorada. Models: 5 llavors (mitjana) per ser més estables. Es reentrena amb `python scripts/train_hard_final.py`.
+**Per què no LightGBM per a tot:** a partir de cert punt els models no milloren la previsió senzilla i afegeixen soroll.
+
+### D-024 · 14/11 · Ivan — `hard_final` v2: excedent solar i preu a totes les hores
+Amb excedent solar carreguem pensant en el cas de més sol (l'error de carregar de més és comprar una mica de xarxa a l'hora
+més barata; el de carregar de menys és perdre energia gratis). El model de preu s'aplica a totes les hores. Validació: 19,22.
