@@ -57,6 +57,32 @@
     });
   }
 
+  // ---------------------------------------------------------------- conclusions i decisions (el que demana la Tukey)
+  function decisions() {
+    const st = D.strategies, p = D.profile, r = D.robustness, H = D.hours, y = D.yearly;
+    const top = [...p].sort((a, b) => b.battery_kw - a.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
+    const bot = [...p].sort((a, b) => a.battery_kw - b.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
+    const sz = D.sizing.filter(s => s.power_kw === 500).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
+    const now = sz.find(s => s.capacity_kwh === 2000);
+    const best = sz.filter(s => s.payback < 10).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
+    const low = Math.min(...H.load);
+    const rows = [
+      { d: "Operar la bateria amb control predictiu", view: "strategy",
+        c: `Treu ${f(st[2].score, 2)} punts, igual que l'òptim teòric (${f(st[3].score, 2)}). Les regles fixes per hores en treuen ${f(st[1].score, 2)}.` },
+      { d: "Carregar a les hores de sol, descarregar al matí i al vespre", view: "strategy",
+        c: `Les hores amb més càrrega (${top.join(", ")} h) són les de menys CO₂; les de descàrrega (${bot.join(", ")} h), les de més CO₂ i preu.` },
+      { d: `Ampliar la bateria a ${f(best.capacity_kwh)} kWh amb el mateix inversor`, view: "sizing",
+        c: `Passaria de ${f(now.co2_t_year)} a ${f(best.co2_t_year)} t de CO₂ l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh). Per sobre de 6.000 kWh el CO₂ gairebé no baixa.` },
+      { d: "Posar-la en marxa amb les previsions públiques de REE", view: "trust",
+        c: `Amb un 50 % d'error a les previsions la puntuació passa de ${f(r[0].score, 2)} a ${f(r[r.length - 1].score, 2)}: no cal una previsió perfecta.` },
+      { d: "Mantenir el límit de 500 kW de consum net", view: "trust",
+        c: `El consum mínim del campus és de ${f(low)} kW i la bateria mai el baixa del límit: ${f(D.result.infraccions)} infraccions a validació i ${f(D.official.violations)} al test públic.` },
+    ];
+    $("decisions").innerHTML = rows.map((r, i) => `<div class="decision"><div class="n">${String(i + 1).padStart(2, "0")}</div>
+      <div><b>${r.d}</b><p>${r.c}</p></div>
+      <button data-goto="${r.view}" data-sel="${r.go || ""}">Veure l'evidència</button></div>`).join("");
+  }
+
   // ---------------------------------------------------------------- estratègies
   function strategyBars(id, h) {
     const st = D.strategies, rows = st.slice(0, 3);
@@ -240,7 +266,7 @@
   // ---------------------------------------------------------------- API
   const drawn = {};
   const draw = {
-    overview: () => { kpis(); profile("c-mini-profile", true); strategyBars("c-mini-strategy", 190); },
+    overview: () => { kpis(); decisions(); profile("c-mini-profile", true); strategyBars("c-mini-strategy", 190); },
     strategy: () => { strategyBars("c-strategy", 200); profile("c-profile", false); heat(); },
     sizing: () => sizing(),
     trust: () => robust(),

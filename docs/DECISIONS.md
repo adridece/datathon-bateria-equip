@@ -131,3 +131,11 @@ i perseguir el públic seria sobreajustar. Com que el jurat puntua al test priva
 - La reproducció avança de manera contínua (amb minuts) i interpola els valors entre hores. Velocitats: lenta, normal i ràpida.
 - El mapa ampliat es col·loca sobre tota la pàgina i torna al seu lloc en tancar-lo. Cada secció s'obre a dalt de tot.
 - Traiem la presentació guiada del dashboard (no aportava prou).
+
+### D-020 · 14/11 · Adrià — Conclusions i decisions a la visió general (Tukey)
+- La Tukey valora sobretot que el dashboard ajudi a decidir. A dalt de la visió general hi ha el bloc
+  "Què concloem i què decidim": 5 decisions per a UPC Sostenible, cadascuna amb la xifra que la justifica
+  i un botó que porta al gràfic on hi ha l'evidència.
+- Les xifres es calculen de les mateixes dades del dashboard (no hi ha cap número escrit a mà).
+- Decisions: control predictiu, horari de càrrega i descàrrega, ampliar a 3.000 kWh (retorn 9,4 anys),
+  posar-la en marxa amb previsions de REE, i mantenir el límit de 500 kW (0 infraccions).
