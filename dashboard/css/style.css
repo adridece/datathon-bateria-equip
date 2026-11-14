@@ -332,3 +332,16 @@ body.demo-on .view.on .grid > .card { animation: none; }
 .batt-fill.discharging { background: linear-gradient(90deg, var(--dt-accent), #D55E00); }
 .batt-kwh { position: absolute; inset: 0; display: grid; place-items: center; font-size: 12px; color: #1F2326; mix-blend-mode: normal; text-shadow: 0 0 4px #fff, 0 0 4px #fff; }
 .batt-state { font-size: 12.5px; color: var(--dt-text, #1F2326); }
+
+/* mides fixes: quan canvia el text en directe, res no s'ha d'eixamplar ni moure */
+.now { overflow: hidden; }
+.signal { height: 64px; box-sizing: border-box; overflow: hidden; }
+.signal p { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
+.batt-state { height: 18px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.now-why { height: 72px; box-sizing: border-box; overflow: hidden; display: -webkit-box; -webkit-line-clamp: 3; -webkit-box-orient: vertical; }
+.now-stats b { height: 20px; overflow: hidden; }
+.now-stats b.good { height: 36px; }
+.num, .now, .plan-sum, .hud-live { font-variant-numeric: tabular-nums; }
+#chip-time { width: 180px; box-sizing: border-box; justify-content: center; text-align: center; }
+#plan-take { min-height: 4.6em; }
+.plan-sum > div { min-width: 110px; }

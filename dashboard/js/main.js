@@ -598,6 +598,4 @@ window.Charts.init(D, { co2Color });
 window.Planner.init();
 setWeek(0);
 go("live");
-// en obrir el tauler el campus ja funciona sol, hora a hora (si no s'han demanat menys animacions)
-if (!matchMedia("(prefers-reduced-motion: reduce)").matches) setTimeout(start, 1200);
 setTimeout(() => { drawPlan(); drawCalendar(); }, 60);

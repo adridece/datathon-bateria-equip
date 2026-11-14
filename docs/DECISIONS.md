@@ -208,3 +208,12 @@ amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, a
 - La càrrega passa a ser protagonista: bateria gran a dalt del panell "Ara mateix" (percentatge, kWh, si carrega o
   descarrega i en quant de temps s'omplirà o es buidarà) i corba de càrrega a sota del pla de 24 h.
   El centre del rellotge ara mostra l'hora.
+
+### D-027 · 14/11 · Adrià — Sense reproducció automàtica, mides fixes i gràfic de Conclusions més clar
+- En obrir la pàgina no es reprodueix sol: l'usuari decideix quan començar.
+- Res canvia de mida quan canvia el text en directe: el panell "Ara mateix" té cada bloc d'alçada fixa (sense barra de
+  desplaçament), els números fan servir xifres d'amplada fixa i el rellotge de dalt té amplada fixa. Comprovat reproduint:
+  cap bloc canvia de mida.
+- El gràfic "Què guanya el campus amb la bateria" ara mostra directament la diferència: cada hora, quant més (amunt) o
+  menys (avall) compra el campus per tenir la bateria, pintat amb el CO₂ de la xarxa. Les dues línies d'abans gairebé es
+  tapaven i les etiquetes es tallaven.

@@ -204,30 +204,35 @@
       eur += (H.base[i] - H.grid[i]) * H.price[i];
       return { i, base: H.base[i], grid: H.grid[i], acc };
     });
-    const { g, iw } = frame("c-counter", 300, { t: 10, r: 70, b: 26, l: 52 });
-    const x = d3.scaleLinear().domain([w.start, w.end - 1]).range([0, iw]);
+    const { g, iw } = frame("c-counter", 300, { t: 10, r: 96, b: 26, l: 70 });
+    const x = d3.scaleBand().domain(idx).range([0, iw]).paddingInner(0.15);
     const top = 170, gap = 26, low = 70;
-    const y = d3.scaleLinear().domain([0, d3.max(rows, r => Math.max(r.base, r.grid)) * 1.05]).nice().range([top, 0]);
-    gridY(g, y, iw, 4, d => f(d) + " kW");
-    // zona entre les dues corbes: verd si la bateria fa comprar menys, blau si en fa comprar més (carrega)
-    const between = (cond) => d3.area().defined(r => cond(r)).x(r => x(r.i)).y0(r => y(r.base)).y1(r => y(r.grid)).curve(d3.curveStepAfter);
-    g.append("path").datum(rows).attr("fill", C.accent).attr("opacity", 0.28).attr("d", between(r => r.grid <= r.base));
-    g.append("path").datum(rows).attr("fill", C.charge).attr("opacity", 0.22).attr("d", between(r => r.grid >= r.base));
-    const line = k => d3.line().x(r => x(r.i)).y(r => y(r[k])).curve(d3.curveStepAfter);
-    g.append("path").datum(rows).attr("fill", "none").attr("stroke", C.dim).attr("stroke-dasharray", "4 3").attr("d", line("base"));
-    g.append("path").datum(rows).attr("fill", "none").attr("stroke", C.text).attr("stroke-width", 1.4).attr("d", line("grid"));
+    // diferència de compra per culpa de la bateria: amunt compra més (carrega), avall compra menys (descarrega)
+    const diff = i => H.grid[i] - H.base[i];
+    const lim = Math.max(100, d3.max(idx, i => Math.abs(diff(i))));
+    const y = d3.scaleLinear().domain([-lim, lim]).nice().range([top, 0]);
+    gridY(g, y, iw, 4, d => (d > 0 ? "+" : "") + f(d) + " kW");
+    const ext = d3.extent(H.co2), ramp = ["#C9D6CF", "#C9B48A", "#A9824F", "#7A5532", "#4A3220"];
+    const co2c = d3.scaleLinear().domain(d3.range(5).map(j => ext[0] + j * (ext[1] - ext[0]) / 4)).range(ramp).clamp(true);
+    g.selectAll("rect.d").data(idx.filter(i => Math.abs(diff(i)) > 1)).join("rect").attr("class", "d")
+      .attr("x", i => x(i)).attr("width", Math.max(1, x.bandwidth())).attr("y", i => y(Math.max(0, diff(i))))
+      .attr("height", i => Math.abs(y(diff(i)) - y(0))).attr("fill", i => co2c(H.co2[i]))
+      .append("title").text(i => `${H.t[i].slice(8, 10)}/${H.t[i].slice(5, 7)} ${H.t[i].slice(11, 13)} h: ${diff(i) > 0 ? "compra " + f(diff(i)) + " kW més" : "compra " + f(-diff(i)) + " kW menys"}, CO₂ ${f(H.co2[i] * 1000)} g/kWh`);
+    g.append("line").attr("x1", 0).attr("x2", iw).attr("y1", y(0)).attr("y2", y(0)).attr("stroke", C.text).attr("stroke-width", 0.8);
+    g.append("text").attr("x", iw + 8).attr("y", y(lim * 0.6)).attr("fill", C.muted).text("compra més");
+    g.append("text").attr("x", iw + 8).attr("y", y(-lim * 0.6)).attr("fill", C.muted).text("compra menys");
     // CO₂ evitat acumulat: baixa quan carrega i puja quan descarrega
     const g2 = g.append("g").attr("transform", `translate(0,${top + gap})`);
     const y2 = d3.scaleLinear().domain(d3.extent([0, ...rows.map(r => r.acc)])).nice().range([low, 0]);
     gridY(g2, y2, iw, 2, d => f(d) + " kg");
-    g2.append("path").datum(rows).attr("fill", "none").attr("stroke", C.accent).attr("stroke-width", 2).attr("d", d3.line().x(r => x(r.i)).y(r => y2(r.acc)));
+    g2.append("path").datum(rows).attr("fill", "none").attr("stroke", C.accent).attr("stroke-width", 2).attr("d", d3.line().x(r => x(r.i) + x.bandwidth() / 2).y(r => y2(r.acc)));
     g2.append("text").attr("x", iw + 8).attr("y", y2(acc) + 4).attr("fill", C.accent).text(f(acc) + " kg");
     const days = d3.range(w.start, w.end, 24);
     g2.append("g").attr("class", "axis").attr("transform", `translate(0,${low})`)
       .call(d3.axisBottom(x).tickValues(days).tickFormat(i => H.t[i].slice(8, 10) + "/" + H.t[i].slice(5, 7)).tickSize(0).tickPadding(8))
       .call(s => s.select(".domain").remove());
     $("counter-take").innerHTML = `Aquesta setmana la bateria evita <b>${f(acc)} kg de CO₂</b> i <b>${f(eur)} €</b>. ` +
-      `Compra més a la xarxa al migdia, quan és neta (zona blava), i menys al vespre, quan és bruta (zona verda): ` +
+      `Les barres que pugen (compra més per carregar) són clares, hores netes; les que baixen (compra menys) són fosques, hores brutes: ` +
       `el consum total gairebé no canvia, el que canvia és <b>quan</b> es compra.`;
   }
 
