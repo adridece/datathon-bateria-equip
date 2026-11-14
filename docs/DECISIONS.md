@@ -59,3 +59,8 @@ amb 500 kW, més de 4.000 kWh no aporta gaire; ≈ 44 t CO₂ i ≈ 96 k€ esta
   internet i a Windows. La ubicació de la bateria i de l'escomesa és una suposició (no està publicada) i es diu a la
   mateixa escena.
 - Fonts de la recerca: `docs/RECERCA_DASHBOARD.md` i `docs/RECERCA_CAMPUS3D.md`.
+
+### D-010 · 14/11 · equip — Primer enviament al leaderboard (substitueix D-007)
+Enviem `agents/mpc_lp` amb el nom d'equip **La Datoneta**. Resultat públic: **6,43** (CO₂ −5,97 %, factura −7,5 %,
+0 infraccions). La validació local donava 6,08: el nostre pseudo-test és una bona estimació del test real.
+El PIN de l'equip el guarda l'Adrià (mai al repo).
