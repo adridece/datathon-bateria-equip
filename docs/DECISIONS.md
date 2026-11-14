@@ -70,3 +70,15 @@ Streamlit sempre semblava "una eina interna". Fem una web pròpia (HTML + CSS + 
 estil sala de control fosca, amb el campus real en 3D a la portada i les decisions a sota. Funciona sense internet
 amb `python scripts/serve_dashboard.py`. Les xifres es generen amb `scripts/build_dashboard_data.py` a partir del
 simulador oficial, així segueixen sent coherents amb el leaderboard.
+
+### D-012 · 14/11 · Adrià — Regles de disseny del dashboard en un sol document
+Les regles concretes del dashboard (estructura d'app d'una pantalla, KPI, gràfics, tokens del tema clar, moviment, 3D i
+interacció) són a `docs/REGLES_DASHBOARD.md`. Canvis respecte a la recerca: formes rodones amb escala de radis
+(6/10/14/20 px i píndola) en lloc de 4–6 px, tema clar (el fosc no es llegia bé), i corbes d'animació
+`cubic-bezier(.23,1,.32,1)` / `(.77,0,.175,1)` amb durades curtes.
+
+### D-013 · 14/11 · Adrià — Dashboard com a app clara amb targetes rodones (substitueix l'estil fosc de D-011)
+La versió fosca es llegia malament. Passem a una app d'una sola pantalla: barra lateral amb 5 vistes, tema clar i càlid,
+targetes rodones, un sol color d'accent per al nostre agent i colors d'energia aptes per a daltonisme. El 3D és una maqueta
+blanca ben il·luminada. Animacions curtes en entrar a cada vista (xifres que compten, barres i línies que es dibuixen).
+Normes a `docs/REGLES_DASHBOARD.md`.

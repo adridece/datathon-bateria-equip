@@ -1,27 +1,24 @@
 // Escena 3D del Campus Nord (edificis reals d'OpenStreetMap) amb els fluxos d'energia.
+// Estil maqueta d'arquitecte: clara, amb ombres suaus, perquè es llegeixi bé també al projector.
 import * as THREE from "three";
 import { OrbitControls } from "three/addons/controls/OrbitControls.js";
 
 const S = 0.1;   // 1 unitat = 10 m
-const VX = 1.5;  // alçades exagerades perquè la maqueta es llegeixi millor
+const VX = 1.5;  // alçades exagerades perquè es llegeixi millor
 
 export function createScene(container, campus, colors) {
   const renderer = new THREE.WebGLRenderer({ antialias: true });
   renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
   renderer.shadowMap.enabled = true;
   renderer.shadowMap.type = THREE.PCFSoftShadowMap;
-  container.appendChild(renderer.domElement);
 
   const scene = new THREE.Scene();
-  scene.background = new THREE.Color("#0B0C0D");
-  scene.fog = new THREE.Fog("#0B0C0D", 90, 170);
+  scene.background = new THREE.Color("#EAE6DE");
 
-  // càmera isomètrica, com una maqueta
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
   const controls = new OrbitControls(camera, renderer.domElement);
-  Object.assign(controls, { enableDamping: true, enablePan: false, minPolarAngle: 0.5, maxPolarAngle: 1.2,
-                            minZoom: 0.7, maxZoom: 5 });
-  const HOME = { target: new THREE.Vector3(-2, 0, 4), zoom: 1.15, dir: new THREE.Vector3(1, 1.1, 1).normalize() };
+  Object.assign(controls, { enableDamping: true, enablePan: false, minPolarAngle: 0.5, maxPolarAngle: 1.2, minZoom: 0.7, maxZoom: 5 });
+  const HOME = { target: new THREE.Vector3(-2, 0, 4), zoom: 1.2, dir: new THREE.Vector3(1, 1.1, 1).normalize() };
 
   function place(view) {
     controls.target.copy(view.target);
@@ -29,26 +26,40 @@ export function createScene(container, campus, colors) {
     camera.zoom = view.zoom;
     camera.updateProjectionMatrix();
   }
+
+  // l'escena es pot moure entre la targeta petita i la vista gran
+  let host = null;
+  const observer = new ResizeObserver(resize);
   function resize() {
-    const w = container.clientWidth, h = container.clientHeight, half = 30;
+    if (!host) return;
+    const w = host.clientWidth, h = host.clientHeight;
+    const half = h < 450 ? 19 : 27;   // a la targeta petita ens apropem més
+    if (!w || !h) return;
     renderer.setSize(w, h);
     Object.assign(camera, { left: -half * w / h, right: half * w / h, top: half, bottom: -half });
     camera.updateProjectionMatrix();
   }
-  new ResizeObserver(resize).observe(container);
-  resize();
-  place(HOME);
+  function mount(el) {
+    if (host) observer.unobserve(host);
+    host = el;
+    el.prepend(renderer.domElement);
+    Object.values(tags).forEach(t => el.appendChild(t.el));
+    el.appendChild(credit);
+    observer.observe(el);
+    resize();
+  }
 
-  // llum de nit: lluna freda i un sol que es mou amb l'hora
-  const hemi = new THREE.HemisphereLight("#9FB0C4", "#1A1814", 0.55);
-  const sun = new THREE.DirectionalLight("#EEF0F2", 0.9);
+  // llums: cel clar i un sol que es mou amb l'hora
+  const hemi = new THREE.HemisphereLight("#FFFFFF", "#D9D3C7", 1.25);
+  const sun = new THREE.DirectionalLight("#FFFFFF", 1.4);
   sun.castShadow = true;
   sun.shadow.mapSize.set(2048, 2048);
   Object.assign(sun.shadow.camera, { left: -40, right: 40, top: 40, bottom: -40, near: 1, far: 220 });
   sun.shadow.bias = -0.0005;
+  sun.shadow.radius = 4;
   scene.add(hemi, sun, sun.target);
 
-  const ground = new THREE.Mesh(new THREE.PlaneGeometry(180, 140), new THREE.MeshStandardMaterial({ color: "#121416", roughness: 1 }));
+  const ground = new THREE.Mesh(new THREE.PlaneGeometry(180, 140), new THREE.MeshStandardMaterial({ color: "#E2DDD3", roughness: 1 }));
   ground.rotation.x = -Math.PI / 2;
   ground.receiveShadow = true;
   scene.add(ground);
@@ -59,10 +70,8 @@ export function createScene(container, campus, colors) {
     s.closePath();
     return s;
   };
-  const extrude = (ring, h, bevel) => {
-    const g = new THREE.ExtrudeGeometry(shape(ring), bevel
-      ? { depth: h, bevelEnabled: true, bevelThickness: 0.03, bevelSize: 0.03, bevelSegments: 1 }
-      : { depth: h, bevelEnabled: false });
+  const extrude = (ring, h) => {
+    const g = new THREE.ExtrudeGeometry(shape(ring), { depth: h, bevelEnabled: false });
     g.rotateX(-Math.PI / 2);
     return g;
   };
@@ -70,42 +79,39 @@ export function createScene(container, campus, colors) {
     new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts.map(([x, z]) => new THREE.Vector3(x * S, y, z * S))), mat);
 
   // carrers i límit del campus
-  const streetMat = new THREE.LineBasicMaterial({ color: "#26292D" });
+  const streetMat = new THREE.LineBasicMaterial({ color: "#CEC8BC" });
   campus.streets.forEach(s => scene.add(line(s.line, streetMat, 0.01)));
-  const edge = line(campus.boundary, new THREE.LineDashedMaterial({ color: "#3C4146", dashSize: 0.6, gapSize: 0.5 }));
+  const edge = line(campus.boundary, new THREE.LineDashedMaterial({ color: "#A59D8E", dashSize: 0.6, gapSize: 0.5 }));
   edge.computeLineDistances();
   scene.add(edge);
 
-  // edificis veïns: només volum, sense detall
-  const contextMat = new THREE.MeshStandardMaterial({ color: "#17191C", roughness: 1 });
-  const contextEdge = new THREE.LineBasicMaterial({ color: "#26292D" });
+  // edificis veïns: volums grisos sense detall
+  const contextMat = new THREE.MeshStandardMaterial({ color: "#D8D3C9", roughness: 1 });
+  const contextEdge = new THREE.LineBasicMaterial({ color: "#C8C2B6" });
   campus.context_buildings.forEach(b => {
-    const geo = extrude(b.ring, b.h * S * VX, false);
+    const geo = extrude(b.ring, b.h * S * VX);
     const m = new THREE.Mesh(geo, contextMat);
     m.receiveShadow = true;
-    scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), contextEdge));
-    scene.add(m);
+    scene.add(m, new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), contextEdge));
   });
 
-  // edificis del campus: les "finestres" brillen segons el consum
-  const campusMat = new THREE.MeshStandardMaterial({ color: "#34393E", roughness: 0.85, emissive: "#FFB36B", emissiveIntensity: 0.02 });
-  const edgeMat = new THREE.LineBasicMaterial({ color: "#565C62" });
+  // edificis del campus: blancs; de nit s'il·luminen una mica segons el consum
+  const campusMat = new THREE.MeshStandardMaterial({ color: "#FBFAF7", roughness: 0.9, emissive: "#FFC27A", emissiveIntensity: 0 });
+  const campusEdge = new THREE.LineBasicMaterial({ color: "#9E978B" });
   const pickables = [];
   campus.buildings.forEach(b => {
-    const geo = extrude(b.polygon, b.height_m * S * VX, false);
+    const geo = extrude(b.polygon, b.height_m * S * VX);
     const m = new THREE.Mesh(geo, campusMat);
     m.castShadow = m.receiveShadow = true;
-    scene.add(new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), edgeMat));
     m.userData = { kind: "building", info: b };
-    scene.add(m);
+    scene.add(m, new THREE.LineSegments(new THREE.EdgesGeometry(geo, 30), campusEdge));
     pickables.push(m);
   });
 
   // plaques solars reals sobre els aularis A
-  const pvMat = new THREE.MeshStandardMaterial({ color: "#1E2A36", roughness: 0.4, emissive: colors.solar, emissiveIntensity: 0 });
+  const pvMat = new THREE.MeshStandardMaterial({ color: "#2F4A63", roughness: 0.35, metalness: 0.2, emissive: colors.solar, emissiveIntensity: 0 });
   campus.pv_arrays.forEach(p => {
-    const host = campus.buildings.find(b => b.has_pv === true &&
-      Math.hypot(b.centroid[0] - p.centroid[0], b.centroid[1] - p.centroid[1]) < 40);
+    const host = campus.buildings.find(b => b.has_pv === true && Math.hypot(b.centroid[0] - p.centroid[0], b.centroid[1] - p.centroid[1]) < 40);
     const g = new THREE.ShapeGeometry(shape(p.ring));
     g.rotateX(-Math.PI / 2);
     const m = new THREE.Mesh(g, pvMat);
@@ -124,26 +130,28 @@ export function createScene(container, campus, colors) {
   const node = batPos.clone().lerp(gridPos, 0.5).setY(0.3);
 
   const battery = new THREE.Group();
-  const shell = new THREE.Mesh(new THREE.BoxGeometry(2.8, 1.3, 1.2),
-    new THREE.MeshStandardMaterial({ color: "#C9D2D8", transparent: true, opacity: 0.18, roughness: 0.2 }));
+  const shellGeo = new THREE.BoxGeometry(2.8, 1.3, 1.2);
+  const shell = new THREE.Mesh(shellGeo, new THREE.MeshStandardMaterial({ color: "#FFFFFF", transparent: true, opacity: 0.35, roughness: 0.2 }));
   shell.position.y = 0.65;
-  const fill = new THREE.Mesh(new THREE.BoxGeometry(2.55, 1.1, 0.95),
-    new THREE.MeshStandardMaterial({ color: colors.accent, emissive: colors.accent, emissiveIntensity: 0.55 }));
-  const outline = new THREE.LineSegments(new THREE.EdgesGeometry(shell.geometry), new THREE.LineBasicMaterial({ color: "#7E8A90" }));
+  const fill = new THREE.Mesh(new THREE.BoxGeometry(2.55, 1.1, 0.95), new THREE.MeshStandardMaterial({ color: colors.accent, roughness: 0.5 }));
+  const outline = new THREE.LineSegments(new THREE.EdgesGeometry(shellGeo), new THREE.LineBasicMaterial({ color: "#5E5A54" }));
   outline.position.y = 0.65;
-  battery.add(fill, shell, outline);
+  const pad = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.12, 1.6), new THREE.MeshStandardMaterial({ color: "#C9C3B7" }));
+  battery.add(pad, fill, shell, outline);
   battery.position.copy(batPos);
+  battery.traverse(o => { o.castShadow = true; });
   shell.userData = { kind: "battery" };
   scene.add(battery);
   pickables.push(shell);
 
-  const steel = new THREE.MeshStandardMaterial({ color: "#6E6A63", roughness: 0.6 });
+  const steel = new THREE.MeshStandardMaterial({ color: "#7D776E", roughness: 0.6 });
   const tower = new THREE.Group();
-  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.07, 0.16, 3.4, 6), steel);
+  const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.08, 0.17, 3.4, 8), steel);
   mast.position.y = 1.7;
   tower.add(mast);
-  [2.6, 3.1].forEach(y => { const a = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.06, 0.06), steel); a.position.y = y; tower.add(a); });
+  [2.6, 3.1].forEach(y => { const a = new THREE.Mesh(new THREE.BoxGeometry(1.7, 0.07, 0.07), steel); a.position.y = y; tower.add(a); });
   tower.position.copy(gridPos);
+  tower.traverse(o => { o.castShadow = true; });
   mast.userData = { kind: "grid" };
   scene.add(tower);
   pickables.push(mast);
@@ -152,12 +160,14 @@ export function createScene(container, campus, colors) {
   const sprite = (() => {
     const c = document.createElement("canvas");
     c.width = c.height = 64;
-    const g = c.getContext("2d"), r = g.createRadialGradient(32, 32, 0, 32, 32, 32);
-    r.addColorStop(0, "rgba(255,255,255,1)");
-    r.addColorStop(0.25, "rgba(255,255,255,.75)");
-    r.addColorStop(1, "rgba(255,255,255,0)");
-    g.fillStyle = r;
-    g.fillRect(0, 0, 64, 64);
+    const g = c.getContext("2d");
+    g.beginPath();
+    g.arc(32, 32, 26, 0, Math.PI * 2);
+    g.fillStyle = "#fff";
+    g.fill();
+    g.lineWidth = 6;
+    g.strokeStyle = "rgba(255,255,255,.9)";
+    g.stroke();
     return new THREE.CanvasTexture(c);
   })();
 
@@ -173,26 +183,25 @@ export function createScene(container, campus, colors) {
     flows["pv" + i] = curve([p, lift(p.clone().lerp(node, 0.3), 2.0), lift(p.clone().lerp(node, 0.7), 0.9), node]);
   });
 
-  const MAX_P = 80;
+  const MAX_P = 48;
   const streams = {};
   for (const [name, c] of Object.entries(flows)) {
-    const guide = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 0.035, 6),
-      new THREE.MeshBasicMaterial({ color: "#3A3D41", transparent: true, opacity: 0.8 }));
+    const guide = new THREE.Mesh(new THREE.TubeGeometry(c, 80, 0.05, 8), new THREE.MeshBasicMaterial({ color: "#CFC9BD" }));
     scene.add(guide);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MAX_P * 3), 3));
-    const mat = new THREE.PointsMaterial({ size: 9 * renderer.getPixelRatio(), map: sprite, transparent: true,
-      depthWrite: false, sizeAttenuation: false, color: "#FFFFFF" });
+    const mat = new THREE.PointsMaterial({ size: 11 * renderer.getPixelRatio(), map: sprite, transparent: true, alphaTest: 0.3,
+      depthWrite: false, sizeAttenuation: false });
     const pts = new THREE.Points(geo, mat);
     pts.frustumCulled = false;
     scene.add(pts);
-    streams[name] = { curve: c, geo, mat, seed: Float32Array.from({ length: MAX_P }, Math.random), kw: 0, dir: 1, phase: 0, guide };
+    streams[name] = { curve: c, geo, mat, guide, seed: Float32Array.from({ length: MAX_P }, Math.random), kw: 0, dir: 1, phase: 0 };
   }
 
   function stepStreams(dt) {
     for (const s of Object.values(streams)) {
       const share = Math.min(1, s.kw / 1400);
-      const n = s.kw < 1 ? 0 : Math.max(6, Math.round(40 * share));
+      const n = s.kw < 1 ? 0 : Math.max(5, Math.round(MAX_P * share * 0.8));
       s.phase += dt * (0.05 + 0.25 * share) * s.dir;
       const arr = s.geo.attributes.position.array;
       for (let i = 0; i < n; i++) {
@@ -210,17 +219,20 @@ export function createScene(container, campus, colors) {
   const tags = {};
   function addTag(name, pos, dx, dy) {
     const el = document.createElement("div");
-    el.style.cssText = "position:absolute;z-index:4;pointer-events:none;white-space:nowrap;font:500 11px var(--mono);" +
-      "color:var(--text);background:rgba(11,12,13,.78);border:1px solid var(--line);padding:3px 7px;border-radius:2px;transform:translate(-50%,-100%)";
-    container.parentElement.appendChild(el);
+    el.className = "tag";
     tags[name] = { el, pos, dx, dy };
   }
   addTag("battery", lift(batPos, 1.6), -100, 46);
-  addTag("grid", lift(gridPos, 3.8), 120, 14);
+  addTag("grid", lift(gridPos, 3.8), 110, 14);
   addTag("load", lift(loadPos, loadPos.y + 1.6), 50, -18);
   addTag("solar", at(A.pv_inverters[0].pos).setY(17.5 * S * VX + 1.6), -50, -18);
+  const credit = document.createElement("div");
+  credit.className = "credit";
+  credit.textContent = "Edificis © OpenStreetMap contributors · alçades ×1,5 · ubicació de la bateria i l'escomesa suposada";
+
   function placeTags() {
-    const w = container.clientWidth, h = container.clientHeight;
+    if (!host) return;
+    const w = host.clientWidth, h = host.clientHeight;
     for (const t of Object.values(tags)) {
       const v = t.pos.clone().project(camera);
       t.el.style.left = ((v.x + 1) / 2 * w + t.dx) + "px";
@@ -243,37 +255,38 @@ export function createScene(container, campus, colors) {
 
   // ---------------------------------------------------------------- estat d'una hora
   let socTarget = 0.5, socShown = 0.5;
+  const fmt = (x, d = 0) => x.toLocaleString("ca-ES", { maximumFractionDigits: d, minimumFractionDigits: d });
   function setHour(h, co2Color) {
     const day = h.hour >= 7 && h.hour <= 19;
     const a = (h.hour - 6) / 14 * Math.PI;
-    sun.position.set(Math.cos(a) * 45, Math.max(0.15, Math.sin(a)) * 50 + 6, 28);
-    sun.intensity = day ? 0.35 + 0.9 * Math.sin(Math.max(0, a)) : 0.12;
-    hemi.intensity = day ? 0.75 : 0.45;
-    campusMat.emissiveIntensity = (day ? 0.0 : 0.04) + 0.1 * h.busy;
-    pvMat.emissiveIntensity = 1.1 * h.pv / 145;
+    sun.position.set(Math.cos(a) * 45, Math.max(0.2, Math.sin(a)) * 50 + 8, 28);
+    sun.intensity = day ? 0.8 + 0.8 * Math.sin(Math.max(0, a)) : 0.45;
+    sun.color.set(day ? "#FFFFFF" : "#D6DEEA");
+    hemi.intensity = day ? 1.25 : 0.95;
+    scene.background.set(day ? "#EAE6DE" : "#DFE1E4");
+    campusMat.emissiveIntensity = day ? 0 : 0.08 + 0.12 * h.busy;
+    pvMat.emissiveIntensity = 0.9 * h.pv / 145;
 
     streams.grid.kw = h.grid;
     streams.grid.mat.color.set(co2Color);
-    streams.grid.guide.material.color.set(co2Color).multiplyScalar(0.45);
     streams.load.kw = h.load;
-    streams.load.mat.color.set("#B9B4AA");
+    streams.load.mat.color.set("#7C776E");
     streams.bat.kw = Math.abs(h.bat);
     streams.bat.dir = h.bat >= 0 ? -1 : 1;
     streams.bat.mat.color.set(h.bat >= 0 ? colors.charge : colors.discharge);
     A.pv_inverters.forEach((_, i) => {
-      streams["pv" + i].kw = h.pv / 3 * 6;   // la solar és petita: l'ampliem perquè es vegi el moviment
+      streams["pv" + i].kw = h.pv * 2;   // la solar és petita: l'ampliem perquè es vegi el moviment
       streams["pv" + i].mat.color.set(colors.solar);
     });
     socTarget = h.soc;
 
-    const f = (x, d = 0) => x.toLocaleString("ca-ES", { maximumFractionDigits: d, minimumFractionDigits: d });
-    tags.battery.el.textContent = `BATERIA ${f(100 * h.soc)} % · ${h.bat > 1 ? "+" : ""}${f(h.bat)} kW`;
-    tags.grid.el.textContent = `XARXA ${f(h.grid)} kW`;
-    tags.load.el.textContent = `CAMPUS ${f(h.load)} kW`;
-    tags.solar.el.textContent = `SOLAR ${f(h.pv)} kW`;
+    tags.battery.el.textContent = `Bateria ${fmt(100 * h.soc)} % · ${h.bat > 1 ? "+" : ""}${fmt(h.bat)} kW`;
+    tags.grid.el.textContent = `Xarxa ${fmt(h.grid)} kW`;
+    tags.load.el.textContent = `Campus ${fmt(h.load)} kW`;
+    tags.solar.el.textContent = `Solar ${fmt(h.pv)} kW`;
   }
 
-  // ---------------------------------------------------------------- hover
+  // ---------------------------------------------------------------- selecció amb el ratolí
   const ray = new THREE.Raycaster(), mouse = new THREE.Vector2();
   function pick(x, y) {
     const r = renderer.domElement.getBoundingClientRect();
@@ -306,7 +319,9 @@ export function createScene(container, campus, colors) {
     renderer.render(scene, camera);
     requestAnimationFrame(frame);
   }
-  requestAnimationFrame(frame);
 
-  return { setHour, flyTo, views, pick, controls };
+  place(HOME);
+  mount(container);
+  requestAnimationFrame(frame);
+  return { setHour, flyTo, views, pick, controls, mount, canvas: renderer.domElement };
 }

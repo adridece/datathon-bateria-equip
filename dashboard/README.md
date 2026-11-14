@@ -1,7 +1,7 @@
 # Dashboard
 
-Tauler de decisions per a UPC Sostenible (side challenge de la Tukey Commission). És una web feta a mida:
-el Campus Nord real en 3D a la portada i, a sota, les decisions amb els gràfics que les justifiquen.
+Tauler de decisions per a UPC Sostenible (side challenge de la Tukey Commission). És una app d'una sola pantalla,
+feta a mida: tema clar, targetes rodones, barra lateral amb 5 vistes i el Campus Nord real en 3D.
 
 ```
 python scripts/serve_dashboard.py
@@ -14,18 +14,20 @@ python scripts/build_dashboard_data.py
 ```
 
 ## Què hi ha
-- **Portada (Directe):** campus real en 3D hora a hora. Fluxos d'energia, estat de la bateria, CO₂ i preu, estalvi acumulat,
-  franja de la setmana (clic per moure's) i **presentació guiada** (botó o tecla P; fletxes per avançar, Esc per sortir).
-- **01 Estratègia:** per què el control predictiu és el millor.
-- **02 Quan carrega:** perfil horari i mapa de calor de cada hora de cada dia.
-- **03 Mida:** quina bateria convé i retorn de la inversió (controls interactius).
-- **04 Fiabilitat:** robustesa a errors de previsió i resultats per setmana.
-- **05 Supòsits i límits.**
+- **Visió general:** xifres clau (CO₂ i € per any, puntuació oficial, infraccions), el campus en 3D, l'estat de la bateria
+  i el "per què" de cada decisió, i dos gràfics resum.
+- **Campus en directe:** el 3D a pantalla gran, franja de la setmana (clic per moure's) i **presentació guiada**
+  (botó o tecla P; fletxes per avançar, Esc per sortir).
+- **Estratègia:** comparació d'estratègies, què fa a cada hora i mapa de calor de tots els dies.
+- **Mida de la bateria:** controls de capacitat, potència i cost, corba de CO₂ i taula de retorn de la inversió.
+- **Fiabilitat:** robustesa a errors de previsió, estalvi per setmana i supòsits.
+
+Les normes de disseny que seguim són a `docs/REGLES_DASHBOARD.md`.
 
 ## Fitxers
-- `index.html`, `css/style.css`: estructura i estil (sala de control fosca, IBM Plex).
+- `index.html`, `css/style.css`: estructura i estil (tema clar, targetes rodones, IBM Plex).
 - `js/scene.js`: escena 3D (three.js 0.170.0, a `vendor/`).
-- `js/main.js`: reproducció, panells i presentació guiada.
+- `js/main.js`: navegació entre vistes, reproducció, panell de la bateria i presentació guiada.
 - `js/charts.js`: gràfics de les decisions (D3 7.9, a `vendor/`).
 - `data/`: dades generades per `scripts/build_dashboard_data.py` (no editar a mà).
 - `analysis.py`: càlculs amb el simulador oficial (els fa servir el script de dades).
