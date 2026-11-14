@@ -54,14 +54,14 @@
 
   function render() {
     if (!ctx) return;
-    const { H, k, co2Color, w0 } = ctx;
+    const { H, k, co2Color } = ctx;
     const idx = d3.range(k, Math.min(k + 24, H.t.length));
     const price = idx.map(i => H.price[i] * (1 + state.price / 100));
     const co2 = idx.map(i => H.co2[i] * (1 + state.co2 / 100));
     const a = state.weight / 100;
     const w = idx.map((_, j) => a * co2[j] / 0.0921 + (1 - a) * price[j] / 0.1568);
     const net = idx.map(i => Math.max(0, H.load[i] - H.pv[i]));
-    const soc0 = k > w0 ? H.soc[k - 1] * CAP : CAP / 2;   // cada setmana comença al 50 %
+    const soc0 = k > 0 ? H.soc[k - 1] * CAP : CAP / 2;
     const agentPlan = idx.map(i => H.bat[i]);
     const agentSocs = idx.map(i => H.soc[i]);
     let res = solve(w, net, soc0, state.power, state.reserve / 100, H.soc[idx[idx.length - 1]] * CAP);

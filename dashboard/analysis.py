@@ -8,7 +8,7 @@ import pandas as pd
 
 from src.data import PROCESSED, load_hourly
 from src.evaluate import oracle, valid_split
-from src.replay import make_agent, replay, replay_weeks
+from src.replay import make_agent, replay
 
 HOURS_PER_YEAR = 8760
 MONTHS_SHORT = ["gen", "feb", "març", "abr", "maig", "juny", "jul", "ag", "set", "oct", "nov", "des"]
@@ -21,7 +21,7 @@ def valid_data() -> pd.DataFrame:
 
 
 def _cached(name, build):
-    path = PROCESSED / f"dash_{name}_v3.csv"   # v3: cada setmana comença al 50 %
+    path = PROCESSED / f"dash_{name}_v4.csv"   # v4: simulació contínua, com l'oficial
     if path.exists():
         return pd.read_csv(path)
     df = build()
@@ -31,30 +31,31 @@ def _cached(name, build):
 
 def run(agent="mpc_robust", cap=2000.0, power=500.0, data=None) -> pd.DataFrame:
     data = valid_data() if data is None else data
-    return replay_weeks(lambda: make_agent(agent, cap, power), data, cap, power)
+    return replay(make_agent(agent, cap, power), data, cap, power)
 
 
-def oracle_weeks(data: pd.DataFrame) -> dict:
-    """Òptim teòric setmana a setmana (cada una comença al 50 %), amb els pesos de tot el conjunt."""
+def oracle_continuous(data: pd.DataFrame) -> dict:
+    """Òptim teòric de tot el conjunt seguit, com el simulador oficial (la bateria comença al 50 % un sol cop i no es
+    reinicia), i què estalvia a cada setmana."""
     from scipy.optimize import linprog
     from scipy.sparse import hstack, tril, vstack
     from src.data import contiguous_blocks
-    net_all = (data.load_kw - data.pv_kw).clip(lower=0)
-    C, K = (net_all * data.co2_kg_per_kwh).sum(), (net_all * data.precio_eur_per_kwh).sum()
-    eta, co2, cost, weeks = 0.9 ** 0.5, 0.0, 0.0, []
+    net = (data.load_kw - data.pv_kw).clip(lower=0).values
+    co2, price = data.co2_kg_per_kwh.values, data.precio_eur_per_kwh.values
+    C, K = (net * co2).sum(), (net * price).sum()
+    n, eta = len(net), 0.9 ** 0.5
+    w = n * (0.7 * co2 / C + 0.3 * price / K)
+    L = tril(np.ones((n, n)), format="csr")
+    A = vstack([hstack([eta * L, -L / eta]), hstack([-eta * L, L / eta])])
+    res = linprog(np.concatenate([w, -w]), A_ub=A, b_ub=np.full(2 * n, 1000.0 - 1e-3),
+                  bounds=[(0, 500)] * n + [(0, min(500, x)) for x in net], method="highs")
+    grid = np.maximum(net + res.x[:n] - res.x[n:], 0)
+    weeks, pos = [], 0
     for b in contiguous_blocks(data):
-        n, net = len(b), (b.load_kw - b.pv_kw).clip(lower=0).values
-        w = len(data) * (0.7 * b.co2_kg_per_kwh.values / C + 0.3 * b.precio_eur_per_kwh.values / K)
-        L = tril(np.ones((n, n)), format="csr")
-        A = vstack([hstack([eta * L, -L / eta]), hstack([-eta * L, L / eta])])
-        res = linprog(np.concatenate([w, -w]), A_ub=A, b_ub=np.full(2 * n, 1000.0 - 1e-3),
-                      bounds=[(0, 500)] * n + [(0, min(500, x)) for x in net], method="highs")
-        grid = np.maximum(net + res.x[:n] - res.x[n:], 0)
-        c_w, e_w = (grid * b.co2_kg_per_kwh.values).sum(), (grid * b.precio_eur_per_kwh.values).sum()
-        weeks.append({"co2_saved_kg": float((net * b.co2_kg_per_kwh.values).sum() - c_w),
-                      "eur_saved": float((net * b.precio_eur_per_kwh.values).sum() - e_w)})
-        co2, cost = co2 + c_w, cost + e_w
-    dco2, dcost = 1 - co2 / C, 1 - cost / K
+        sl = slice(pos, pos + len(b))
+        weeks.append({"co2_saved_kg": float(((net - grid) * co2)[sl].sum()), "eur_saved": float(((net - grid) * price)[sl].sum())})
+        pos += len(b)
+    dco2, dcost = 1 - (grid * co2).sum() / C, 1 - (grid * price).sum() / K
     return {"score": round(100 * (0.7 * dco2 + 0.3 * dcost), 2),
             "co2_estalviat_pct": round(100 * dco2, 2), "cost_estalviat_pct": round(100 * dcost, 2), "weeks": weeks}
 
@@ -67,7 +68,7 @@ def strategies() -> pd.DataFrame:
             r = run(agent).attrs["resultat"]
             rows.append({"strategy": label, "score": r["score"], "co2_pct": r["co2_estalviat_pct"],
                          "cost_pct": r["cost_estalviat_pct"], "violations": r["infraccions"]})
-        o = oracle_weeks(valid_data())
+        o = oracle_continuous(valid_data())
         rows.append({"strategy": "Òptim teòric", "score": float(o["score"]),
                      "co2_pct": float(o["co2_estalviat_pct"]), "cost_pct": float(o["cost_estalviat_pct"]),
                      "violations": 0})
@@ -111,7 +112,7 @@ def robustness() -> pd.DataFrame:
     def build():
         rows = []
         for e in [0.0, 0.05, 0.10, 0.20, 0.30, 0.50]:
-            d = replay_weeks(lambda: NoisyForecast(make_agent("mpc_robust"), e), valid_data())
+            d = replay(NoisyForecast(make_agent("mpc_robust"), e), valid_data())
             rows.append({"error_pct": int(100 * e), "score": d.attrs["resultat"]["score"],
                          "violations": d.attrs["resultat"]["infraccions"]})
         return pd.DataFrame(rows)
