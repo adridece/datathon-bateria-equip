@@ -105,7 +105,7 @@
       <div class="chart"><h2>Si les previsions fallen</h2><div class="s">Part de l'estalvi que es conserva segons l'error de les previsions</div><div id="c4"></div></div>
     </div>
     <div class="foot"><p><b>Com llegir-ho.</b> Totes les xifres surten del simulador oficial del repte amb 11 setmanes reals de validació
-      (una de cada mes), cada una començant amb la bateria al 50 %. Les xifres per any multipliquen per 8.760 / 1.848 hores.</p></div>`;
+      (una de cada mes) simulades seguides, com el simulador oficial: la bateria comença al 50 % i no es reinicia. Les xifres per any multipliquen per 8.760 / 1.848 hores.</p></div>`;
 
   const tot = { co2: d3.sum(W, w => w.co2_kg), eur: d3.sum(W, w => w.eur), rules: d3.sum(W, w => w.rules_co2_kg) };
   const worst = d3.least(W, w => w.co2_pct), bestW = d3.greatest(W, w => w.co2_pct);

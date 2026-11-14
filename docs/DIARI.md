@@ -11,7 +11,7 @@
 | `agents/hard_final` (Mode Difícil) | 20,75 (F0) / 17,70 (F1) | – | 0 | versió final: veure registre 14/11 vespre. Òptim: 22,34 / 18,75 |
 | `agents/hard_v3` (Mode Difícil) | banc nou: 18,88 / 17,42 / 17,92 (F0/F1/F2) | – | 0 | `hard_final` al mateix banc: 18,80 / 17,36 / 17,75. Òptim F0/F1: 20,28 / 18,75 |
 | oracle (cota superior) | 6,08 | 5,68 | – | sap el futur sencer |
-| `mpc_robust`, cada setmana a part des del 50 % (dashboard) | 6,41 | – | 0 | igual que l'oracle setmana a setmana (6,41); més a prop del test públic (6,43) |
+| ~~`mpc_robust`, cada setmana a part des del 50 %~~ | ~~6,41~~ | – | 0 | **descartat (D-038):** l'oficial no reinicia la bateria; el valor bo és 6,08 |
 
 ## Enviaments a la web
 | Data/hora | Fitxer | Score públic | Qui | Notes |

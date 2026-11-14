@@ -35,7 +35,7 @@ function go(name) {
   if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(() => { drawStrip(); drawPlan(); }, 450); }   // es torna a dibuixar quan la vista ja és oberta
   window.Charts.show(name);
   if (name === "planner") stop();   // l'escenari no s'ha de moure mentre es prova
-  if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color, w0: week.start }), 30);
+  if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color }), 30);
 }
 all(".nav button").forEach(b => b.onclick = () => go(b.dataset.view));
 
@@ -84,7 +84,7 @@ function show(i, fromPlayer) {
   setAll("[data-cycles]", e => (e.textContent = f(weekCycles(), 1)));
   sceneAt(k);
   drawPlan();
-  window.Planner.update({ H, k, co2Color, w0: week.start });
+  window.Planner.update({ H, k, co2Color });
   if (cursor) cursor.attr("x", sx(k) - 1.5);
 }
 
@@ -209,7 +209,7 @@ function planAgreement(idx) {
   const N = 20, rnd = d3.randomNormal.source(d3.randomLcg(0.42))(0, 1);
   const err = j => 1 + 0.2 * Math.sqrt(j / 23) * rnd();
   const net = idx.map(i => Math.max(0, H.load[i] - H.pv[i]));
-  const soc0 = (k === week.start ? 0.5 : H.soc[k - 1]) * 2000;
+  const soc0 = (k > 0 ? H.soc[k - 1] : 0.5) * 2000;
   const kind = p => (p > 20 ? 1 : p < -20 ? -1 : 0);
   const hits = idx.map(() => 0);
   for (let s = 0; s < N; s++) {
@@ -367,9 +367,10 @@ function sceneAt(c) {
 }
 // ---------------------------------------------------------------- xifres en directe i rellotge del dia
 // la càrrega es guarda al final de cada hora: durant l'hora va de la de l'hora anterior a la nova
+// (la simulació és contínua: la setmana comença amb la càrrega amb què va acabar l'anterior)
 const socAt = c => {
   const i = Math.min(Math.floor(c), week.end - 1), x = c - i;
-  return lerp(i > week.start ? H.soc[i - 1] : 0.5, H.soc[i], x);
+  return lerp(i > 0 ? H.soc[i - 1] : 0.5, H.soc[i], x);
 };
 function liveNumbers(c) {
   const v = key => hourly(key, c);

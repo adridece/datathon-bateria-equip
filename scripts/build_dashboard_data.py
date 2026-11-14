@@ -18,13 +18,12 @@ from src.data import contiguous_blocks  # noqa: E402
 OUT = ROOT / "dashboard" / "data" / "data.js"
 
 
-def why_text(d, ends):
-    # ends[k]: on acaba la setmana de l'hora k (les previsions no passen d'una setmana a l'altra)
+def why_text(d):
     # frase curta que explica la decisio de cada hora
     w = (0.7 * d.co2_kg_per_kwh / 0.0921 + 0.3 * d.precio_eur_per_kwh / 0.1568).values
     out = []
     for k in range(len(d)):
-        ahead = w[k:min(k + 24, ends[k])]
+        ahead = w[k:k + 24]
         rank = int((ahead < w[k]).sum()) + 1
         b, soc = d.bat_kw.iloc[k], d.soc_pct.iloc[k]
         if b > 1:
@@ -86,7 +85,6 @@ def main():
         weeks.append({"start": pos, "end": pos + len(b), "label": b.index[0].strftime("%d/%m/%Y")})
         pos += len(b)
 
-    ends = [w["end"] for w in weeks for _ in range(w["end"] - w["start"])]
     hours = {
         "t": [t.strftime("%Y-%m-%d %H:00") for t in d.index],
         "load": d.load_kw.round(1).tolist(), "pv": d.pv_kw.round(1).tolist(),
@@ -94,7 +92,7 @@ def main():
         "bat": d.bat_kw.round(1).tolist(), "soc": d.soc_pct.round(4).tolist(),
         "grid": d.grid_kw.round(1).tolist(), "base": d.base_grid_kw.round(1).tolist(),
         "rules_soc": rules.soc_pct.round(4).tolist(),
-        "why": why_text(d, ends),
+        "why": why_text(d),
     }
     data = {
         "hours": hours,
@@ -109,7 +107,7 @@ def main():
         "monthly": an.monthly(d).to_dict("records"),
         "profile": an.hourly_profile(d).to_dict("records"),
     }
-    data["weekly"] = weekly(d, rules, weeks, an.oracle_weeks(an.valid_data())["weeks"])
+    data["weekly"] = weekly(d, rules, weeks, an.oracle_continuous(an.valid_data())["weeks"])
     data["history"] = save_history(data)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("window.DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n",
