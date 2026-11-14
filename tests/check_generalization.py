@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 from src.data import contiguous_blocks, load_hourly  # noqa: E402
 from src.evaluate import BASE_COLS, CampusBatteryEnv, load_agent, valid_split  # noqa: E402
 
-AGENTS = ["mpc_robust", "mpc_test_weights"]
+AGENTS = ["estandard_robust", "estandard_robust_pesos_test"]
 WEEK = 168
 
 
@@ -143,7 +143,7 @@ def main():
         gap = t2[name] - t2.oracle
         print(f"  {name}: score {t2[name].mean():.4f} ± {t2[name].std():.4f} | "
               f"gap mitja {gap.mean():.4f}, pitjor {gap.min():.4f}")
-    print(f"  diferencia mitjana test_weights - robust: {(t2.mpc_test_weights - t2.mpc_robust).mean():+.4f}")
+    print(f"  diferencia mitjana test_weights - robust: {(t2.estandard_robust_pesos_test - t2.estandard_robust).mean():+.4f}")
 
     # 3. robustesa (sobre el primer test simulat)
     print("\n3) Robustesa")
@@ -161,8 +161,8 @@ def main():
     for p in pos:
         cut.iloc[p:p + 6, cut.columns.get_loc("load_kw")] = 0.0
     o = oracle_score(cut)
-    s_lp, _, _ = simulate(load_agent(ROOT / "agents" / "mpc_lp"), cut)
-    out = [f"mpc_lp {s_lp:.4f}"]
+    s_lp, _, _ = simulate(load_agent(ROOT / "agents" / "estandard_lp"), cut)
+    out = [f"estandard_lp {s_lp:.4f}"]
     for name in AGENTS:
         s, infr, _ = simulate(load_agent(ROOT / "agents" / name), cut)
         out.append(f"{name} {s:.4f} ({infr} infr)")
@@ -175,7 +175,7 @@ def main():
     # 4. sensibilitat de params.json (sobre la validacio oficial de 7 dies/mes)
     print("\n4) Sensibilitat de params.json")
     valid = valid_split(df)
-    base = load_agent(ROOT / "agents" / "mpc_robust")
+    base = load_agent(ROOT / "agents" / "estandard_robust")
     sens = []
     for label, changes in [
         ("base", {}),
@@ -186,7 +186,7 @@ def main():
         ("w_co2 0.65", {"w_co2": 0.65, "w_cost": 0.35}),
         ("w_co2 0.75", {"w_co2": 0.75, "w_cost": 0.25}),
     ]:
-        s, infr, _ = simulate(agent_with_params("mpc_robust", **changes), valid)
+        s, infr, _ = simulate(agent_with_params("estandard_robust", **changes), valid)
         sens.append({"variant": label, "score": s, "infr": infr})
     t4 = pd.DataFrame(sens)
     t4["diferencia"] = t4.score - t4.score[0]

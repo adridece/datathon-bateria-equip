@@ -1,10 +1,7 @@
 """
-BatteryAgent - mpc_robust amb els pesos del test.
+BatteryAgent - versio robusta de estandard_lp.
 
-Mateix codi que agents/mpc_robust; nomes canvia params.json: la proporcio entre CO2 i preu
-es la del test public (71.816 kg i 118.746 EUR del campus sense bateria), veure docs/DECISIONS.md D-016.
-
-Mateixa idea que mpc_lp (LP de 24 h + MPC, veure docs/DECISIONS.md D-003), pero:
+Mateixa idea que estandard_lp (LP de 24 h + MPC, veure docs/DECISIONS.md D-003), pero:
   - No descarreguem mes del que ha consumit el campus l'hora anterior (si hi ha un
     tall del comptador, el que descarreguem es perdria).
   - Netegem l'obs (NaN, llistes buides o de mida diferent).

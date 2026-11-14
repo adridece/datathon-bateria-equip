@@ -1,9 +1,9 @@
 """
-Entrena els models de previsio de agents/hard_final (Mode Dificil) i escriu params.json.
-    python scripts/train_hard_final.py
+Entrena els models de previsio de agents/dificil_marges (Mode Dificil) i escriu params.json.
+    python scripts/train_dificil_marges.py
 Cal lightgbm (ja es a requirements.txt). Tarda menys d'un minut.
 
-Cada model aprèn a corregir l'error de la previsio senzilla de l agent (agents/hard_final/agent.py),
+Cada model aprèn a corregir l'error de la previsio senzilla de l agent (agents/dificil_marges/agent.py),
 amb les mateixes variables que l'agent calcula durant la simulacio.
 """
 import importlib.util
@@ -19,7 +19,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 from src.data import contiguous_blocks, load_hourly  # noqa: E402
 
-FOLDER = ROOT / "agents" / "hard_final"
+FOLDER = ROOT / "agents" / "dificil_marges"
 # cada model nomes s'entrena (i es fa servir) fins a aquesta hora +j: mes lluny no millora res
 NEAR_HOURS = {"price": 8, "co2": 8, "load": 2, "pv": 2}
 LGB_PARAMS = {"objective": "l1", "learning_rate": 0.05, "num_leaves": 15, "min_data_in_leaf": 50,
@@ -28,7 +28,7 @@ LGB_PARAMS = {"objective": "l1", "learning_rate": 0.05, "num_leaves": 15, "min_d
 
 
 def load_agent_module():
-    spec = importlib.util.spec_from_file_location("hard_final_agent", FOLDER / "agent.py")
+    spec = importlib.util.spec_from_file_location("dificil_marges_agent", FOLDER / "agent.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod

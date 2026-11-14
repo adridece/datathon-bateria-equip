@@ -3,7 +3,7 @@ BatteryAgent final per al Mode Dificil (6.000 kWh, +-1.500 kW, solar x12, 3 h de
 
 LP de 24 h + MPC amb la xarxa dins del LP (aprofita l'excedent solar i no descarrega mes del que es
 consumeix). Les previsions son senzilles (ultims dies a la mateixa hora + perfils del train) i uns models
-LightGBM (scripts/train_hard_final.py, 5 llavors) les corregeixen:
+LightGBM (scripts/train_dificil_marges.py, 5 llavors) les corregeixen:
   - consum i solar de l'hora actual i les 2 seguents,
   - CO2 de les hores +3..+8 i preu de totes les hores; a +3/+4 h hi barregem la forma d'ahir ancorada
     a l'ultima hora coneguda.
@@ -133,7 +133,7 @@ def pv_base(pv, hour, typical=None):
 
 
 # ---------------------------------------------------------------- variables dels models
-# Les fan servir igual l'agent i scripts/train_hard.py: no canviar l'una sense l'altre.
+# Les fan servir igual l'agent i scripts/train_dificil_lightgbm.py: no canviar l'una sense l'altre.
 # L'ultima columna es la previsio senzilla; el model prediu (valor real - previsio senzilla).
 def anchored(full, n, j):
     """La forma d'ahir i d'abans d'ahir enganxada a l'ultima hora de mercat coneguda (posicio n+2)."""

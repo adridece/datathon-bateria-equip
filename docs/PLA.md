@@ -4,7 +4,7 @@ El score del leaderboard ja és pràcticament el màxim teòric (MPC-LP ≈ orac
 decideix amb la presentació i el raonament**, la diferència la farem amb l'anàlisi i les idees.
 
 ## Feina pendent (repartiu-vos-la i marqueu qui la fa)
-- [ ] Enviar `agents/mpc_lp` a la web (primer "Validació Ràpida") i apuntar el score a DIARI.md
+- [ ] Enviar `agents/estandard_lp` a la web (primer "Validació Ràpida") i apuntar el score a DIARI.md
 - [ ] Ajustar `terminal` i `co2_ref/preu_ref` (validació creuada per mesos, sense sobreajustar)
 - [ ] Cas consum net < 500 kW (caps de setmana assolellats): limitar la descàrrega amb una
       predicció del consum (LightGBM/estadística per hora i dia) → guanys petits però reals

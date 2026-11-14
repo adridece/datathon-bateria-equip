@@ -1,8 +1,8 @@
 """
 Avaluacio local del Mode Dificil (solar x12, bateria 6.000 kWh / 1.500 kW, 3 h de mercat).
 Des de l'arrel del projecte:
-    python tests/evaluate_hard.py                 (avalua agents/hard_mpc)
-    python tests/evaluate_hard.py agents/altre    (avalua una altra carpeta)
+    python tests/evaluate_dificil.py                 (avalua agents/dificil_previsio_simple)
+    python tests/evaluate_dificil.py agents/altre    (avalua una altra carpeta)
 
 Fa servir el simulador oficial i nomes hi afegeix el que diu la pestanya Mode Dificil de la web:
 retalla les previsions a 3 h i afegeix la meteo i la mida de la bateria a obs.
@@ -65,6 +65,6 @@ def run_hard(agent, data):
 
 
 if __name__ == "__main__":
-    folder = sys.argv[1] if len(sys.argv) > 1 else "agents/hard_mpc"
+    folder = sys.argv[1] if len(sys.argv) > 1 else "agents/dificil_previsio_simple"
     data = hard_data()
     print(f"Mode Dificil, validacio ({len(data)} h): {run_hard(load_agent(ROOT / folder), data)}")

@@ -1,8 +1,8 @@
 """
 BatteryAgent per al Mode Dificil amb models de previsio (LightGBM).
 
-Mateix esquema que hard_mpc (LP de 24 h + MPC amb la xarxa dins del LP), pero les previsions
-les corregeixen models entrenats amb el train (scripts/train_hard.py):
+Mateix esquema que dificil_previsio_simple (LP de 24 h + MPC amb la xarxa dins del LP), pero les previsions
+les corregeixen models entrenats amb el train (scripts/train_dificil_lightgbm.py):
   - preu i CO2 de les hores +3..+23 (les 3 primeres ja les dona el mercat),
   - consum i solar de les hores +0..+23, sobretot la de l'hora actual: saber quant consumeix
     el campus ARA diu quant podem descarregar sense llencar energia.
@@ -124,7 +124,7 @@ def pv_base(pv, hour):
 
 
 # ---------------------------------------------------------------- variables dels models
-# Les fan servir igual l'agent i scripts/train_hard.py: no canviar l'una sense l'altre.
+# Les fan servir igual l'agent i scripts/train_dificil_lightgbm.py: no canviar l'una sense l'altre.
 # L'ultima columna es la previsio senzilla; el model prediu (valor real - previsio senzilla).
 def market_rows(hist, other_hist, known, other_known, hour, dow, month, irr_last, profile):
     """Una fila per hora futura (+3..+23) per predir preu o CO2."""

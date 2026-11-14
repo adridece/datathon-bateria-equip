@@ -41,7 +41,7 @@ Totes les xifres surten del simulador oficial (`src/replay.py`), així són cohe
 També serveix per al side challenge de la Tukey Commission (veure `docs/SIDE_CHALLENGES.md`).
 
 ### D-007 · 14/11 · equip — No enviem encara a la web
-L'agent `mpc_lp` està validat a la web (dry-run correcte, 0 infraccions, 1,55 ms/hora). Decidim esperar
+L'agent `estandard_lp` està validat a la web (dry-run correcte, 0 infraccions, 1,55 ms/hora). Decidim esperar
 abans de gastar un enviament al leaderboard.
 
 ### D-008 · 14/11 · Adrià — Dashboard orientat a decisions (side challenge Tukey)
@@ -61,7 +61,7 @@ amb 500 kW, més de 4.000 kWh no aporta gaire; ≈ 44 t CO₂ i ≈ 96 k€ esta
 - Fonts de la recerca: `docs/RECERCA_DASHBOARD.md` i `docs/RECERCA_CAMPUS3D.md`.
 
 ### D-010 · 14/11 · equip — Primer enviament al leaderboard (substitueix D-007)
-Enviem `agents/mpc_lp` amb el nom d'equip **La Datoneta**. Resultat públic: **6,43** (CO₂ −5,97 %, factura −7,5 %,
+Enviem `agents/estandard_lp` amb el nom d'equip **La Datoneta**. Resultat públic: **6,43** (CO₂ −5,97 %, factura −7,5 %,
 0 infraccions). La validació local donava 6,08: el nostre pseudo-test és una bona estimació del test real.
 El PIN de l'equip el guarda l'Adrià (mai al repo).
 
@@ -82,27 +82,27 @@ La versió fosca es llegia malament. Passem a una app d'una sola pantalla: barra
 targetes rodones, un sol color d'accent per al nostre agent i colors d'energia aptes per a daltonisme. El 3D és una maqueta
 blanca ben il·luminada. Animacions curtes en entrar a cada vista (xifres que compten, barres i línies que es dibuixen).
 Normes a `docs/REGLES_DASHBOARD.md`.
-### D-014 · 14/11 · Ivan — Agent robust (`agents/mpc_robust`)
-mpc_lp + no descarregar més del consum net de l'hora anterior (talls del comptador: FULL 5,65 → 5,67)
+### D-014 · 14/11 · Ivan — Agent robust (`agents/estandard_robust`)
+estandard_lp + no descarregar més del consum net de l'hora anterior (talls del comptador: FULL 5,65 → 5,67)
 + neteja de NaN/llistes buides + regla de reserva si el LP falla (sola fa 4,68 al VALID).
 Provat: el paràmetre `terminal` i `co2_ref/preu_ref` ±20 % no canvien el score → no els ajustem.
 
 ### D-015 · 14/11 · equip — El 6,43 és el sostre: no té sentit seguir ajustant l'agent per al score
-Mesurat sense arrodonir (validació de 12 setmanes): `mpc_robust` = 6,0833 i l'òptim teòric (que sap tot el futur,
+Mesurat sense arrodonir (validació de 12 setmanes): `estandard_robust` = 6,0833 i l'òptim teòric (que sap tot el futur,
 també el consum) = 6,0834. Provat i descartat: horitzó de 48 h (persistència d'avui per a demà) i pesos amb la proporció
 CO₂/cost del test (71.816 kg / 118.746 €): canvis < 0,001.
 Al leaderboard, el nostre 6,43 exacte és 0,7·4.289,4/71.816 + 0,3·8.907,86/118.746,34 = **6,4315**. Per sortir 6,44
 caldrien 6,435: 35 vegades més que tot el marge que queda fins a l'òptim. Tots els equips de dalt són al mateix sostre
 i el simulador arrodoneix a 2 decimals, per això l'ordre el decideix l'hora d'enviament.
-**Decisió:** l'agent queda congelat (`mpc_robust`). El temps va al dashboard, a la presentació i als side challenges.
+**Decisió:** l'agent queda congelat (`estandard_robust`). El temps va al dashboard, a la presentació i als side challenges.
 
 ### D-016 · 14/11 · equip — El rànquing públic té soroll: triem dues versions òptimes diferents per al jurat
 Un equip ha tret 6,44 al públic. Simulant la meitat pública amb la nostra validació, variants pràcticament igual de bones
 en total (6,078–6,083) es separen fins a 0,1 punts segons quines hores compten. Per tant, el 6,44 no implica un agent millor
 i perseguir el públic seria sobreajustar. Com que el jurat puntua al test privat les 2 trameses que triem, triem dues versions
 òptimes però diferents (més opcions de quedar a dalt):
-1. `agents/mpc_robust` (gestiona fallades del comptador).
-2. `agents/mpc_test_weights`: el mateix codi amb la proporció CO₂/€ del test públic (71.816 kg / 118.746 €), que és la
+1. `agents/estandard_robust` (gestiona fallades del comptador).
+2. `agents/estandard_robust_pesos_test`: el mateix codi amb la proporció CO₂/€ del test públic (71.816 kg / 118.746 €), que és la
    ponderació exacta del test. Validació 6,08 · train complet 5,67 · 0 infraccions.
 
 ### D-017 · 14/11 · Adrià — Dashboard: eines de gestió i representació elèctrica del campus
@@ -116,8 +116,8 @@ i perseguir el públic seria sobreajustar. Com que el jurat puntua al test priva
 - Noms dels edificis confirmats amb fonts de la UPC (ja no n'hi ha cap de deduït).
 
 ### D-018 · 14/11 · Adrià — Coherència del dashboard (revisió del Jesús)
-- Totes les xifres del dashboard surten ara de `mpc_robust` (versió final). La corba de mida per a 1 MW queda bé
-  (4.000 kWh i 1 MW: 11,84 punts, abans 11,12 amb mpc_lp, que descarregava més del que consumia el campus).
+- Totes les xifres del dashboard surten ara de `estandard_robust` (versió final). La corba de mida per a 1 MW queda bé
+  (4.000 kWh i 1 MW: 11,84 punts, abans 11,12 amb estandard_lp, que descarregava més del que consumia el campus).
 - El cost per tona de CO₂ és net: (inversió − estalvi en 15 anys) / tones. Si surt negatiu, la bateria es paga sola.
 - 11 setmanes de validació (no 12) i "0 infraccions al test públic".
 - El planificador mai proposa un pla pitjor que el de l'agent si el de l'agent compleix l'escenari (càlcul en salts de 10 kWh).
@@ -237,11 +237,11 @@ amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, a
 Comprovat amb `tests/check_generalization.py` (veure DIARI): validació creuada per mesos, 10 tests simulats com l'oficial,
 error a les previsions, talls del comptador, final de simulació, SOC als límits i sensibilitat de params.json.
 Cap problema real: 0 infraccions sempre, a 0,002 de l'òptim de mitjana i estables davant canvis dels paràmetres.
-`mpc_robust` i `mpc_test_weights` empaten (+0,0001), així que per al jurat són dues opcions igual de bones.
-El que més pesa al test privat són els talls del comptador: `mpc_lp` hi perdria fins a 0,2 punts, les nostres versions no.
-**Decisió:** les dues versions queden congelades tal com estan. Si el test privat té talls, `mpc_robust`/`mpc_test_weights` són clarament millors que `mpc_lp`.
+`estandard_robust` i `estandard_robust_pesos_test` empaten (+0,0001), així que per al jurat són dues opcions igual de bones.
+El que més pesa al test privat són els talls del comptador: `estandard_lp` hi perdria fins a 0,2 punts, les nostres versions no.
+**Decisió:** les dues versions queden congelades tal com estan. Si el test privat té talls, `estandard_robust`/`estandard_robust_pesos_test` són clarament millors que `estandard_lp`.
 
-### D-030 · 14/11 · Ivan — Agent per al Mode Difícil (`agents/hard_mpc`)
+### D-030 · 14/11 · Ivan — Agent per al Mode Difícil (`agents/dificil_previsio_simple`)
 Al Mode Difícil ja no val la idea del mode estàndard: només sabem 3 h de mercat i la bateria (1.500 kW) pot descarregar més
 del que consumeix el campus. Mantenim LP + MPC de 24 h, amb dos canvis:
 1. **Previsions.** Preu i CO₂: mitjana dels últims 3 dies a la mateixa hora barrejada amb el perfil del train del mateix mes
@@ -249,30 +249,30 @@ del que consumeix el campus. Mantenim LP + MPC de 24 h, amb dos canvis:
    hora, escalat amb les últimes mesures. Solar: la dels últims dies a la mateixa hora, corregida segons com de clar està avui.
 2. **La xarxa dins del LP** (`xarxa ≥ consum − solar + bateria`, `xarxa ≥ 0`): el pla aprofita l'excedent solar gratuït i no
    descarrega més del que es consumirà. A l'hora actual descarreguem com a molt el 92 % del consum net previst (marge d'error).
-**Alternatives:** adaptar `mpc_robust` sense previsions (10,50) o models LightGBM per a les previsions (més feina i risc de
+**Alternatives:** adaptar `estandard_robust` sense previsions (10,50) o models LightGBM per a les previsions (més feina i risc de
 sobreajustar; queda com a millora possible: el marge fins a l'òptim és de 2,5 punts).
 Només hi ha 2 enviaments cada 4 h: validar sempre en local i amb la Validació Ràpida abans d'enviar.
 
-### D-031 · 14/11 · Ivan — Mode Difícil amb models de previsió (`agents/hard_ml`)
-Mateix LP que `hard_mpc`, però el consum i el preu els corregeix un model LightGBM entrenat amb el train: el model no prediu
+### D-031 · 14/11 · Ivan — Mode Difícil amb models de previsió (`agents/dificil_lightgbm`)
+Mateix LP que `dificil_previsio_simple`, però el consum i el preu els corregeix un model LightGBM entrenat amb el train: el model no prediu
 el valor sinó l'error de la previsió senzilla, així si no es pot carregar al servidor l'agent funciona igual (sense la millora).
 Els models es guarden en text (`.txt`) perquè no depenguin de la versió de LightGBM.
 El CO₂ és el que més pesa i el que pitjor es pot predir amb 3 setmanes de dades per mes: cap model millora la previsió senzilla.
-**Pendent:** enviar `hard_mpc` per saber quin score públic correspon al nostre 19,9 local abans de decidir res més.
+**Pendent:** enviar `dificil_previsio_simple` per saber quin score públic correspon al nostre 19,9 local abans de decidir res més.
 
-### D-032 · 14/11 · Ivan — `hard_ml`: els models només corregeixen les hores properes
+### D-032 · 14/11 · Ivan — `dificil_lightgbm`: els models només corregeixen les hores properes
 Substitueix la part de models de D-031. Hem mesurat que el que decideix el score és l'hora actual (consum i solar) i el mercat de
 les hores +3..+7; més lluny, els models no milloren la previsió senzilla. Per tant: un model per sèrie, entrenat i aplicat només a
 les hores properes (`near_hours` a params.json), i previsió senzilla per a la resta. Marge de descàrrega 0,96.
 
-### D-033 · 14/11 · Ivan — Agent final del Mode Difícil (`agents/hard_final`)
-Substitueix `hard_ml` com a candidat principal. Mateix LP + MPC, amb 5 millores validades a dues validacions independents
+### D-033 · 14/11 · Ivan — Agent final del Mode Difícil (`agents/dificil_marges`)
+Substitueix `dificil_lightgbm` com a candidat principal. Mateix LP + MPC, amb 5 millores validades a dues validacions independents
 (veure DIARI 14/11 vespre): previsió solar del 1r dia, marge de descàrrega per hora segons l'error real, el pla també
 compta amb aquest marge, historial del train al principi de cada setmana, i previsió de CO₂/preu a +3/+4 h amb la forma
-d'ahir ancorada. Models: 5 llavors (mitjana) per ser més estables. Es reentrena amb `python scripts/train_hard_final.py`.
+d'ahir ancorada. Models: 5 llavors (mitjana) per ser més estables. Es reentrena amb `python scripts/train_dificil_marges.py`.
 **Per què no LightGBM per a tot:** a partir de cert punt els models no milloren la previsió senzilla i afegeixen soroll.
 
-### D-034 · 14/11 · Ivan — `hard_final` v2: excedent solar i preu a totes les hores
+### D-034 · 14/11 · Ivan — `dificil_marges` v2: excedent solar i preu a totes les hores
 Amb excedent solar carreguem pensant en el cas de més sol (l'error de carregar de més és comprar una mica de xarxa a l'hora
 més barata; el de carregar de menys és perdre energia gratis). El model de preu s'aplica a totes les hores. Validació: 19,22.
 
@@ -282,20 +282,20 @@ més barata; el de carregar de menys és perdre energia gratis). El model de pre
   mateix aspecte a tot arreu: llista amb les 11 setmanes i el CO₂ que estalvia cadascuna, la triada ressaltada, i es pot fer
   servir amb el teclat (fletxes, Enter, Esc). El `<select>` queda amagat perquè la resta del codi segueixi igual.
 
-### D-036 · 14/11 · Adrià — `agents/hard_v3`: model directe de CO₂ a +3..+12 h
+### D-036 · 14/11 · Adrià — `agents/dificil_co2_irradiancia`: model directe de CO₂ a +3..+12 h
 Anàlisi a fons del Mode Difícil amb un banc de proves honest (models entrenats sense les setmanes avaluades; F0, F1 i F2
 reservada) i l'òptim teòric calculat igual (F0 20,28 · F1 18,75):
-- `hard_final` és al 92,7 % de l'òptim. Amb totes les previsions perfectes el mateix LP faria 20,18 (F0): **tot el que falta
+- `dificil_marges` és al 92,7 % de l'òptim. Amb totes les previsions perfectes el mateix LP faria 20,18 (F0): **tot el que falta
   és error de previsió**, no el mètode. El que més pesa: CO₂ +0,64 (només +3..+5 h ja +0,29), consum net de l'hora actual +0,51,
   preu +0,27. Els marges de descàrrega ja són als millors valors.
 - El rècord de la web (24,10) és ~97 % de l'òptim; el sostre de la web és ~24,7–24,8 (22,96 / 0,927). **25 no s'hi arriba**
   ni sabent el futur.
 - Millora trobada: un model directe de CO₂ (LightGBM, la corba de 48 h de CO₂ i 24 h de preu relativa a l'última hora coneguda)
-  barrejat meitat i meitat amb la previsió de `hard_final` a les hores +3..+12. Error −5/−6 %; score F0 +0,08, F1 +0,07,
+  barrejat meitat i meitat amb la previsió de `dificil_marges` a les hores +3..+12. Error −5/−6 %; score F0 +0,08, F1 +0,07,
   F2 +0,17, 0 infraccions. Descartat: preu (+0,02), horitzó fins a +18 (empitjora F2), pes 0,7 (no millora les tres).
-**Decisió:** `hard_v3` és el nou candidat del Mode Difícil (esperat ~23,1 a la web). Es reentrena amb `python scripts/train_hard_v3.py`.
+**Decisió:** `dificil_co2_irradiancia` és el nou candidat del Mode Difícil (esperat ~23,1 a la web). Es reentrena amb `python scripts/train_dificil_co2_irradiancia.py`.
 
-### D-037 · 14/11 · Adrià — `hard_v3`: detecta si la irradiància és de l'hora actual
+### D-037 · 14/11 · Adrià — `dificil_co2_irradiancia`: detecta si la irradiància és de l'hora actual
 La web diu que `obs` porta "les lectures de la darrera hora de meteo.csv", però no si és l'hora que comença o la que acaba
 d'acabar. Amb la irradiància de la mateixa hora la solar es preveu gairebé exacta (error 33 kW, correlació 0,995) i amb la de
 l'hora anterior no (192 kW). En lloc d'endevinar-ho, l'agent ho comprova sol: compara la solar de l'hora passada amb la
@@ -305,3 +305,27 @@ Banc honest (F0 / F1 / F2): si la web dona l'hora passada, igual que abans (18,8
 si dona l'hora actual, 19,02 / 17,55 / 18,20 (+0,14 / +0,13 / +0,28).
 També provat i descartat (no milloren totes les validacions): valor de l'energia al final del pla, decisió amb escenaris,
 variables d'ahir i de fa una setmana a l'hora objectiu per al CO₂.
+
+### D-038 · 14/11 · Adrià — Revisió crítica: errors trobats a les dades, a l'agent i a una decisió nostra
+- **Error nostre (D-026):** vam fer que cada setmana del dashboard comencés al 50 %. Les FAQ oficials diuen el contrari: la
+  bateria comença al 50 % només a l'inici de tota la simulació i **no es reinicia mai** (ni cada dia ni cada setmana).
+  Es desfà: el dashboard torna a la simulació contínua. El 6,41 que "s'acostava més al test públic" era casualitat.
+- **El comptador es congela de nit:** de ~22 h a ~6 h el comptador repeteix el mateix valor cada 5 minuts (el 29,5 % de les
+  hores del train són trams plans de 6 h o més; l'85 % de les hores de nit tenen el mateix consum que l'anterior).
+  El consum real de nit no el coneixem. L'agent ja en treu profit sense trampes (marge de nit de 2,5 kW).
+- **Canvi d'hora:** les dades són en hora local (el migdia solar passa de 12,3 h a l'hivern a 13,0 h a l'estiu) i els canvis
+  d'hora (26/10 i 29/03) cauen a setmanes de test. Abans, una hora que falta feia esborrar l'historic. Hem provat les
+  tres opcions simulant-ho: esborrar 18,96 · mantenir-lo desalineat 18,90 (pitjor!) · **repetir l'hora que falta 19,00**.
+  `dificil_co2_irradiancia` ara repeteix l'hora que falta i, si una hora arriba dues vegades, substitueix el valor. Sense canvi d'hora no canvia res.
+  Els agents ja enviats (`dificil_marges`, `dificil_lightgbm`) no es toquen.
+- **Penalització:** les FAQ diuen −1 punt per infracció; el simulador del starter kit en resta 0,2. Tots els nostres agents en fan 0.
+- **Banc de proves:** alguns paràmetres de l'Ivan es van triar mirant F0 i F1, així que aquestes dues validacions són una mica
+  optimistes. La més honesta és F2: `dificil_co2_irradiancia` hi és al 88,6 % de l'òptim (F0 93,1 %, F1 92,9 %).
+
+### D-039 · 14/11 · Adrià — Noms dels agents: mode + mètode
+Els noms (`mpc_lp`, `hard_v3`, `hard_final`...) no deien ni el mode ni què feien, i "final" ja no era l'últim.
+Ara cada nom diu el mode i què fa diferent: `estandard_lp`, `estandard_robust`, `estandard_robust_pesos_test`,
+`dificil_previsio_simple`, `dificil_lightgbm`, `dificil_marges` i `dificil_co2_irradiancia`. Els scripts, les proves i les
+figures segueixen el mateix criteri (`train_dificil_*.py`, `tests/bench_dificil.py`, `docs/figures/dificil_*.png`) i els zips
+d'enviament agafen el nom de l'agent. A `agents/README.md` hi ha el nom antic de cada un per relacionar-lo amb els enviaments.
+Comprovat que tot dona el mateix després del canvi (6,08 · 20,93 · banc F0 18,88 · 7/7 proves).

@@ -1,6 +1,6 @@
 """
-Entrena agents/hard_v3 (Mode Dificil): els models de hard_final i, a mes, el model directe de CO2 (+3..+12 h).
-    python scripts/train_hard_v3.py
+Entrena agents/dificil_co2_irradiancia (Mode Dificil): els models de dificil_marges i, a mes, el model directe de CO2 (+3..+12 h).
+    python scripts/train_dificil_co2_irradiancia.py
 """
 import importlib.util
 import json
@@ -14,16 +14,16 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "scripts"))
 from src.data import contiguous_blocks, load_hourly  # noqa: E402
-import train_hard_final as base  # noqa: E402
+import train_dificil_marges as base  # noqa: E402
 
-FOLDER = ROOT / "agents" / "hard_v3"
+FOLDER = ROOT / "agents" / "dificil_co2_irradiancia"
 DIRECT = {"first": 3, "last": 12, "weight": 0.5, "seeds": 3}
 PARAMS = {"objective": "l1", "learning_rate": 0.05, "num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.8,
           "bagging_fraction": 0.8, "bagging_freq": 1, "verbose": -1}
 
 
 def load_agent_module(folder):
-    spec = importlib.util.spec_from_file_location("hard_v3_agent", Path(folder) / "agent.py")
+    spec = importlib.util.spec_from_file_location("dificil_co2_irradiancia_agent", Path(folder) / "agent.py")
     mod = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(mod)
     return mod
@@ -53,7 +53,7 @@ def pv_per_irr(d):
 
 
 def train(d, folder, seeds_base=5, **kw):
-    """Primer els models de hard_final i despres el model directe de CO2 a la mateixa carpeta."""
+    """Primer els models de dificil_marges i despres el model directe de CO2 a la mateixa carpeta."""
     folder = Path(folder)
     base.FOLDER = folder
     base.load_agent_module = lambda: load_agent_module(folder)

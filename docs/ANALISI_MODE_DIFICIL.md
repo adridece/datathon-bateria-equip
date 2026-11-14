@@ -9,7 +9,7 @@ només sabem les 3 hores següents. L'agent decideix cada hora quanta energia ca
 el CO₂ (70 % del pes) i la factura (30 %) del campus respecte de no tenir bateria.
 
 ## 2. Què diuen les dades
-**El consum net canvia de signe al migdia** (`docs/figures/hard_01_consum_net.png`). Amb 12× solar, un 9 % de les hores
+**El consum net canvia de signe al migdia** (`docs/figures/dificil_01_consum_net.png`). Amb 12× solar, un 9 % de les hores
 hi ha excedent (fins a 1.117 kW) que es pot guardar gratis. A la nit el consum net és ~1.000 kW, menys que la potència
 de la bateria (1.500 kW): si descarreguem més del que consumeix el campus, l'energia sobrant es perd.
 → L'agent ha de saber **quant consumirà el campus aquesta hora**, no només quan és bruta la xarxa.
@@ -24,7 +24,7 @@ peninsular) i puja al vespre; la diferència entre l'hora més bruta i la més n
 
 ## 3. Com mesurem sense enganyar-nos
 Validar amb les mateixes dades amb què s'entrena dona xifres massa bones (20,9 en lloc de 18,9). Per això
-`tests/bench_hard.py`:
+`tests/bench_dificil.py`:
 - fa servir com a test l'última setmana de cada mes (F0), la d'abans (F1) i la d'abans encara (F2), com el test oficial;
 - **entrena tots els models sense aquestes setmanes**;
 - calcula l'òptim teòric (programació lineal sabent tot el futur) de les mateixes setmanes.
@@ -33,7 +33,7 @@ Regla: **un canvi només es queda si millora F0 i F1**, i F2 no es fa servir per
 Així evitem quedar-nos amb millores que només funcionen en unes setmanes concretes.
 
 ## 4. On són els punts (`hard_04_on_son_els_punts.png`)
-Hem donat a l'agent `hard_final` informació perfecta peça a peça (validació F0):
+Hem donat a l'agent `dificil_marges` informació perfecta peça a peça (validació F0):
 
 | Què sabem perfecte | Puntuació | Guany |
 |---|---|---|
@@ -48,9 +48,9 @@ Hem donat a l'agent `hard_final` informació perfecta peça a peça (validació 
 és **error de previsió**, sobretot del CO₂ a +3..+8 h i de la solar de l'hora actual. Els marges de seguretat ja són als
 millors valors (cap altre valor millora F0 i F1 alhora).
 
-## 5. L'agent (`agents/hard_v3`) pas a pas
+## 5. L'agent (`agents/dificil_co2_irradiancia`) pas a pas
 1. **Previsions.** Preu, CO₂, consum i solar de les properes 24 h amb una previsió senzilla (dies anteriors a la mateixa
-   hora i perfils del train) corregida amb models LightGBM a les hores properes (feina de l'Ivan, `hard_final`).
+   hora i perfils del train) corregida amb models LightGBM a les hores properes (feina de l'Ivan, `dificil_marges`).
 2. **CO₂ +3..+12 h (nou).** Un model directe que mira la corba de les últimes 48 h, relativa a l'última hora coneguda
    (aprèn la forma, no el nivell). Es barreja meitat i meitat amb la previsió anterior: error −5/−6 %.
 3. **Irradiància de l'hora actual (nou).** La web no diu si la irradiància de `obs` és de l'hora que comença o de la
@@ -65,9 +65,9 @@ millors valors (cap altre valor millora F0 i F1 alhora).
 ## 6. Resultats (banc honest)
 | | F0 | F1 | F2 (reservada) |
 |---|---|---|---|
-| `hard_final` | 18,80 | 17,36 | 17,75 |
-| `hard_v3`, si la irradiància és de l'hora passada | 18,88 | 17,42 | 17,92 |
-| `hard_v3`, si la irradiància és de l'hora actual | 19,02 | 17,55 | 18,20 |
+| `dificil_marges` | 18,80 | 17,36 | 17,75 |
+| `dificil_co2_irradiancia`, si la irradiància és de l'hora passada | 18,88 | 17,42 | 17,92 |
+| `dificil_co2_irradiancia`, si la irradiància és de l'hora actual | 19,02 | 17,55 | 18,20 |
 | Òptim teòric | 20,28 | 18,75 | – |
 
 ## 7. Què hem provat i descartat
@@ -89,8 +89,8 @@ millors valors (cap altre valor millora F0 i F1 alhora).
 
 ## 9. Com reproduir-ho
 ```
-python scripts/train_hard_v3.py        # entrena l'agent amb tot el train
-python tests/bench_hard.py 0,1,2       # validació honesta i òptim teòric
-python scripts/analysis_hard.py        # figures d'aquest document
-python scripts/make_submission.py agents/hard_v3
+python scripts/train_dificil_co2_irradiancia.py        # entrena l'agent amb tot el train
+python tests/bench_dificil.py 0,1,2       # validació honesta i òptim teòric
+python scripts/analysis_dificil.py        # figures d'aquest document
+python scripts/make_submission.py agents/dificil_co2_irradiancia
 ```

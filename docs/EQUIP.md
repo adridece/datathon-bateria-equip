@@ -27,7 +27,7 @@ Si algú acaba, ajuda el bloc que vagi més endarrerit (pregunteu-ho pel grup).
 3. Tota decisió → `docs/DECISIONS.md`. Tot resultat → `docs/DIARI.md`. Escriviu-hi a sota de tot,
    amb el vostre nom.
 4. **Enviaments a la web: només l'Ivan** (i avisant el grup), per no gastar els 10 intents diaris.
-   L'agent `agents/mpc_lp` ja està validat a la web (dry-run OK, 0 infraccions).
+   L'agent `agents/estandard_lp` ja està validat a la web (dry-run OK, 0 infraccions).
 5. Cap rastre d'assistents de codi enlloc (normes a `AGENTS.md`).
 
 ## Punts de control (24 h)

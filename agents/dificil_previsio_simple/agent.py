@@ -1,7 +1,7 @@
 """
 BatteryAgent per al Mode Dificil (6.000 kWh, +-1.500 kW, solar x12, nomes 3 h de mercat).
 
-Mateixa idea que mpc_robust (LP de 24 h + MPC), amb dues peces noves:
+Mateixa idea que estandard_robust (LP de 24 h + MPC), amb dues peces noves:
   - Previsions: de preu i CO2 nomes en sabem 3 h, la resta de les 24 h les estimem amb
     els ultims dies a la mateixa hora. El consum i la solar tambe els estimem.
   - La xarxa entra al LP: xarxa >= consum - solar + bateria i xarxa >= 0. Aixi el pla

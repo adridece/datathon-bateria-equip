@@ -16,8 +16,8 @@ DEST = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT.parent / "datathon-publi
 INCLUDE = ["README.md", "requirements.txt", ".gitignore", ".gitattributes",
            "agents", "src", "notebooks", "tests", "dashboard",
            "scripts/setup.py", "scripts/make_submission.py", "scripts/serve_dashboard.py",
-           "scripts/build_dashboard_data.py", "scripts/build_campus_json.py", "scripts/analysis_hard.py",
-           "scripts/train_hard.py", "scripts/train_hard_final.py", "scripts/train_hard_v3.py",
+           "scripts/build_dashboard_data.py", "scripts/build_campus_json.py", "scripts/analysis_dificil.py",
+           "scripts/train_dificil_lightgbm.py", "scripts/train_dificil_marges.py", "scripts/train_dificil_co2_irradiancia.py",
            "docs/DECISIONS.md", "docs/DIARI.md", "docs/CONTEXT.md", "docs/ANALISI_MODE_DIFICIL.md", "docs/figures"]
 SKIP_NAMES = {"__pycache__", ".ipynb_checkpoints", ".DS_Store", "*.zip"}
 # Paraules que NO poden apareixer enlloc

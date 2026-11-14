@@ -9,7 +9,7 @@
 > **Què heu de fer ara (30 min):**
 > 1. Accepteu la invitació de GitHub al repo `adridece/datathon-bateria-equip`.
 > 2. Seguiu la guia pas a pas `docs/GUIA_EQUIP.md` (instal·lar Python 3.11 i Git, clonar, entorn, setup).
->    Al final, `python -m src.evaluate agents/mpc_lp` us ha de donar `score: 6.08`.
+>    Al final, `python -m src.evaluate agents/estandard_lp` us ha de donar `score: 6.08`.
 > 3. Llegiu `docs/EQUIP.md` (com treballem i què fa cadascú) i `docs/CONTEXT.md` (el repte resumit).
 > 4. Obriu el vostre assistent de codi DINS la carpeta del projecte i enganxeu-li el missatge que us
 >    toca (més avall).
@@ -39,7 +39,7 @@ docs/GUIA_EQUIP.md. Explica'm amb paraules senzilles on estem (no sé gaire de r
 canviar cap fitxer, proposa'm un pla.
 
 El meu bloc: l'AGENT FINAL, perfecte i sense errors. Treballa només a agents/ i tests/.
-1. Copia agents/mpc_lp a agents/mpc_robust i fes-lo indestructible, resolent els riscos R1, R2, R3 i
+1. Copia agents/estandard_lp a agents/estandard_robust i fes-lo indestructible, resolent els riscos R1, R2, R3 i
    R8 de docs/RISCOS.md: try/except al LP amb una estratègia de reserva, neteja de NaN i llistes buides,
    límit de descàrrega quan el consum net previst sigui < 500 kW, i prova de sensibilitat de co2_ref/preu_ref.
 2. Crea proves automàtiques a tests/ (obs amb NaN, llista de 1 valor, SOC a 0 i a 2000, salts de
@@ -133,13 +133,13 @@ Llegeix AGENTS.md i després docs/EQUIP.md, docs/CONTEXT.md, docs/DECISIONS.md i
 Treballa a la branca "agent" (git checkout agent; git pull origin main). Codi en anglès,
 comentaris en català, simple. Explica'm cada pas abans de fer-lo.
 Objectiu: deixar l'agent final indestructible i congelat abans de les +14 h.
-1. agents/mpc_robust (còpia de agents/mpc_lp) resolent R1, R2, R3 i R8 de docs/RISCOS.md:
+1. agents/estandard_robust (còpia de agents/estandard_lp) resolent R1, R2, R3 i R8 de docs/RISCOS.md:
    try/except al LP amb una estratègia de reserva, neteja de NaN i llistes buides, límit de
    descàrrega si el consum net previst és < 500 kW, i comprovar la sensibilitat de co2_ref/preu_ref.
 2. Proves automàtiques a tests/ (obs amb NaN, llista d'1 valor, SOC a 0 i a 2000, salts de
    timestamp, temps < 10 s per a 2.016 h) que s'executin amb: python -m pytest tests
 3. Compara sempre amb l'oracle (python -m src.evaluate --oracle) i valida amb
-   python scripts/make_submission.py agents/mpc_robust. Apunta els resultats a docs/DIARI.md.
+   python scripts/make_submission.py agents/estandard_robust. Apunta els resultats a docs/DIARI.md.
 4. Quan estigui, fes una Pull Request cap a main i avisa el grup. No enviïs res a la web sense parlar-ho.
 ```
 

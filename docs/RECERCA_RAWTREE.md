@@ -137,7 +137,7 @@ print(query("SELECT toHour(parseDateTimeBestEffort(ts::String)) h, avg(load_kw::
 - Projecte principal: controlador de bateria (2 MWh, ±500 kW, η=0,9) per a la UPC Campus Nord amb dades horàries
   de consum, solar, preu PVPC i CO₂ (`data/processed/hourly.csv`, ~6.000 h, columnes
   `Fecha, load_kw, pv_kw, precio_eur_per_kwh, co2_kg_per_kwh, irr_wm2, temp_c`) i un agent LP-MPC
-  (`agents/mpc_lp/agent.py`, `params.json`). Fets útils per a la història: consum nocturn 0–5 h constant
+  (`agents/estandard_lp/agent.py`, `params.json`). Fets útils per a la història: consum nocturn 0–5 h constant
   (artefacte del comptador), forats de sensor (p. ex. 17/06/2026 amb consum 0), CO₂ baix al migdia, preu alt
   19–22 h, consum net ≥500 kW el 99,5 % de les hores.
 - **HelmCode** [verificat]:
@@ -296,7 +296,7 @@ campus-operator-rawtree/
   README.md  .env.example  .gitignore  requirements.txt   # requests, openai (opcional), pandas, numpy, scipy
   rawtree.py       # insert(), query(), describe(), log_trace() — ~60 línies
   tools.py         # eines + esquemes JSON per a function calling + guardrails SQL
-  planner.py       # LP de bateria (copiat/adaptat de agents/mpc_lp/agent.py)
+  planner.py       # LP de bateria (copiat/adaptat de agents/estandard_lp/agent.py)
   simulator.py     # rellotge de replay: genera landing/ del dia D a partir de hourly.csv (+ 5-min crus si cal)
   agent.py         # bucle LLM (HelmCode) amb tool calling, prompt de sistema
   run.py           # CLI: --days, --model, --replay-trace

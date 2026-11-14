@@ -3,12 +3,11 @@ Repeteix una simulacio amb el simulador oficial i en guarda TOT hora a hora
 (el que fa servir el dashboard per animar-ho).
 
     from src.replay import replay
-    df = replay("agents/mpc_lp", dades)      # DataFrame amb una fila per hora
+    df = replay("agents/estandard_lp", dades)      # DataFrame amb una fila per hora
 """
 import numpy as np
 import pandas as pd
 
-from src.data import contiguous_blocks
 from src.evaluate import BASE_COLS, CampusBatteryEnv, load_agent
 
 
@@ -59,25 +58,3 @@ def replay(agent, data: pd.DataFrame, cap: float = 2000.0, pmax: float = 500.0) 
     d.attrs["resultat"] = env.evaluate_results()
     return d
 
-
-def replay_weeks(new_agent, data: pd.DataFrame, cap: float = 2000.0, pmax: float = 500.0) -> pd.DataFrame:
-    """Cada setmana es una simulacio a part que comenca al 50 %, com al simulador oficial.
-    Les setmanes de validacio estan separades per mesos: no te sentit que la bateria passi la carrega d'una a l'altra."""
-    parts = [replay(new_agent(), b, cap, pmax) for b in contiguous_blocks(data)]
-    d = pd.concat(parts)
-    d["co2_estalviat_acum"] = (d.co2_base_kg - d.co2_kg).cumsum()
-    d["eur_estalviat_acum"] = (d.cost_base_eur - d.cost_eur).cumsum()
-    # resultat de tot el conjunt amb la mateixa formula del simulador oficial
-    res = [p.attrs["resultat"] for p in parts]
-    s = lambda key: sum(x[key] for x in res)
-    co2_base, co2_p, cost_base, cost_p, infr = (s("co2_baseline_kg"), s("co2_participant_kg"),
-                                                s("cost_baseline_eur"), s("cost_participant_eur"), s("infraccions"))
-    d_co2, d_cost = (co2_base - co2_p) / co2_base, (cost_base - cost_p) / cost_base
-    d.attrs["resultat"] = {
-        "score": round(max(0.0, (0.7 * d_co2 + 0.3 * d_cost - 0.002 * infr) * 100), 2),
-        "co2_estalviat_pct": round(d_co2 * 100, 2), "cost_estalviat_pct": round(d_cost * 100, 2),
-        "co2_estalviat_kg": round(co2_base - co2_p, 1), "cost_estalviat_eur": round(cost_base - cost_p, 2),
-        "co2_participant_kg": round(co2_p, 1), "cost_participant_eur": round(cost_p, 2),
-        "co2_baseline_kg": round(co2_base, 1), "cost_baseline_eur": round(cost_base, 2), "infraccions": infr,
-    }
-    return d

@@ -42,7 +42,7 @@ Treballem des de Mac i Windows, cadascú amb el seu assistent de codi.
 ## Comandes útils
 ```
 python scripts/setup.py                         # primer cop: dades
-python -m src.evaluate agents/mpc_lp            # puntuació local
+python -m src.evaluate agents/estandard_lp            # puntuació local
 python -m src.evaluate --oracle                 # cota superior
-python scripts/make_submission.py agents/mpc_lp # zip + validació
+python scripts/make_submission.py agents/estandard_lp # zip + validació
 ```
