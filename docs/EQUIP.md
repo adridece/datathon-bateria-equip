@@ -11,7 +11,7 @@ Tot el que fem va al mateix repo privat. El que s'entrega acaba al repo públic 
 ## Rols i blocs (cadascú, la seva carpeta)
 | Qui | Bloc | Carpeta | Què ha de quedar fet |
 |---|---|---|---|
-| **Adrià** | Dashboard en temps real (Streamlit) | `dashboard/` | App que reprodueix l'agent hora a hora: fletxes d'energia, bateria omplint-se, gràfics, comptadors d'estalvi, comparativa i "què passaria si" |
+| **Adrià** | Dashboard en temps real (web amb 3D) | `dashboard/` | App que reprodueix l'agent hora a hora: fletxes d'energia, bateria omplint-se, gràfics, comptadors d'estalvi, comparativa i "què passaria si" |
 | **Ivan** | Agent perfecte i robust + imprevistos | `agents/` + `tests/` | Agent final sense cap error possible (veure `docs/RISCOS.md`), proves automàtiques, ajust de paràmetres sense sobreajustar, enviament a la web |
 | **Jesús** | Anàlisi de dades i resultats per a la presentació | `notebooks/` + `docs/figures/` | Notebook d'EDA amb gràfics nets, frontera CO₂ vs cost, sensibilitat de la mida de la bateria, xifres reals (tones CO₂/any, €/any) |
 | **Martí** | Presentació i història | `presentacio/` | Guió + diapositives, explicació senzilla de l'estratègia, pràctica de la defensa, preguntes probables del jurat, revisió del repo públic |

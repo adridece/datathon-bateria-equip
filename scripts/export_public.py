@@ -14,12 +14,15 @@ DEST = Path(sys.argv[1]) if len(sys.argv) > 1 else ROOT.parent / "datathon-publi
 
 # El que SI va al public (afegiu-hi coses si cal)
 INCLUDE = ["README.md", "requirements.txt", ".gitignore", ".gitattributes",
-           "agents", "src", "notebooks", "scripts/setup.py", "scripts/make_submission.py",
-           "docs/DECISIONS.md", "docs/CONTEXT.md"]
-SKIP_NAMES = {"__pycache__", ".ipynb_checkpoints", ".DS_Store"}
+           "agents", "src", "notebooks", "tests", "dashboard",
+           "scripts/setup.py", "scripts/make_submission.py", "scripts/serve_dashboard.py",
+           "scripts/build_dashboard_data.py", "scripts/build_campus_json.py", "scripts/analysis_hard.py",
+           "scripts/train_hard.py", "scripts/train_hard_final.py", "scripts/train_hard_v3.py",
+           "docs/DECISIONS.md", "docs/DIARI.md", "docs/CONTEXT.md", "docs/ANALISI_MODE_DIFICIL.md", "docs/figures"]
+SKIP_NAMES = {"__pycache__", ".ipynb_checkpoints", ".DS_Store", "*.zip"}
 # Paraules que NO poden apareixer enlloc
 BANNED = re.compile(r"claude|anthropic|gemini|openai|chatgpt|gpt-|copilot|opencode|helmcode|"
-                    r"co-authored-by|generated with|AGENTS\.md|sk-[a-z]{2,4}_", re.I)
+                    r"co-authored-by|generated with|AGENTS\.md|CLAUDE\.md|GEMINI\.md|assistent de codi|sk-[a-z]{2,4}_", re.I)
 
 if DEST.exists():
     for p in DEST.iterdir():
@@ -37,6 +40,11 @@ for item in INCLUDE:
         shutil.copytree(src, dst, ignore=shutil.ignore_patterns(*SKIP_NAMES))
     else:
         shutil.copy2(src, dst)
+
+# al .gitignore public no hi ha d'haver res de les eines internes de l'equip
+gi = DEST / ".gitignore"
+if gi.exists():
+    gi.write_text("".join(l for l in gi.read_text(encoding="utf-8").splitlines(True) if not BANNED.search(l)), encoding="utf-8")
 
 problemes = []
 for f in DEST.rglob("*"):

@@ -18,6 +18,6 @@ decideix amb la presentació i el raonament**, la diferència la farem amb l'an�
 - [ ] Repo públic final amb `scripts/export_public.py`
 
 ## Idees "extra" per diferenciar-nos
-- Dashboard interactiu (Streamlit) per simular la bateria amb diferents mides i pesos.
+- Dashboard interactiu (web) per simular la bateria amb diferents mides i pesos.
 - Demostrar que el nostre agent és **òptim** (gap amb l'oracle ≈ 0 %) i explicar per què.
 - Robustesa: què passa si les previsions de preu/CO₂ tinguessin error (soroll) → MPC segueix bé?

@@ -12,4 +12,3 @@ seaborn
 jupyter
 ipykernel
 pyarrow
-streamlit
