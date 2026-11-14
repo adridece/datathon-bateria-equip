@@ -27,6 +27,7 @@ export function createScene(container, campus, colors) {
   function place(view) {
     controls.target.copy(view.target);
     camera.position.copy(view.target).addScaledVector(view.dir, 90);
+    camera.lookAt(view.target);   // sense això la càmera mira cap a l'antic punt durant el vol
     camera.zoom = view.zoom;
     camera.updateProjectionMatrix();
   }
@@ -397,6 +398,10 @@ export function createScene(container, campus, colors) {
   // ---------------------------------------------------------------- vols de càmera
   let flight = null;
   function flyTo(view, ms = 1800) {
+    // traiem l'inèrcia que quedi d'haver arrossegat, si no la càmera es mou sola en acabar el vol
+    controls.enableDamping = false;
+    controls.update();
+    controls.enableDamping = true;
     flight = { from: { target: controls.target.clone(), zoom: camera.zoom, dir: camera.position.clone().sub(controls.target).normalize() },
                to: view, t0: performance.now(), ms };
   }
@@ -470,7 +475,7 @@ export function createScene(container, campus, colors) {
       t = t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2;
       place({ target: flight.from.target.clone().lerp(flight.to.target, t),
               dir: flight.from.dir.clone().lerp(flight.to.dir, t).normalize(),
-              zoom: flight.from.zoom + (flight.to.zoom - flight.from.zoom) * t });
+              zoom: flight.from.zoom * Math.pow(flight.to.zoom / flight.from.zoom, t) });
       if (t >= 1) flight = null;
     } else {
       controls.target.clamp(minT, maxT);
