@@ -104,3 +104,77 @@ claredat del raonament, l'anàlisi de dades i la justificació de l'estratègia.
 5. Al final, revisa el README.md perquè quedi molt clar per al repo públic.
 Tot en català, natural, com a estudiants de 2n de carrera. Explica-m'ho tot pas a pas.
 ```
+
+---
+---
+
+# ACTUALITZACIÓ 14/11 (tarda): missatges per seguir avançant
+
+## Missatge per al grup
+
+> Actualització de l'equip:
+> - **Branques a GitHub**: cadascú treballa a la seva (`agent` Ivan, `analisi` Jesús, `presentacio` Martí,
+>   `dashboard` Adrià). El primer cop: `git fetch` i `git checkout <la-vostra-branca>`. Cada vegada abans de
+>   començar: `git pull origin main`. Quan una cosa funcioni: Pull Request cap a `main` (guia, secció 5).
+> - **Estil de codi**: codi en **anglès**, comentaris en **català**, curts i naturals. Simple, que sembli
+>   nostre. Ja és a `AGENTS.md`, la vostra IA ho llegirà sola.
+> - **Side challenges** (`docs/SIDE_CHALLENGES.md`): el dashboard va per la Tukey Commission (Adrià),
+>   amb el Campus Nord real en 3D. Per a RawTree, algú hauria d'anar a l'estand a demanar accés i docs.
+> - **Premis**: cal anar com a mínim a **una xerrada** per poder-los recollir.
+> - **Xifres que ja tenim** (per a l'anàlisi i la presentació): score 6,08 = òptim teòric; ≈ 44 t CO₂ i
+>   ≈ 96 k€ estalviats l'any; amb un 50 % d'error a les previsions el score només baixa a 5,68; amb 500 kW,
+>   més de 4.000 kWh no aporta gaire.
+>
+> Enganxeu a la vostra IA el missatge que us toca (a sota).
+
+## Per a la IA de l'IVAN (agent)
+```
+Llegeix AGENTS.md i després docs/EQUIP.md, docs/CONTEXT.md, docs/DECISIONS.md i docs/RISCOS.md.
+Treballa a la branca "agent" (git checkout agent; git pull origin main). Codi en anglès,
+comentaris en català, simple. Explica'm cada pas abans de fer-lo.
+Objectiu: deixar l'agent final indestructible i congelat abans de les +14 h.
+1. agents/mpc_robust (còpia de agents/mpc_lp) resolent R1, R2, R3 i R8 de docs/RISCOS.md:
+   try/except al LP amb una estratègia de reserva, neteja de NaN i llistes buides, límit de
+   descàrrega si el consum net previst és < 500 kW, i comprovar la sensibilitat de co2_ref/preu_ref.
+2. Proves automàtiques a tests/ (obs amb NaN, llista d'1 valor, SOC a 0 i a 2000, salts de
+   timestamp, temps < 10 s per a 2.016 h) que s'executin amb: python -m pytest tests
+3. Compara sempre amb l'oracle (python -m src.evaluate --oracle) i valida amb
+   python scripts/make_submission.py agents/mpc_robust. Apunta els resultats a docs/DIARI.md.
+4. Quan estigui, fes una Pull Request cap a main i avisa el grup. No enviïs res a la web sense parlar-ho.
+```
+
+## Per a la IA del JESÚS (anàlisi de dades)
+```
+Llegeix AGENTS.md i després docs/EQUIP.md, docs/CONTEXT.md, docs/DECISIONS.md i docs/DIARI.md.
+Treballa a la branca "analisi" (git checkout analisi; git pull origin main). Codi en anglès,
+comentaris en català, simple. Explica'm cada pas, no en sé gaire.
+Objectiu: un notebook net d'anàlisi de dades que expliqui el repte al jurat.
+1. notebooks/01_eda.ipynb amb src/data.py (load_hourly): consum, solar, preu i CO2 per hora,
+   dia de la setmana i mes; correlació preu-CO2; per què el CO2 és baix al migdia; hores amb
+   consum net < 500 kW; qualitat de les dades (forats del comptador, consum de nit constant).
+2. Cada gràfic amb un títol que digui la conclusió i una frase a sota. Estil: segueix
+   docs/RECERCA_DASHBOARD.md secció 6 (paleta, sense emojis).
+3. Desa els gràfics bons en PNG a docs/figures/ i apunta les 5 conclusions principals a
+   docs/DIARI.md. Quan estigui, Pull Request cap a main.
+(Els gràfics de resultats, mida de bateria i robustesa ja els fa el dashboard: no els repeteixis.)
+```
+
+## Per a la IA del MARTÍ (presentació)
+```
+Llegeix AGENTS.md i després docs/EQUIP.md, docs/CONTEXT.md, docs/DECISIONS.md, docs/DIARI.md,
+docs/RISCOS.md i el PDF docs/repte/presentacio_repte.pdf.
+Treballa a la branca "presentacio" (git checkout presentacio; git pull origin main).
+Explica'm cada pas, no en sé gaire.
+Objectiu: la presentació final (el jurat valora presentació, raonament, anàlisi i justificació).
+1. presentacio/GUIO.md, de 5 a 7 minuts: el problema -> què vam descobrir a les dades (consum net
+   >= 500 kW gairebé sempre; preu i CO2 coneguts 24 h abans) -> per què això és programació
+   lineal -> MPC -> resultat igual que l'òptim (6,08) -> impacte real (44 t CO2 i 96 k€ l'any)
+   -> robustesa (amb 50 % d'error, 5,68) -> mida de bateria recomanada -> demo del dashboard
+   amb el campus en 3D (2 min) -> què faríem amb més temps.
+2. presentacio/DIAPOSITIVES.md: títol i contingut de cada diapositiva, sobri i sense emojis.
+3. presentacio/PREGUNTES.md: 15 preguntes difícils del jurat amb la resposta (per què no ML?
+   per què no aprenentatge per reforç? què passa si les previsions fallen? com sabeu que és
+   òptim? i la degradació? per què aquests pesos?...).
+4. L'explicació de la solució amb paraules molt senzilles perquè tots la puguem defensar.
+Tot en català natural, com a estudiants de 2n. Quan estigui, Pull Request cap a main.
+```
