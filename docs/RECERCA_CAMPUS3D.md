@@ -172,7 +172,7 @@ Són keyframes de càmera (`target`, `zoom`, `azimut`). Entre keyframes s'interp
 | # | Pla | target (u) | zoom | azimut | Llegenda (exemple) | Acció |
 |---|---|---|---|---|---|---|
 | 1 | Vista general | (1, 0, −3.3) | 1.0 | 45° | "Campus Nord UPC · 40 edificis · ~1–2,5 MW de consum" | autorotació lenta 6 s |
-| 2 | Cobertes solars | (−5.5, 1.75, 2.5) (fila A) | 2.4 | 30° | "250 kWp a les cobertes dels aularis A1–A6" | salt a les 13:00, plaques brillants, partícules grogues |
+| 2 | Cobertes solars | (−6.3, 1.75, 2.9) (fila A) | 2.4 | 30° | "250 kWp a les cobertes dels aularis A1–A6" | salt a les 13:00, plaques brillants, partícules grogues |
 | 3 | Bateria | (0.75, 0, 11.15) | 4.0 | 60° | "Bateria 2 MWh / 500 kW · carrega quan el CO₂ és baix" | salt a "propera hora de càrrega" |
 | 4 | Xarxa | (1.72, 0, 12.48) | 3.2 | 80° | "Xarxa: el color del cable = g CO₂/kWh de l'hora" | salt al "pic de CO₂ següent": descàrrega |
 | 5 | Tornada | (1, 0, −3.3) | 1.0 | 45° | "Resultat: −X kg CO₂ · −Y € en 12 setmanes" | comptadors animats |
