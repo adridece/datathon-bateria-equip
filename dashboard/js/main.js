@@ -300,6 +300,12 @@ function stop() { cancelAnimationFrame(timer); timer = null; scene.setPlaying(fa
 function start() { last = performance.now(); scene.setPlaying(true); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
 const next = test => { for (let i = k + 1; i < week.end; i++) if (test(i)) return i; return k; };
 document.addEventListener("click", e => {
+  const ev = e.target.closest("[data-goto]");
+  if (ev) {
+    go(ev.dataset.goto);
+    if (ev.dataset.sel) setTimeout(() => document.querySelector(ev.dataset.sel)?.scrollIntoView({ block: "center", behavior: "smooth" }), 400);
+    return;
+  }
   const jump = e.target.closest("[data-go]");
   if (jump) { show(+jump.dataset.go); return; }
   const b = e.target.closest("[data-act],[data-speed]");

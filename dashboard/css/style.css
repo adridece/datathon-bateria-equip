@@ -271,3 +271,12 @@ body.demo-on .view.on .grid > .card { animation: none; }
 .hud-grid em { font-style: normal; font-size: 11px; color: var(--dt-muted); }
 .hud-why { margin-top: 10px; font-size: 13px; color: var(--dt-text); background: var(--dt-soft); border-radius: var(--dt-r-sm); padding: 8px 10px; }
 @media (max-width: 900px) { .hud-grid { grid-template-columns: repeat(2, 1fr); } }
+
+/* ---------- conclusions i decisions ---------- */
+.decisions { display: flex; flex-direction: column; }
+.decision { display: grid; grid-template-columns: 34px 1fr auto; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--dt-line); }
+.decision:first-child { border-top: 0; }
+.decision .n { font: 500 13px var(--dt-mono); color: var(--dt-accent); }
+.decision b { font-size: 14.5px; }
+.decision p { margin: 2px 0 0; color: var(--dt-muted); font-size: 13px; }
+@media (max-width: 700px) { .decision { grid-template-columns: 28px 1fr; } .decision button { grid-column: 2; justify-self: start; } }
