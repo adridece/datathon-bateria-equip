@@ -334,19 +334,40 @@ const tour = [
   { view: "grid", hour: i => H.bat[i] < -200, text: () => "Quan la xarxa és bruta i cara, descarrega. El color de la línia de la xarxa indica el CO₂ de cada hora." },
   { view: "home", hour: "end", text: () => { const s = savedUntil(week.end - 1); return `Aquesta setmana: ${f(s.co2)} kg de CO₂ i ${f(s.eur)} € estalviats.`; } },
 ];
-let step = -1, tourTimer = null;
+let step = -1, tourTimer = null, tween = null;
+// el temps avança suaument fins a l'hora del pas (així la llum i els fluxos no fan salts)
+function animateClock(target, ms) {
+  cancelAnimationFrame(tween);
+  const from = clock, t0 = performance.now();
+  const tick = now => {
+    let x = Math.min(1, (now - t0) / ms);
+    x = x < 0.5 ? 2 * x * x : 1 - Math.pow(-2 * x + 2, 2) / 2;
+    clock = from + (target - from) * x;
+    if (Math.floor(clock) !== k) show(Math.floor(clock), true);
+    sceneAt(clock);
+    if (x < 1) tween = requestAnimationFrame(tick);
+    else show(target);
+  };
+  tween = requestAnimationFrame(tick);
+}
 function showStep(i) {
   step = i;
   const s = tour[i];
-  scene.flyTo(scene.views[s.view]);
-  if (s.hour === "end") show(week.end - 1);
-  else if (s.hour) show(next(s.hour));
+  scene.flyTo(scene.views[s.view], 2400);
+  // busquem l'hora dins les properes 24 h perquè el canvi de temps sigui curt
+  if (s.hour && s.hour !== "end") {
+    let target = k;
+    for (let j = k + 1; j < Math.min(week.end, k + 25); j++) if (s.hour(j)) { target = j; break; }
+    if (target !== k) animateClock(target, 2400);
+  }
   const c = $("caption");
   c.style.opacity = 0;
-  setTimeout(() => { c.textContent = s.text(); c.style.opacity = 1; }, 350);
+  setTimeout(() => { c.textContent = s.text(); c.style.opacity = 1; }, 400);
 }
 function endTour() {
   clearTimeout(tourTimer);
+  cancelAnimationFrame(tween);
+  scene.setPlaying(false);
   step = -1;
   $("caption").style.opacity = 0;
   setAll("[data-act=tour]", b => b.classList.remove("on"));
@@ -356,11 +377,12 @@ function runTour() {
   stop();
   go("live");
   scene.controls.enabled = false;
+  scene.setPlaying(true);   // durant la presentació l'energia es mou
   setAll("[data-act=tour]", b => b.classList.add("on"));
   const run = i => {
     if (i >= tour.length) { tourTimer = setTimeout(endTour, 3500); return; }
     showStep(i);
-    tourTimer = setTimeout(() => run(i + 1), 6500);
+    tourTimer = setTimeout(() => run(i + 1), 7000);
   };
   run(0);
 }

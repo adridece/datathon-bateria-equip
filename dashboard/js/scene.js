@@ -124,6 +124,39 @@ export function createScene(container, campus, colors) {
     pickables.push(m);
   });
 
+  // res (pals, bateria, torre) pot quedar dins ni enganxat a cap edifici: busquem el punt lliure més proper (≥ 10 m)
+  const rings = [...campus.buildings.map(b => b.polygon), ...campus.context_buildings.map(b => b.ring)];
+  const inside = (x, z, r) => {
+    let c = false;
+    for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
+      const [xi, zi] = r[i], [xj, zj] = r[j];
+      if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c;
+    }
+    return c;
+  };
+  const segDist = (x, z, [ax, az], [bx, bz]) => {
+    const dx = bx - ax, dz = bz - az, len = dx * dx + dz * dz || 1;
+    const u = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len));
+    return Math.hypot(x - ax - u * dx, z - az - u * dz);
+  };
+  const clearance = (x, z) => {
+    let best = Infinity;
+    for (const r of rings) {
+      if (inside(x, z, r)) return -1;
+      for (let i = 0; i < r.length; i++) best = Math.min(best, segDist(x, z, r[i], r[(i + 1) % r.length]));
+    }
+    return best;
+  };
+  const freeSpot = ([x, y, z]) => {
+    if (clearance(x, z) >= 10) return [x, y, z];
+    for (let rad = 5; rad <= 80; rad += 5)
+      for (let k = 0; k < 24; k++) {
+        const a = k / 24 * Math.PI * 2, nx = x + Math.cos(a) * rad, nz = z + Math.sin(a) * rad;
+        if (clearance(nx, nz) >= 10) return [nx, y, nz];
+      }
+    return [x, y, z];
+  };
+
   // bateria, escomesa i nus elèctric (més grans que la realitat perquè es vegin)
   const A = campus.energy_assets;
   const at = p => new THREE.Vector3(p[0] * S, p[1] * S * VX, p[2] * S);
@@ -131,8 +164,9 @@ export function createScene(container, campus, colors) {
   // i les plaques i els centres de transformació queden al nord. Així els cables no es creuen.
   const mainCT = at(A.grid_connection.pos);
   const node = mainCT.clone().setY(0.3);
-  const gridPos = mainCT.clone().add(new THREE.Vector3(0.6, 0, 4.2));
-  const batPos = mainCT.clone().add(new THREE.Vector3(4.4, 0, 0.8));
+  const fromMain = (dx, dz) => at(freeSpot([A.grid_connection.pos[0] + dx, 0, A.grid_connection.pos[2] + dz]));
+  const gridPos = fromMain(6, 42);     // la xarxa entra pel carrer, al sud
+  const batPos = fromMain(44, 8);      // la bateria, a l'est, en un espai lliure
   const loadPos = at(A.campus_load_anchor.pos);
 
   const battery = new THREE.Group();
@@ -169,39 +203,6 @@ export function createScene(container, campus, colors) {
   const insulatorMat = new THREE.MeshStandardMaterial({ color: "#E9E6DF", roughness: 0.3 });
   const POLE_H = 2.4;
   const poleTop = {};
-  // els pals no poden quedar dins ni enganxats a cap edifici: busquem el punt lliure més proper (≥ 10 m)
-  const rings = [...campus.buildings.map(b => b.polygon), ...campus.context_buildings.map(b => b.ring)];
-  const inside = (x, z, r) => {
-    let c = false;
-    for (let i = 0, j = r.length - 1; i < r.length; j = i++) {
-      const [xi, zi] = r[i], [xj, zj] = r[j];
-      if ((zi > z) !== (zj > z) && x < (xj - xi) * (z - zi) / (zj - zi) + xi) c = !c;
-    }
-    return c;
-  };
-  const segDist = (x, z, [ax, az], [bx, bz]) => {
-    const dx = bx - ax, dz = bz - az, len = dx * dx + dz * dz || 1;
-    const u = Math.max(0, Math.min(1, ((x - ax) * dx + (z - az) * dz) / len));
-    return Math.hypot(x - ax - u * dx, z - az - u * dz);
-  };
-  const clearance = (x, z) => {
-    let best = Infinity;
-    for (const r of rings) {
-      if (inside(x, z, r)) return -1;
-      for (let i = 0; i < r.length; i++) best = Math.min(best, segDist(x, z, r[i], r[(i + 1) % r.length]));
-    }
-    return best;
-  };
-  const freeSpot = ([x, y, z]) => {
-    if (clearance(x, z) >= 10) return [x, y, z];
-    for (let rad = 5; rad <= 80; rad += 5)
-      for (let k = 0; k < 24; k++) {
-        const a = k / 24 * Math.PI * 2, nx = x + Math.cos(a) * rad, nz = z + Math.sin(a) * rad;
-        if (clearance(nx, nz) >= 10) return [nx, y, nz];
-      }
-    return [x, y, z];
-  };
-
   conns.forEach(c => {
     const p = at(freeSpot(c.pos));
     connPos[c.id] = c.main ? mainCT.clone() : p;
@@ -397,9 +398,12 @@ export function createScene(container, campus, colors) {
   }
   const views = {
     home: HOME,
-    solar: { target: at(A.pv_inverters[1].pos), zoom: 2.3, dir: new THREE.Vector3(0.4, 1.1, 1).normalize() },
-    battery: { target: batPos, zoom: 3.4, dir: new THREE.Vector3(1, 0.9, 0.5).normalize() },
-    grid: { target: gridPos, zoom: 2.8, dir: new THREE.Vector3(1.2, 0.8, -0.2).normalize() },
+    // centre de les plaques dels aularis A (on són els 3 inversors), a l'alçada de les cobertes
+    solar: { target: A.pv_inverters.reduce((v, inv) => v.add(at(inv.pos)), new THREE.Vector3())
+               .divideScalar(A.pv_inverters.length).setY(17.5 * S * VX), zoom: 2.0, dir: new THREE.Vector3(0.4, 1.1, 1).normalize() },
+    // vistes des de força amunt perquè cap edifici tapi la bateria ni la xarxa (dins dels límits de la càmera)
+    battery: { target: batPos.clone().lerp(node, 0.3), zoom: 2.4, dir: new THREE.Vector3(0.35, 1, 0.45).normalize() },
+    grid: { target: gridPos.clone().lerp(node, 0.5), zoom: 2.2, dir: new THREE.Vector3(0.45, 1, 0.35).normalize() },
   };
 
   // ---------------------------------------------------------------- estat d'una hora
@@ -409,9 +413,9 @@ export function createScene(container, campus, colors) {
     const day = h.hour >= 7 && h.hour <= 19;
     const a = (h.hour - 6) / 14 * Math.PI;
     sun.position.set(Math.cos(a) * 45, Math.max(0.2, Math.sin(a)) * 50 + 8, 28);
-    sun.intensity = day ? 0.8 + 0.8 * Math.sin(Math.max(0, a)) : 0.45;
+    sun.intensity = day ? 0.8 + 0.8 * Math.sin(Math.max(0, a)) : 0.7;
     sun.color.set(day ? "#FFFFFF" : "#D6DEEA");
-    hemi.intensity = day ? 1.25 : 0.95;
+    hemi.intensity = day ? 1.25 : 1.15;
     scene.background.set(day ? "#EAE6DE" : "#DFE1E4");
     campusMat.emissiveIntensity = day ? 0 : 0.08 + 0.12 * h.busy;
     pvMat.emissiveIntensity = 0.9 * h.pv / 145;

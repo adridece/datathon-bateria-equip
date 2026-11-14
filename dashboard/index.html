@@ -82,14 +82,14 @@
               <svg width="92" height="92" viewBox="0 0 92 92">
                 <circle cx="46" cy="46" r="38" fill="none" stroke="#EFECE6" stroke-width="10"/>
                 <circle class="ring" cx="46" cy="46" r="38" fill="none" stroke="#47908B" stroke-width="10" stroke-linecap="round"
-                        stroke-dasharray="238.8" stroke-dashoffset="238.8" transform="rotate(-90 46 46)" style="transition:stroke-dashoffset .5s var(--ease)"/>
+                        stroke-dasharray="238.8" stroke-dashoffset="238.8" transform="rotate(-90 46 46)" style="transition:stroke-dashoffset .5s var(--dt-ease)"/>
               </svg>
               <div><div class="big" data-soc>-</div><div class="mode" data-mode>-</div></div>
             </div>
             <div class="rows">
               <span class="k"><i data-dot-grid></i>Compra a la xarxa</span><span class="v" data-grid>-</span>
               <span class="k"><i style="background:#9A958C"></i>Consum del campus</span><span class="v" data-load>-</span>
-              <span class="k"><i style="background:var(--solar)"></i>Solar</span><span class="v" data-pv>-</span>
+              <span class="k"><i style="background:var(--dt-solar)"></i>Solar</span><span class="v" data-pv>-</span>
               <span class="k">CO₂ de la xarxa</span><span class="v" data-co2>-</span>
               <span class="k">Preu</span><span class="v" data-price>-</span>
               <span class="k">Cicles aquesta setmana</span><span class="v" data-cycles>-</span>
@@ -146,14 +146,14 @@
               <button data-act="zoom-in" aria-label="Apropar">+</button><button data-act="zoom-out" aria-label="Allunyar">−</button>
               <button data-act="full" aria-label="Pantalla completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
             </div>
-            <div class="overlay legend3d"><span><i style="background:var(--solar)"></i>solar</span><span><i style="background:var(--charge)"></i>càrrega</span>
-              <span><i style="background:var(--discharge)"></i>descàrrega</span><span><i style="background:#8C6A45"></i>xarxa (color = CO₂)</span><span><i style="background:#3E4A56"></i>consum (per l'anell soterrat)</span><span><i style="background:#8B8F93"></i>pal del centre de transformació (línies cap als edificis)</span></div>
+            <div class="overlay legend3d"><span><i style="background:var(--dt-solar)"></i>solar</span><span><i style="background:var(--dt-charge)"></i>càrrega</span>
+              <span><i style="background:var(--dt-discharge)"></i>descàrrega</span><span><i style="background:#8C6A45"></i>xarxa (color = CO₂)</span><span><i style="background:#3E4A56"></i>consum (per l'anell soterrat)</span><span><i style="background:#8B8F93"></i>pal del centre de transformació (línies cap als edificis)</span></div>
             <div class="overlay caption" id="caption"></div>
           </div>
           <div class="player" data-player></div>
           <svg class="strip" id="strip"></svg>
           <div class="legend"><span>CO₂ de la xarxa: net<svg class="ramp" id="ramp"></svg>brut</span>
-            <span><i style="background:var(--charge)"></i>càrrega</span><span><i style="background:var(--discharge)"></i>descàrrega</span>
+            <span><i style="background:var(--dt-charge)"></i>càrrega</span><span><i style="background:var(--dt-discharge)"></i>descàrrega</span>
             <span>Clic o arrossega la franja per moure't. Espai per reproduir, + i − per fer zoom, 0 per a la vista inicial, P per a la presentació guiada</span></div>
         </div>
       </section>
