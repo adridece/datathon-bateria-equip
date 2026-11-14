@@ -92,20 +92,37 @@ Ha de sortir alguna cosa com `VALID (7d/mes) ... 'score': 6.08 ... 'infraccions'
 
 ---
 
-## 5. Com treballem cada dia (el cicle)
-1. **Abans de començar**, baixa els canvis dels altres: `git pull`
-2. Treballa a la teva carpeta (p. ex. `agents/el_meu_agent/` o un notebook a `notebooks/`).
-3. Prova el que has fet: `python -m src.evaluate agents/el_meu_agent`
-4. Apunta el resultat a `docs/DIARI.md` i, si has decidit alguna cosa, a `docs/DECISIONS.md`.
-5. Puja els canvis:
+## 5. Com treballem cada dia: les BRANQUES (el cicle)
+Una **branca** és una còpia del projecte on pots treballar sense espatllar la dels altres.
+- `main` = la versió **bona i estable**. Ningú hi treballa directament.
+- Cada bloc té la seva branca: `dashboard` (Adrià), `agent` (Ivan), `analisi` (Jesús), `presentacio` (Martí).
+
+**Primer cop** (canviar a la teva branca, p. ex. `analisi`):
+```
+git fetch
+git checkout analisi
+```
+**Cada vegada que treballis:**
+1. Comprova que ets a la teva branca: `git branch` (la teva té un `*` al davant).
+2. Porta't les novetats de `main` (perquè no et quedis enrere):
+   ```
+   git pull origin main
+   ```
+3. Treballa, prova (`python -m src.evaluate ...`) i apunta-ho a `docs/DIARI.md` / `docs/DECISIONS.md`.
+4. Desa i puja **a la teva branca**:
    ```
    git add .
    git commit -m "Explicació curta del que has fet"
    git push
    ```
-   Si `git push` diu que hi ha canvis nous, fes `git pull` i torna a fer `git push`.
+**Quan una cosa ja funciona bé i la vols passar a `main`:**
+1. Ves a https://github.com/adridece/datathon-bateria-equip → surt un botó groc **"Compare & pull request"**
+   (o pestanya *Pull requests* → *New pull request* → base: `main`, compare: la teva branca).
+2. Escriu què has fet i crea-la. L'Adrià o l'Ivan la revisen i premen **"Merge"**.
+3. Aviseu pel grup: "he passat X a main". Els altres fan `git pull origin main` a la seva branca.
 
----
+> Si surt un **conflicte** (dues persones han canviat la mateixa línia): no t'espantis, no esborris res i
+> demana ajuda al grup o al teu assistent: "tinc un conflicte de git, ajuda'm a resoldre'l pas a pas".
 
 ## 6. Com enviar un agent a la web (puntuació oficial)
 1. Crea el zip i valida'l: `python scripts/make_submission.py agents/mpc_lp`

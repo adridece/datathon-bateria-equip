@@ -29,7 +29,10 @@ Treballem des de Mac i Windows, cadascú amb el seu assistent de codi.
 9. **Explicar-ho tot com si l'usuari no en sabés res**: cap membre de l'equip és expert. Abans de
    fer res, explica què faràs i per què; després, com comprovar-ho. Dona les comandes exactes (Windows
    i Mac si canvien), defineix els termes tècnics i actualitza `docs/GUIA_EQUIP.md` si canvia el procés.
-10. Fer `git pull` abans de començar i commits petits amb missatges clars en català.
+10. **Branques:** treballar a la branca del bloc (`dashboard`, `agent`, `analisi`, `presentacio`), mai directament a `main`.
+    Abans de començar: `git pull origin main`. Per passar a `main`: Pull Request a GitHub.
+11. **Dashboards i visuals:** seguir `docs/RECERCA_DASHBOARD.md` (sistema de disseny, 3D, regles per no semblar genèric).
+12. Fer `git pull` abans de començar i commits petits amb missatges clars en català.
 
 ## Comandes útils
 ```

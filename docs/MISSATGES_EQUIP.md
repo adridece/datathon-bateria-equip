@@ -20,7 +20,10 @@
 > - **Jesús:** anàlisi de dades i gràfics per a la presentació (`notebooks/`, `docs/figures/`)
 > - **Martí:** presentació i guió (`presentacio/`)
 >
-> **Normes:** `git pull` abans de començar, `git push` sovint, només toqueu la vostra carpeta, apunteu
+> **Branques:** cadascú treballa a la seva branca (`dashboard`, `agent`, `analisi`, `presentacio`); el primer cop
+> feu `git fetch` i `git checkout <la-vostra-branca>`. Explicat pas a pas a `docs/GUIA_EQUIP.md` (secció 5).
+>
+> **Normes:** `git pull origin main` abans de començar, `git push` sovint, només toqueu la vostra carpeta, apunteu
 > les decisions a `docs/DECISIONS.md` i els resultats a `docs/DIARI.md`. Mai pugeu la clau d'API ni
 > el PIN.
 > La clau d'OpenCode és al Discord: poseu-la al vostre fitxer `.env` (copieu `.env.example`).

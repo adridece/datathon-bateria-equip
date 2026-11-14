@@ -19,7 +19,9 @@ Tot el que fem va al mateix repo privat. El que s'entrega acaba al repo públic 
 Si algú acaba, ajuda el bloc que vagi més endarrerit (pregunteu-ho pel grup).
 
 ## Normes per no fer-nos nosa
-1. **`git pull` abans de començar** i **`git push` sovint** (cada cop que una cosa funciona).
+0. **Cadascú a la seva branca** (`dashboard`, `agent`, `analisi`, `presentacio`); `main` només rep el que ja funciona,
+   via *Pull Request* a GitHub (pas a pas a `docs/GUIA_EQUIP.md`, secció 5).
+1. **`git pull origin main` abans de començar** i **`git push` sovint** (cada cop que una cosa funciona).
 2. **Només toqueu la vostra carpeta.** Si cal canviar alguna cosa compartida (`src/`, `docs/`, el README),
    aviseu pel grup abans.
 3. Tota decisió → `docs/DECISIONS.md`. Tot resultat → `docs/DIARI.md`. Escriviu-hi a sota de tot,
