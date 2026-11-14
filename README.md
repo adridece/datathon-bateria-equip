@@ -3,6 +3,9 @@
 Repte **UPC Sostenible**: decidir cada hora quanta energia carrega o descarrega una bateria de
 2 MWh / 500 kW del Campus Nord per reduir les emissions de CO₂ (70 %) i la factura elèctrica (30 %).
 
+## Equip
+Jesús Martí · Adrià De La Cereza · Ivan Murillo · Martí Montemayor
+
 ## La nostra solució (resum)
 Control predictiu (MPC) amb programació lineal: cada hora resolem un LP sobre les properes 24 h
 (preu i CO₂ són coneguts) i apliquem només la primera decisió. Arriba al mateix resultat que un
