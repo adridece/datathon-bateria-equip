@@ -17,7 +17,11 @@ export function createScene(container, campus, colors) {
 
   const camera = new THREE.OrthographicCamera(-1, 1, 1, -1, 0.1, 400);
   const controls = new OrbitControls(camera, renderer.domElement);
-  Object.assign(controls, { enableDamping: true, enablePan: false, minPolarAngle: 0.5, maxPolarAngle: 1.2, minZoom: 1.0, maxZoom: 6 });
+  // zoom cap al ratolí i desplaçament amb el botó dret (o Maj + arrossegar), sense sortir del campus
+  Object.assign(controls, { enableDamping: true, enablePan: true, screenSpacePanning: false, zoomToCursor: true,
+                            minPolarAngle: 0.5, maxPolarAngle: 1.2, minZoom: 1.0, maxZoom: 6 });
+  const bbox = campus.bbox.buildings;   // [xmin, zmin, xmax, zmax] en metres
+  const minT = new THREE.Vector3(bbox[0] * S, 0, bbox[1] * S), maxT = new THREE.Vector3(bbox[2] * S, 3, bbox[3] * S);
   const HOME = { target: new THREE.Vector3(-2, 0, 4), zoom: 1.2, dir: new THREE.Vector3(1, 1.1, 1).normalize() };
 
   function place(view) {
@@ -47,7 +51,7 @@ export function createScene(container, campus, colors) {
     el.appendChild(credit);
     observer.observe(el);
     resize();
-    controls.enableZoom = el.clientHeight >= 450;
+    controls.enableZoom = el.id === "stage-big" || el.classList.contains("expanded");   // a la targeta petita, la roda fa scroll de la pàgina
   }
 
   // llums: cel clar i un sol que es mou amb l'hora
@@ -469,6 +473,7 @@ export function createScene(container, campus, colors) {
               zoom: flight.from.zoom + (flight.to.zoom - flight.from.zoom) * t });
       if (t >= 1) flight = null;
     } else {
+      controls.target.clamp(minT, maxT);
       controls.update();
     }
     socShown += (socTarget - socShown) * Math.min(1, dt * 5);

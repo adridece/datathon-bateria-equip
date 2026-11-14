@@ -32,7 +32,7 @@ function go(name) {
   $("title").textContent = VIEWS[name][0];
   $("subtitle").textContent = VIEWS[name][1];
   if (name === "overview") { scene.mount($("stage-small")); setTimeout(() => { drawPlan(); drawCalendar(); }, 60); }
-  if (name === "live") { scene.mount($("stage-big")); drawStrip(); }
+  if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(drawStrip, 450); }   // es torna a dibuixar quan la vista ja és oberta
   window.Charts.show(name);
   if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color }), 30);
 }
@@ -97,7 +97,7 @@ let sx, cursor;
 function drawStrip() {
   const svg = d3.select("#strip"), w = $("strip").clientWidth, h = 54;
   if (!w) return;
-  svg.attr("viewBox", `0 0 ${w} ${h}`).selectAll("*").remove();
+  svg.attr("viewBox", `0 0 ${w} ${h}`).attr("preserveAspectRatio", "none").selectAll("*").remove();
   sx = d3.scaleLinear().domain([week.start, week.end]).range([0, w]);
   const bw = w / (week.end - week.start), idx = d3.range(week.start, week.end);
   svg.append("rect").attr("width", w).attr("height", h).attr("rx", 10).attr("fill", "#F7F5F1");
@@ -378,6 +378,7 @@ function runTour() {
   go("live");
   scene.controls.enabled = false;
   scene.setPlaying(true);   // durant la presentació l'energia es mou
+  show(week.start);         // la presentació sempre comença a les 00:00 de la setmana
   setAll("[data-act=tour]", b => b.classList.add("on"));
   const run = i => {
     if (i >= tour.length) { tourTimer = setTimeout(endTour, 3500); return; }
