@@ -18,6 +18,8 @@ Control predictiu (MPC) amb programació lineal: cada hora resolem un LP sobre l
 | Cota superior teòrica | 6,08 |
 
 ## Posar-ho en marxa
+**Si és el primer cop, segueix la guia pas a pas: [`docs/GUIA_EQUIP.md`](docs/GUIA_EQUIP.md).**
+
 Cal Python 3.11.
 
 **Mac / Linux**

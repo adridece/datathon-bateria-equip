@@ -1,0 +1,150 @@
+# Guia pas a pas per a l'equip (des de zero)
+
+Aquesta guia suposa que **no saps res**. Segueix els passos en ordre i no te'n saltis cap.
+Si alguna cosa falla, copia el missatge d'error i passa'l al teu assistent de codi, o pregunta al grup.
+
+---
+
+## 0. Què estem fent (en 1 minut)
+El campus té una bateria gegant. Cada hora hem de decidir si **carrega**, **descarrega** o **no fa res**.
+- Carregar quan l'electricitat és **neta i barata**.
+- Descarregar quan és **bruta i cara** (així el campus compra menys de la xarxa en aquelles hores).
+
+El nostre programa (l'"agent") pren aquesta decisió cada hora. La web del repte el prova amb dades
+secretes i ens dona una puntuació. Com més CO₂ i diners estalviem, més punts.
+
+---
+
+## 1. Instal·lar els programes (només el primer cop)
+
+### Windows
+1. **Python 3.11**: ves a https://www.python.org/downloads/release/python-3119/ → baixa
+   "Windows installer (64-bit)". En instal·lar, **marca la casella "Add python.exe to PATH"**.
+2. **Git**: https://git-scm.com/download/win → instal·la amb les opcions per defecte.
+3. **Visual Studio Code** (editor, recomanat): https://code.visualstudio.com/
+4. Obre **PowerShell** (botó Inici → escriu "PowerShell") i comprova-ho:
+   ```
+   py -3.11 --version
+   git --version
+   ```
+   Han de sortir números de versió. Si no, reinicia l'ordinador i torna-ho a provar.
+
+### Mac
+1. Obre el **Terminal** (Cmd + Espai → "Terminal").
+2. Si no tens Homebrew: segueix https://brew.sh (una sola comanda).
+3. `brew install python@3.11 git`
+4. Comprova: `python3.11 --version` i `git --version`.
+
+---
+
+## 2. Acceptar la invitació i baixar el projecte (només el primer cop)
+1. Mira el correu: t'ha arribat una invitació de GitHub al repo `datathon-bateria-equip`. Accepta-la
+   (si no tens compte de GitHub, crea-te'n un amb el mateix correu).
+2. A PowerShell / Terminal, ves a on vulguis guardar el projecte (p. ex. Documents) i clona'l:
+   ```
+   cd Documents
+   git clone https://github.com/adridece/datathon-bateria-equip.git
+   cd datathon-bateria-equip
+   ```
+   La primera vegada et demanarà iniciar sessió a GitHub (s'obre el navegador).
+3. Digues-li a git qui ets (perquè els teus canvis surtin amb el teu nom):
+   ```
+   git config user.name "El Teu Nom i Cognom"
+   git config user.email "el-teu-correu@exemple.com"
+   ```
+
+---
+
+## 3. Preparar l'entorn de Python (només el primer cop)
+Un "entorn virtual" (`.venv`) és una carpeta amb les llibreries del projecte, separades de la resta.
+
+**Windows (PowerShell, dins la carpeta del projecte):**
+```
+py -3.11 -m venv .venv
+.venv\Scripts\Activate.ps1
+pip install -r requirements.txt
+python scripts/setup.py
+```
+> Si surt un error de "execution policy", executa un cop:
+> `Set-ExecutionPolicy -Scope CurrentUser RemoteSigned` i respon `S`.
+
+**Mac (Terminal, dins la carpeta del projecte):**
+```
+python3.11 -m venv .venv
+source .venv/bin/activate
+pip install -r requirements.txt
+python scripts/setup.py
+```
+
+Sabràs que l'entorn està actiu perquè a l'inici de la línia surt `(.venv)`.
+**Cada cop que obris una terminal nova** has de tornar a activar-lo (la línia `Activate.ps1` o `source`).
+
+La clau de l'API d'OpenCode: copia el fitxer `.env.example` amb el nom `.env` i enganxa-hi la clau
+(és al Discord). **Mai la pugis a GitHub** (el `.env` ja està ignorat).
+
+---
+
+## 4. Comprovar que tot funciona
+```
+python -m src.evaluate agents/mpc_lp
+```
+Ha de sortir alguna cosa com `VALID (7d/mes) ... 'score': 6.08 ... 'infraccions': 0`. Si és així, ja ho tens tot a punt.
+
+---
+
+## 5. Com treballem cada dia (el cicle)
+1. **Abans de començar**, baixa els canvis dels altres: `git pull`
+2. Treballa a la teva carpeta (p. ex. `agents/el_meu_agent/` o un notebook a `notebooks/`).
+3. Prova el que has fet: `python -m src.evaluate agents/el_meu_agent`
+4. Apunta el resultat a `docs/DIARI.md` i, si has decidit alguna cosa, a `docs/DECISIONS.md`.
+5. Puja els canvis:
+   ```
+   git add .
+   git commit -m "Explicació curta del que has fet"
+   git push
+   ```
+   Si `git push` diu que hi ha canvis nous, fes `git pull` i torna a fer `git push`.
+
+---
+
+## 6. Com enviar un agent a la web (puntuació oficial)
+1. Crea el zip i valida'l: `python scripts/make_submission.py agents/mpc_lp`
+   → ha de dir **"LA SOLUCIÓ ÉS VÀLIDA"**. El zip queda a la carpeta `submissions/`.
+2. Obre https://repteupc.datathon.cat/ → pestanya **"Lliurament de Solucions"**.
+3. Omple: **Nom de l'equip** (sempre el mateix!), **PIN** (el de l'equip, el guarda l'Adrià; no el
+   poseu a GitHub) i, només el primer cop, els **noms dels 4 integrants**.
+4. A "Arxiu de la solució" → **Browse files** → tria el zip de `submissions/`.
+5. Prem **"🧪 Validació Ràpida"** (gratis). Si surt bé →
+6. Prem **"🚀 Trametre al Leaderboard"** (gasta 1 dels 10 intents diaris de TOT l'equip:
+   **aviseu al grup abans d'enviar**).
+7. Mira la nota a "Classificació General (Leaderboard)" i apunta-la a `docs/DIARI.md`.
+
+---
+
+## 7. Com fer servir el teu assistent de codi (Claude, Gemini, OpenCode...)
+- Obre'l **dins la carpeta del projecte**. Llegirà sol el fitxer `AGENTS.md` (Claude i Gemini també,
+  a través de `CLAUDE.md` / `GEMINI.md`), on hi ha les normes i tot el context.
+- Primer missatge recomanat: *"Llegeix AGENTS.md i tots els documents de docs/ i explica'm on estem
+  i què queda per fer."*
+- Demana-li sempre que t'**expliqui** el que fa i per què, i que ho apunti a `docs/`.
+
+---
+
+## 8. On és cada cosa
+| Vull... | Mira... |
+|---|---|
+| Entendre el repte | `docs/CONTEXT.md` |
+| Saber per què hem fet les coses | `docs/DECISIONS.md` |
+| Veure resultats i enviaments | `docs/DIARI.md` |
+| Saber què queda per fer | `docs/PLA.md` |
+| El nostre agent | `agents/mpc_lp/agent.py` |
+| Material oficial (no tocar) | `starter_kit/`, `docs/repte/` |
+
+## 9. Glossari ràpid
+- **SOC**: quanta energia té la bateria (0 a 2.000 kWh).
+- **kW / kWh**: potència (velocitat) / energia (quantitat). 500 kW durant 1 h = 500 kWh.
+- **PVPC**: preu de la llum per hores (€/kWh).
+- **CO₂ (kg/kWh)**: quanta contaminació fa cada kWh de la xarxa aquella hora.
+- **LP (programació lineal)**: mètode matemàtic que troba la millor decisió possible quan tot és "lineal".
+- **MPC**: planificar les properes 24 h, fer només la primera hora i tornar a planificar.
+- **Oracle**: agent "trampós" que coneix tot el futur; serveix per saber el màxim possible.

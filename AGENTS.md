@@ -5,6 +5,7 @@ Llegeix aquest fitxer sencer abans de fer res. Després llegeix, en aquest ordre
 2. `docs/DECISIONS.md` – què hem decidit i per què.
 3. `docs/DIARI.md` – resultats i registre de feina.
 4. `docs/PLA.md` – què queda per fer.
+5. `docs/GUIA_EQUIP.md` – guia pas a pas des de zero (instal·lar, treballar, enviar).
 
 ## Qui som
 Equip de 4 estudiants de 2n de carrera (UPC) a la Datathon FME 2026, repte UPC Sostenible (bateria).
@@ -25,7 +26,10 @@ Treballem des de Mac i Windows, cadascú amb el seu assistent de codi.
 6. **Mai pujar secrets**: la clau d'API va a `.env` (ignorat per git). Mai escriure-la en cap fitxer versionat.
 7. Codi multiplataforma: `pathlib`, scripts en Python (no bash), sense rutes absolutes.
 8. Cada agent nou en una carpeta pròpia `agents/<nom>/` (no trepitjar la feina dels altres).
-9. Fer `git pull` abans de començar i commits petits amb missatges clars en català.
+9. **Explicar-ho tot com si l'usuari no en sabés res**: cap membre de l'equip és expert. Abans de
+   fer res, explica què faràs i per què; després, com comprovar-ho. Dona les comandes exactes (Windows
+   i Mac si canvien), defineix els termes tècnics i actualitza `docs/GUIA_EQUIP.md` si canvia el procés.
+10. Fer `git pull` abans de començar i commits petits amb missatges clars en català.
 
 ## Comandes útils
 ```
