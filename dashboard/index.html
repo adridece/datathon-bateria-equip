@@ -99,7 +99,7 @@
         </div>
         <div class="grid" style="margin-top:16px">
           <div class="card s12">
-            <h2>Calendari d'estalvi</h2><div class="sub">CO₂ evitat cada dia de les 12 setmanes de validació. Clica un dia per veure'l al campus.</div>
+            <h2>Calendari d'estalvi</h2><div class="sub">CO₂ evitat cada dia de les 11 setmanes de validació. Clica un dia per veure'l al campus.</div>
             <div class="chart" id="c-calendar"></div>
           </div>
         </div>
@@ -107,7 +107,7 @@
           <div class="card s6"><h2>Carrega quan la xarxa és neta, descarrega quan és bruta</h2>
             <div class="sub">Potència mitjana de la bateria per hora del dia (kW) i CO₂ de la xarxa</div><div class="chart" id="c-mini-profile"></div></div>
           <div class="card s6"><h2>El nostre control arriba al màxim teòric</h2>
-            <div class="sub">Puntuació oficial del repte, validació de 12 setmanes</div><div class="chart" id="c-mini-strategy"></div></div>
+            <div class="sub">Puntuació oficial del repte, validació d'11 setmanes</div><div class="chart" id="c-mini-strategy"></div></div>
         </div>
       </section>
 
@@ -154,7 +154,7 @@
             <div class="ctrl"><div class="l">Reserva mínima per a emergències: <b class="num" id="pl-reserve-v"></b></div><input type="range" id="pl-reserve" min="0" max="60" step="5"></div>
             <div class="ctrl"><div class="l">Potència màxima de l'inversor: <b class="num" id="pl-power-v"></b></div><input type="range" id="pl-power" min="100" max="500" step="50"></div>
             <div class="ctrl"><div class="l">Prioritat: <b class="num" id="pl-weight-v"></b></div><input type="range" id="pl-weight" min="0" max="100" step="10"></div>
-            <p class="note">El pla es recalcula al moment amb programació dinàmica (nivells de 20 kWh), des de l'hora triada al panell de dalt.</p>
+            <p class="note">El pla es recalcula al moment amb programació dinàmica (nivells de 10 kWh), des de l'hora triada al panell de dalt.</p>
           </div>
           <div class="card s8">
             <h2>Pla nou comparat amb el de l'agent</h2>
@@ -191,7 +191,7 @@
           <div class="card s12"><h2>Supòsits i límits</h2>
             <ul class="list">
               <li><b>Previsions.</b> El preu i el CO₂ de les properes 24 h es coneixen, com al repte. El consum i la solar futurs no.</li>
-              <li><b>Anualització.</b> Les xifres per any multipliquen les 12 setmanes de validació per 8.760 / 1.848 hores.</li>
+              <li><b>Anualització.</b> Les xifres per any multipliquen les 11 setmanes de validació per 8.760 / 1.848 hores.</li>
               <li><b>Bateria.</b> 90 % de rendiment i sense degradació, com el simulador oficial.</li>
               <li><b>Ubicació.</b> Els edificis i les plaques solars són reals; la posició de la bateria i de l'escomesa és suposada.</li>
               <li><b>Inversió.</b> El cost per kWh és una hipòtesi editable; no inclou manteniment ni subvencions.</li>

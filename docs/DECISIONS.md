@@ -114,3 +114,11 @@ i perseguir el públic seria sobreajustar. Com que el jurat puntua al test priva
   i 3 centres proposats amb un anell soterrat; el consum es reparteix segons el volum dels edificis que alimenta cada centre.
   La subestació del BSC (documentada) surt en gris perquè és un client a part. Detall i fonts: `docs/RECERCA_ELECTRICA_CAMPUS.md`.
 - Noms dels edificis confirmats amb fonts de la UPC (ja no n'hi ha cap de deduït).
+
+### D-018 · 14/11 · Adrià — Coherència del dashboard (revisió del Jesús)
+- Totes les xifres del dashboard surten ara de `mpc_robust` (versió final). La corba de mida per a 1 MW queda bé
+  (4.000 kWh i 1 MW: 11,84 punts, abans 11,12 amb mpc_lp, que descarregava més del que consumia el campus).
+- El cost per tona de CO₂ és net: (inversió − estalvi en 15 anys) / tones. Si surt negatiu, la bateria es paga sola.
+- 11 setmanes de validació (no 12) i "0 infraccions al test públic".
+- El planificador mai proposa un pla pitjor que el de l'agent si el de l'agent compleix l'escenari (càlcul en salts de 10 kWh).
+- La visió general comença a l'hora 0. Informe en una pàgina pròpia (`dashboard/report.html`) i presentació guiada amb portada i resum.
