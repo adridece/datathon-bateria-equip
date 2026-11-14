@@ -33,3 +33,13 @@ Al test seran una mica diferents, però només importa la proporció entre els d
 
 ### D-005 · 14/11 · equip — Seguretat: 0 infraccions
 Sempre retallem la consigna amb el *safety clamp* oficial abans de retornar-la (amb marge 1e-4).
+
+### D-006 · 14/11 · Adrià — Dashboard amb Streamlit + animació pròpia
+**Per què:** Streamlit és Python (el que ja fem servir) i funciona a Mac i Windows. L'animació va en
+SVG + JavaScript dins d'un sol fitxer, sense dependre d'internet, perquè no falli en directe a la presentació.
+Totes les xifres surten del simulador oficial (`src/replay.py`), així són coherents amb el leaderboard.
+També serveix per al side challenge de la Tukey Commission (veure `docs/SIDE_CHALLENGES.md`).
+
+### D-007 · 14/11 · equip — No enviem encara a la web
+L'agent `mpc_lp` està validat a la web (dry-run correcte, 0 infraccions, 1,55 ms/hora). Decidim esperar
+abans de gastar un enviament al leaderboard.

@@ -39,4 +39,5 @@ Si algú acaba, ajuda el bloc que vagi més endarrerit (pregunteu-ho pel grup).
 | +23 h | Res de nou: només repassar i arreglar errors |
 
 ## Side challenges
-Encara no s'han anunciat. Quan surtin, s'afegiran aquí i es repartiran.
+Veure `docs/SIDE_CHALLENGES.md` (Tukey Commission = dashboard; Tinybird/RawTree = agent d'IA).
+**Recordeu: per recollir premis cal anar com a mínim a una xerrada.**

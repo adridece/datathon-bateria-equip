@@ -11,3 +11,4 @@ data/processed/
 submissions/*.zip
 .idea/
 .vscode/
+.claude/
