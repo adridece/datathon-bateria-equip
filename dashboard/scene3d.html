@@ -252,7 +252,7 @@ const flows = {
   grid: { curve: curve([lift(gridPos, 3.0), lift(gridPos.clone().lerp(node, 0.5), 1.2), node]), color: new THREE.Color("#87603A") },
   bat: { curve: curve([node, lift(node.clone().lerp(batPos, 0.5), 0.6), lift(batPos, 0.8)]), color: new THREE.Color(C.charge) },
   load: { curve: curve([node, lift(node.clone().lerp(loadPos, 0.35), 1.4), lift(node.clone().lerp(loadPos, 0.75), 2.4), loadPos.clone().setY(loadPos.y + 0.2)]),
-          color: new THREE.Color(C.ink) },
+          color: new THREE.Color(C.muted) },
 };
 assets.pv_inverters.forEach((inv, i) => {
   const p = at(inv.pos).setY(17.5 * S * VX + 0.2);
