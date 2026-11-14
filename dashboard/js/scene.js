@@ -165,8 +165,10 @@ export function createScene(container, campus, colors) {
   // centres de transformació (proposta) i subestació del BSC (real, però és un client a part)
   const conns = A.grid_connections || [];
   const connPos = {};
-  const markerMat = new THREE.MeshStandardMaterial({ color: "#2F7A74", roughness: 0.45 });
-  const markerPadMat = new THREE.MeshStandardMaterial({ color: "#D3E7E3", roughness: 0.9 });
+  const poleMat = new THREE.MeshStandardMaterial({ color: "#8B8F93", roughness: 0.45, metalness: 0.3 });
+  const insulatorMat = new THREE.MeshStandardMaterial({ color: "#E9E6DF", roughness: 0.3 });
+  const POLE_H = 2.4;
+  const poleTop = {};
   conns.forEach(c => {
     const p = at(c.pos);
     connPos[c.id] = c.main ? mainCT.clone() : p;
@@ -178,19 +180,29 @@ export function createScene(container, campus, colors) {
       pickables.push(disc);
       return;
     }
-    // marcador rodó: base circular a terra i un pilonet arrodonit
-    const marker = new THREE.Group();
+    // pal elèctric: màstil amb dues travesses i aïlladors; d'aquí surten les línies cap als edificis
     if (c.main) p.copy(mainCT);
-    const pad = new THREE.Mesh(new THREE.CylinderGeometry(0.95, 0.95, 0.06, 48), markerPadMat);
-    pad.position.y = 0.03;
-    const pin = new THREE.Mesh(new THREE.CapsuleGeometry(0.26, 0.55, 8, 24), markerMat);
-    pin.position.y = 0.6;
-    marker.add(pad, pin);
-    marker.position.copy(p);
-    pin.castShadow = true;
-    pin.userData = { kind: "ct", info: c };
-    scene.add(marker);
-    pickables.push(pin);
+    const pole = new THREE.Group();
+    const mast = new THREE.Mesh(new THREE.CylinderGeometry(0.06, 0.12, POLE_H, 10), poleMat);
+    mast.position.y = POLE_H / 2;
+    pole.add(mast);
+    [POLE_H - 0.45, POLE_H - 0.1].forEach((y, j) => {
+      const w = j ? 1.1 : 1.5;
+      const arm = new THREE.Mesh(new THREE.BoxGeometry(w, 0.06, 0.06), poleMat);
+      arm.position.y = y;
+      pole.add(arm);
+      [-w / 2 + 0.08, 0, w / 2 - 0.08].forEach(x => {
+        const ins = new THREE.Mesh(new THREE.SphereGeometry(0.06, 12, 8), insulatorMat);
+        ins.position.set(x, y + 0.08, 0);
+        pole.add(ins);
+      });
+    });
+    pole.position.copy(p);
+    pole.traverse(o => { o.castShadow = true; });
+    mast.userData = { kind: "ct", info: c };
+    scene.add(pole);
+    pickables.push(mast);
+    poleTop[c.id] = p.clone().setY(POLE_H);
   });
   // anell soterrat de mitja tensió: un cable fi arran de terra
   const cableMat = new THREE.MeshBasicMaterial({ color: "#A08C70", transparent: true, opacity: 0.75 });
@@ -239,11 +251,26 @@ export function createScene(container, campus, colors) {
     if (!link) return [node];
     return [...ringPath(link[0]), connPos[id]];
   };
-  conns.filter(c => c.upc_meter !== false).forEach(c => {
-    const pts = c.main ? [lift(node, 0.25), lift(at(A.pv_inverters[1].pos), 0.25)] : ringPath(c.id).map(p => lift(p, 0.25));
-    flows["load_" + c.id] = polyline(pts);
+  conns.filter(c => c.upc_meter !== false && !c.main).forEach(c => {
+    flows["load_" + c.id] = polyline(ringPath(c.id).map(p => lift(p, 0.25)));
     flowColor["load_" + c.id] = null;   // ja es veu el cable de l'anell
   });
+  // línies de cada pal a cada edifici que alimenta, amb el consum repartit segons la mida de l'edifici
+  const feeders = [];
+  conns.filter(c => c.upc_meter !== false && poleTop[c.id]).forEach(c => {
+    c.feeds.forEach(n => {
+      const b = campus.buildings.find(x => x.id === n || x.name === n);
+      if (!b) return;
+      const roof = new THREE.Vector3(b.centroid[0] * S, b.height_m * S * VX + 0.08, b.centroid[1] * S);
+      const top = poleTop[c.id];
+      const mid = top.clone().lerp(roof, 0.5).setY(Math.max(top.y, roof.y) + 0.7);
+      const name = "feed_" + c.id + "_" + b.id;
+      flows[name] = curve([top, mid, roof]);
+      flowColor[name] = "#C9CED2";
+      feeders.push({ name, share: area(n) });
+    });
+  });
+  const feederTotal = feeders.reduce((s, f) => s + f.share, 0) || 1;
   A.pv_inverters.forEach((inv, i) => {
     const p = at(inv.pos).setY(17.5 * S * VX + 0.25);
     flows["pv" + i] = curve([p, lift(p.clone().lerp(node, 0.35), 3.2), lift(p.clone().lerp(node, 0.8), 2.2), lift(node, 1.2)]);
@@ -259,18 +286,19 @@ export function createScene(container, campus, colors) {
     scene.add(guide);
     const geo = new THREE.BufferGeometry();
     geo.setAttribute("position", new THREE.BufferAttribute(new Float32Array(MAX_P * 3), 3));
-    const mat = new THREE.PointsMaterial({ size: 8 * renderer.getPixelRatio(), map: sprite, transparent: true, alphaTest: 0.3,
+    const small = name.startsWith("feed_");   // les línies als edificis porten partícules més petites
+    const mat = new THREE.PointsMaterial({ size: (small ? 5 : 8) * renderer.getPixelRatio(), map: sprite, transparent: true, alphaTest: 0.3,
       depthWrite: false, sizeAttenuation: false });
     const pts = new THREE.Points(geo, mat);
     pts.frustumCulled = false;
     scene.add(pts);
-    streams[name] = { curve: c, geo, mat, guide, seed: Float32Array.from({ length: MAX_P }, Math.random), kw: 0, dir: 1, phase: 0 };
+    streams[name] = { curve: c, geo, mat, guide, min: small ? 1 : 3, seed: Float32Array.from({ length: MAX_P }, Math.random), kw: 0, dir: 1, phase: 0 };
   }
 
   function stepStreams(dt) {
     for (const s of Object.values(streams)) {
       const share = Math.min(1, s.kw / 1400);
-      const n = s.kw < 1 ? 0 : Math.max(3, Math.round(MAX_P * share));
+      const n = s.kw < 1 ? 0 : Math.max(s.min, Math.round(MAX_P * share));
       s.phase += dt * (0.04 + 0.16 * share) * s.dir;
       const arr = s.geo.attributes.position.array;
       for (let i = 0; i < n; i++) {
@@ -297,7 +325,7 @@ export function createScene(container, campus, colors) {
   addTag("solar", at(A.pv_inverters[0].pos).setY(17.5 * S * VX + 1.6), -50, -18);
   conns.forEach(c => {
     const short = c.main ? "Escomesa principal" : c.underground ? "Subestació BSC" : c.name.replace("CT ", "Centre ").replace(" (CPD)", "");
-    addTag("ct_" + c.id, lift(connPos[c.id], 2.4), 0, -4);
+    addTag("ct_" + c.id, lift(connPos[c.id], c.underground ? 0.6 : POLE_H + 0.5), 0, -4);
     tags["ct_" + c.id].el.classList.add("small");
     tags["ct_" + c.id].el.textContent = short;
   });
@@ -345,8 +373,13 @@ export function createScene(container, campus, colors) {
     streams.grid.kw = h.grid;
     streams.grid.mat.color.set(co2Color);
     Object.keys(shares).forEach(id => {
+      if (!streams["load_" + id]) return;
       streams["load_" + id].kw = h.load * shares[id] / totalShare;
       streams["load_" + id].mat.color.set("#3E4A56");
+    });
+    feeders.forEach(fd => {
+      streams[fd.name].kw = h.load * fd.share / feederTotal;
+      streams[fd.name].mat.color.set("#6B7884");
     });
     streams.bat.kw = Math.abs(h.bat);
     streams.bat.dir = h.bat >= 0 ? -1 : 1;
