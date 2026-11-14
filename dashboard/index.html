@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light only">
 <title>La Datoneta | Bateria del Campus Nord</title>
-<link rel="icon" href="static/icon.svg">
+<link rel="icon" type="image/png" href="static/logo-datathon.png">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">
   { "imports": { "three": "./vendor/three.module.min.js",
@@ -56,7 +56,20 @@
           <div class="card s8">
             <h2>El campus ara mateix</h2>
             <div class="sub">Edificis reals del Campus Nord. Les partícules són l'energia: com més n'hi ha, més kW.</div>
-            <div class="stage" id="stage-small" style="height:380px"><div class="overlay maptools">
+            <div class="stage" id="stage-small" style="height:380px">
+            <div class="overlay hud-live">
+              <div class="hud-top"><span class="num hud-clock" data-clock>-</span>
+                <button class="primary" data-act="play">Reproduir</button>
+                <span class="seg"><button data-speed="0.4">Lent</button><button data-speed="1.2" class="on">Normal</button><button data-speed="4">Ràpid</button></span></div>
+              <div class="hud-grid">
+                <div><span>Bateria</span><b class="num" data-soc>-</b><em data-mode></em></div>
+                <div><span>Compra a la xarxa</span><b class="num" data-grid>-</b></div>
+                <div><span>CO₂ de la xarxa</span><b class="num" data-co2>-</b></div>
+                <div><span>Preu</span><b class="num" data-price>-</b></div>
+                <div><span>Estalviat aquesta setmana</span><b class="num good" data-saved>-</b></div>
+              </div>
+              <div class="hud-why" data-why>-</div>
+            </div><div class="overlay maptools">
               <button data-act="zoom-in" aria-label="Apropar">+</button><button data-act="zoom-out" aria-label="Allunyar">−</button>
               <button data-act="full" aria-label="Pantalla completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
             </div></div>
@@ -68,15 +81,15 @@
             <div class="battery-now">
               <svg width="92" height="92" viewBox="0 0 92 92">
                 <circle cx="46" cy="46" r="38" fill="none" stroke="#EFECE6" stroke-width="10"/>
-                <circle class="ring" cx="46" cy="46" r="38" fill="none" stroke="#2F7A74" stroke-width="10" stroke-linecap="round"
-                        stroke-dasharray="238.8" stroke-dashoffset="238.8" transform="rotate(-90 46 46)" style="transition:stroke-dashoffset .5s var(--ease)"/>
+                <circle class="ring" cx="46" cy="46" r="38" fill="none" stroke="#47908B" stroke-width="10" stroke-linecap="round"
+                        stroke-dasharray="238.8" stroke-dashoffset="238.8" transform="rotate(-90 46 46)" style="transition:stroke-dashoffset .5s var(--dt-ease)"/>
               </svg>
               <div><div class="big" data-soc>-</div><div class="mode" data-mode>-</div></div>
             </div>
             <div class="rows">
               <span class="k"><i data-dot-grid></i>Compra a la xarxa</span><span class="v" data-grid>-</span>
               <span class="k"><i style="background:#9A958C"></i>Consum del campus</span><span class="v" data-load>-</span>
-              <span class="k"><i style="background:var(--solar)"></i>Solar</span><span class="v" data-pv>-</span>
+              <span class="k"><i style="background:var(--dt-solar)"></i>Solar</span><span class="v" data-pv>-</span>
               <span class="k">CO₂ de la xarxa</span><span class="v" data-co2>-</span>
               <span class="k">Preu</span><span class="v" data-price>-</span>
               <span class="k">Cicles aquesta setmana</span><span class="v" data-cycles>-</span>
@@ -115,20 +128,33 @@
       <section class="view" id="v-live">
         <div class="card" style="height:calc(100% - 4px);display:flex;flex-direction:column">
           <div class="stage" id="stage-big" style="flex:1;min-height:420px">
+            <div class="overlay hud-live">
+              <div class="hud-top"><span class="num hud-clock" data-clock>-</span>
+                <button class="primary" data-act="play">Reproduir</button>
+                <span class="seg"><button data-speed="0.4">Lent</button><button data-speed="1.2" class="on">Normal</button><button data-speed="4">Ràpid</button></span></div>
+              <div class="hud-grid">
+                <div><span>Bateria</span><b class="num" data-soc>-</b><em data-mode></em></div>
+                <div><span>Compra a la xarxa</span><b class="num" data-grid>-</b></div>
+                <div><span>CO₂ de la xarxa</span><b class="num" data-co2>-</b></div>
+                <div><span>Preu</span><b class="num" data-price>-</b></div>
+                <div><span>Estalviat aquesta setmana</span><b class="num good" data-saved>-</b></div>
+              </div>
+              <div class="hud-why" data-why>-</div>
+            </div>
             <div class="overlay maptools">
               <label class="switch"><input type="checkbox" data-compare> Sense bateria</label>
               <button data-act="zoom-in" aria-label="Apropar">+</button><button data-act="zoom-out" aria-label="Allunyar">−</button>
               <button data-act="full" aria-label="Pantalla completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
             </div>
-            <div class="overlay legend3d"><span><i style="background:var(--solar)"></i>solar</span><span><i style="background:var(--charge)"></i>càrrega</span>
-              <span><i style="background:var(--discharge)"></i>descàrrega</span><span><i style="background:#8C6A45"></i>xarxa (color = CO₂)</span><span><i style="background:#3E4A56"></i>consum (per l'anell soterrat)</span><span><i style="background:#2F7A74"></i>centre de transformació</span></div>
+            <div class="overlay legend3d"><span><i style="background:var(--dt-solar)"></i>solar</span><span><i style="background:var(--dt-charge)"></i>càrrega</span>
+              <span><i style="background:var(--dt-discharge)"></i>descàrrega</span><span><i style="background:#8C6A45"></i>xarxa (color = CO₂)</span><span><i style="background:#3E4A56"></i>consum (per l'anell soterrat)</span><span><i style="background:#8B8F93"></i>pal del centre de transformació (línies cap als edificis)</span></div>
             <div class="overlay caption" id="caption"></div>
           </div>
           <div class="player" data-player></div>
           <svg class="strip" id="strip"></svg>
           <div class="legend"><span>CO₂ de la xarxa: net<svg class="ramp" id="ramp"></svg>brut</span>
-            <span><i style="background:var(--charge)"></i>càrrega</span><span><i style="background:var(--discharge)"></i>descàrrega</span>
-            <span>Clic o arrossega la franja per moure't. Espai per reproduir, P per a la presentació guiada</span></div>
+            <span><i style="background:var(--dt-charge)"></i>càrrega</span><span><i style="background:var(--dt-discharge)"></i>descàrrega</span>
+            <span>Clic o arrossega la franja per moure't. Espai per reproduir, + i − o la roda per fer zoom on hi ha el ratolí, botó dret per desplaçar, 0 per a la vista inicial, P per a la presentació guiada</span></div>
         </div>
       </section>
 
