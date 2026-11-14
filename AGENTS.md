@@ -1,6 +1,7 @@
 # Instruccions per a qualsevol assistent de codi d'aquest projecte
 
 Llegeix aquest fitxer sencer abans de fer res. Després llegeix, en aquest ordre:
+0. `docs/EQUIP.md` – qui fa què, branques i punts de control.
 1. `docs/CONTEXT.md` – tot el repte resumit (normes, puntuació, dades, descobertes).
 2. `docs/DECISIONS.md` – què hem decidit i per què.
 3. `docs/DIARI.md` – resultats i registre de feina.
@@ -15,8 +16,12 @@ Treballem des de Mac i Windows, cadascú amb el seu assistent de codi.
 1. **Cap rastre d'assistents de codi.** Mai afegir línies `Co-Authored-By`, "Generated with...", ni
    mencions a cap assistent en commits, codi, comentaris, notebooks ni documents. Els commits els signa
    la persona de l'equip que treballa.
-2. **Estil humà d'estudiants de 2n**: comentaris en català, curts i naturals; codi senzill i llegible,
-   sense sobre-enginyeria ni comentaris excessivament formals.
+2. **Estil de codi (molt important):** ha de semblar escrit per nosaltres.
+   - **Codi en anglès** (noms de variables, funcions i fitxers nous) i **comentaris en català**.
+   - Simple i llegible: funcions curtes, noms clars, res de sobre-enginyeria ni capes innecessàries.
+   - Comentaris curts i naturals, només on aporten (el "per què", no el "què"). Res de comentaris
+     estranys, decoratius, en majúscules, amb emojis o massa formals.
+   - Ha de funcionar sempre: provar-ho abans de pujar-ho.
 3. **Documentar sempre**: tota decisió nova → `docs/DECISIONS.md`; tot resultat nou → taula de
    `docs/DIARI.md`. Si no està escrit, no ha passat.
 4. **Avaluar sempre amb el simulador oficial**: `python -m src.evaluate agents/<carpeta>`.
