@@ -104,3 +104,11 @@ i perseguir el públic seria sobreajustar. Com que el jurat puntua al test priva
 1. `agents/mpc_robust` (gestiona fallades del comptador).
 2. `agents/mpc_test_weights`: el mateix codi amb la proporció CO₂/€ del test públic (71.816 kg / 118.746 €), que és la
    ponderació exacta del test. Validació 6,08 · train complet 5,67 · 0 infraccions.
+
+### D-017 · 14/11 · Ivan — Les dues versions generalitzen: no les toquem
+Comprovat amb `tests/check_generalization.py` (veure DIARI): validació creuada per mesos, 10 tests simulats com l'oficial,
+error a les previsions, talls del comptador, final de simulació, SOC als límits i sensibilitat de params.json.
+Cap problema real: 0 infraccions sempre, a 0,002 de l'òptim de mitjana i estables davant canvis dels paràmetres.
+`mpc_robust` i `mpc_test_weights` empaten (+0,0001), així que per al jurat són dues opcions igual de bones.
+El que més pesa al test privat són els talls del comptador: `mpc_lp` hi perdria fins a 0,2 punts, les nostres versions no.
+**Decisió:** les dues versions queden congelades tal com estan. Si el test privat té talls, `mpc_robust`/`mpc_test_weights` són clarament millors que `mpc_lp`.
