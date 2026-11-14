@@ -275,3 +275,16 @@ d'ahir ancorada. Models: 5 llavors (mitjana) per ser més estables. Es reentrena
 ### D-034 · 14/11 · Ivan — `hard_final` v2: excedent solar i preu a totes les hores
 Amb excedent solar carreguem pensant en el cas de més sol (l'error de carregar de més és comprar una mica de xarxa a l'hora
 més barata; el de carregar de menys és perdre energia gratis). El model de preu s'aplica a totes les hores. Validació: 19,22.
+
+### D-036 · 14/11 · Adrià — `agents/hard_v3`: model directe de CO₂ a +3..+12 h
+Anàlisi a fons del Mode Difícil amb un banc de proves honest (models entrenats sense les setmanes avaluades; F0, F1 i F2
+reservada) i l'òptim teòric calculat igual (F0 20,28 · F1 18,75):
+- `hard_final` és al 92,7 % de l'òptim. Amb totes les previsions perfectes el mateix LP faria 20,18 (F0): **tot el que falta
+  és error de previsió**, no el mètode. El que més pesa: CO₂ +0,64 (només +3..+5 h ja +0,29), consum net de l'hora actual +0,51,
+  preu +0,27. Els marges de descàrrega ja són als millors valors.
+- El rècord de la web (24,10) és ~97 % de l'òptim; el sostre de la web és ~24,7–24,8 (22,96 / 0,927). **25 no s'hi arriba**
+  ni sabent el futur.
+- Millora trobada: un model directe de CO₂ (LightGBM, la corba de 48 h de CO₂ i 24 h de preu relativa a l'última hora coneguda)
+  barrejat meitat i meitat amb la previsió de `hard_final` a les hores +3..+12. Error −5/−6 %; score F0 +0,08, F1 +0,07,
+  F2 +0,17, 0 infraccions. Descartat: preu (+0,02), horitzó fins a +18 (empitjora F2), pes 0,7 (no millora les tres).
+**Decisió:** `hard_v3` és el nou candidat del Mode Difícil (esperat ~23,1 a la web). Es reentrena amb `python scripts/train_hard_v3.py`.
