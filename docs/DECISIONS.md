@@ -139,3 +139,61 @@ i perseguir el públic seria sobreajustar. Com que el jurat puntua al test priva
 - Les xifres es calculen de les mateixes dades del dashboard (no hi ha cap número escrit a mà).
 - Decisions: control predictiu, horari de càrrega i descàrrega, ampliar a 3.000 kWh (retorn 9,4 anys),
   posar-la en marxa amb previsions de REE, i mantenir el límit de 500 kW (0 infraccions).
+
+### D-021 · 14/11 · Adrià — Diagrama de caixa del CO₂ per hora (homenatge a Tukey)
+- La mitjana per hora amagava la clau: a la mateixa hora el CO₂ canvia molt d'un dia a l'altre. A Estratègia hi ha
+  un diagrama de caixa de Tukey per hora (77 dies), pintat segons què fa la bateria, i una conclusió calculada:
+  a les 7 h el CO₂ va de 40 a 209 g/kWh i el 83 % dels dies l'hora més neta no és la de sempre.
+- Justifica la decisió 01 (control predictiu i no un horari fix). És la gràfica que va inventar Tukey.
+- Vista inicial del 3D: la càmera mira cap al punt durant el vol i no fa cap salt en acabar.
+
+### D-022 · 14/11 · Adrià — Recerca per a la Tukey i què hi posem (i què no)
+Hem fet una recerca sobre què guanya concursos de visualització (Iron Viz, Information is Beautiful) i quines eines
+de Tukey té sentit fer servir. Els tres criteris del jurat (útil per decidir, gràfics adequats, coherència) coincideixen
+amb els d'Iron Viz: guanya un camí clar pregunta → evidència → decisió, amb tots els números iguals a tot arreu.
+- **Amb bateria i sense** (visió general): compra a la xarxa amb i sense bateria i CO₂ evitat acumulat de la setmana.
+  És la pregunta que es fa UPC Sostenible: què hi guanyem? Mateixa fórmula que el calendari i el HUD.
+- **Caixes amb osca** (McGill, Tukey i Larsen, 1978) i resum de cinc nombres a cada hora.
+- **Quan compensa més**: CO₂ evitat de cada dia contra la diferència de CO₂ dins del dia, amb la recta resistent de
+  Tukey. Conclusió: com més variable sigui la xarxa (més renovables), més val la bateria.
+- **Polit de medianes** (Tukey, EDA cap. 11) de la taula dia × hora amb els 77 dies reals. Primer el vam fer amb mitjanes
+  per dia de la setmana i deia que l'hora ho explicava gairebé tot, cosa que contradeia el diagrama de caixa; amb els dies
+  reals surt 18 % hora, 46 % nivell del dia i 36 % forma del dia, coherent amb la resta.
+- Traiem de la visió general els dos gràfics petits que repetien Estratègia.
+- No hi posem: més 3D amb valors, més KPI, pastissos, xat amb IA, dades en directe d'APIs ni pàgines noves.
+
+### D-023 · 14/11 · Adrià — El 3D en temps real és el centre, sense repeticions ni competició
+- **El dashboard és per a UPC Sostenible, no per a la competició.** Traiem el leaderboard, la puntuació, el test públic i
+  les infraccions del concurs. Tot es diu en tones de CO₂ i euros; la robustesa és "part de l'estalvi que es conserva" i les
+  estratègies es comparen en t/any i €/any.
+- **El 3D en temps real és la secció principal** i s'obre primer, reproduint-se sol (si el navegador no demana menys
+  animació). A sota hi ha el pla de 24 h i els avisos, que segueixen l'hora que es reprodueix.
+- **Cada hora del pla explica el seu motiu** en passar-hi el ratolí, i una franja diu com de segura és la decisió:
+  refem el pla 20 vegades amb el mateix model d'error que a Fiabilitat (l'error creix amb l'horitzó) i comptem quantes
+  vegades es manté (carregar, descarregar o esperar). Sense error coincideix amb l'agent en un 83-100 % de les hores.
+- **Res repetit:** fora el 3D petit i la targeta Bateria de la visió general (repetien el panell del 3D), fora les respostes
+  de dalt d'Estratègia i Fiabilitat (repetien les decisions) i fora els petits múltiples de setmanes (repetien el calendari).
+  La visió general passa a dir-se Conclusions. Els KPI de puntuació i infraccions es canvien per energia moguda i cicles per any.
+
+### D-024 · 14/11 · Adrià — Panell en directe sempre visible i planificador just
+- El panell amb les dades de l'hora (bateria, compra, CO₂, preu, estalvi i el motiu de la decisió) es veu sempre sobre
+  el 3D, en petit i a baix a l'esquerra. Abans només sortia a pantalla completa i el 3D no s'entenia sol.
+- Planificador: el pla nou ha d'acabar el dia amb almenys la mateixa càrrega que el de l'agent. Si no, buidava la bateria
+  al final "gratis" i semblava que millorava l'agent (257 contra 237 kg); ara surten iguals (264 i 263 kg).
+  La reproducció s'atura en entrar-hi perquè l'escenari no es mogui mentre es prova.
+- Estratègies amb noms per a UPC: "Horari fix" i "Control predictiu".
+
+### D-025 · 14/11 · Adrià — Panell "Ara mateix", rellotge del dia i semàfor per al campus
+- El panell de dades sobre el 3D tapava el campus i es veia malament en petit. Ara hi ha una columna al costat del 3D,
+  "Ara mateix", i el panell flotant només surt a pantalla completa.
+- **Rellotge de 24 h**: a fora, el CO₂ de la xarxa de cada hora del dia; a dins, què fa la bateria (blau carrega,
+  vermelló descarrega, més llarg com més potència); l'agulla avança amb la reproducció i al centre hi ha la càrrega.
+  Es veu d'un cop d'ull que carrega a les hores netes i descarrega a les brutes.
+- **Semàfor per al campus** (idea d'Electricity Maps i Octopus): compara el CO₂ d'ara amb les properes 24 h i diu si és bon
+  moment per fer servir consums que es poden moure (equips, càrrega de cotxes...) o a quina hora serà més neta.
+  És una decisió nova per a UPC Sostenible, més enllà de la bateria.
+- **Sense salts**: cada hora té una consigna; en començar l'hora els valors passen al nou en poc temps i suau, i la
+  càrrega de la bateria avança contínua dins l'hora (abans mostrava la del final de l'hora i podia dir "100 %" carregant).
+  El 3D, el rellotge i les xifres fan servir els mateixos valors.
+- Disposició: el calendari ocupa tota l'amplada i un clic obre aquell dia al 3D; barres d'estratègia de gruix fix;
+  la fiabilitat amb eix del 80 al 100 % i sense àrea (l'eix no comença a zero).

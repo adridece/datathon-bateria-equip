@@ -67,26 +67,26 @@
     <h1>Operar la bateria del Campus Nord amb control predictiu</h1>
     <p class="lead">Cada hora, l'agent planifica les 24 hores següents amb el preu i el CO₂ de la xarxa, que ja es coneixen, i
       decideix quan carregar i quan descarregar. Així evitaria <b>${f(y.co2_t_year)} tones de CO₂</b> i <b>${eur(y.eur_year)}</b> de
-      factura cada any, el ${f(100 * st[2].score / st[3].score)} % del màxim possible.</p>
+      factura cada any, el ${f(100 * st[2].co2_pct / st[3].co2_pct)} % del que s'evitaria coneixent el futur.</p>
     <div class="kpis">
       <div class="kpi main"><b>${f(y.co2_t_year)} t</b>CO₂ evitat per any</div>
       <div class="kpi"><b>−${f(y.cost_pct, 1)} %</b>factura elèctrica</div>
-      <div class="kpi"><b>${f(D.official.score, 2)}</b>punts al test públic</div>
-      <div class="kpi"><b>${f(D.official.violations)}</b>infraccions</div>
+      <div class="kpi"><b>${eur(y.eur_year)}</b>estalviats per any</div>
+      <div class="kpi"><b>${f(st[1].co2_pct / y.co2_pct * y.co2_t_year)} t</b>amb un horari fix</div>
     </div>
     <h2>Recomanacions</h2>
     <div class="recs">
-      <div class="rec"><div class="n">01</div><b>Fer servir control predictiu</b><p>Fa ${f(st[2].score, 2)} punts, igual que l'òptim teòric.
-        Les regles fixes per hores en fan ${f(st[1].score, 2)}. Es recalcula cada hora.</p></div>
+      <div class="rec"><div class="n">01</div><b>Fer servir control predictiu</b><p>Evita ${f(y.co2_t_year)} t de CO₂ l'any, gairebé tot el que es podria
+        evitar coneixent el futur. Un horari fix per hores només n'evita ${f(st[1].co2_pct / y.co2_pct * y.co2_t_year)} t. Es recalcula cada hora.</p></div>
       <div class="rec"><div class="n">02</div><b>Ampliar fins a ${f(best.capacity_kwh)} kWh</b><p>Amb l'inversor de 500 kW, passaria de
         ${f(cur.co2_t_year)} a ${f(best.co2_t_year)} t de CO₂ l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh).</p></div>
       <div class="rec"><div class="n">03</div><b>Confiar-hi tot l'any</b><p>Estalvia CO₂ cada setmana (${f(d3.min(m, d => d.co2_pct), 1)}–${f(d3.max(m, d => d.co2_pct), 1)} %)
-        i amb un 50 % d'error a les previsions només passa de ${f(r[0].score, 2)} a ${f(r[r.length - 1].score, 2)} punts.</p></div>
+        i amb un 50 % d'error a les previsions encara conserva el ${f(100 * r[r.length - 1].score / r[0].score)} % de l'estalvi.</p></div>
     </div>
     <div class="charts">
       <div class="chart"><h2>Quan carrega i quan descarrega</h2><div class="s">Potència mitjana per hora del dia (kW) i CO₂ de la xarxa</div><div id="c1"></div></div>
       <div class="chart"><h2>Quina mida de bateria</h2><div class="s">CO₂ evitat per any segons la capacitat i la potència</div><div id="c2"></div></div>
-      <div class="chart"><h2>Comparació d'estratègies</h2><div class="s">Puntuació oficial del repte, validació d'11 setmanes</div><div id="c3"></div></div>
+      <div class="chart"><h2>Comparació d'estratègies</h2><div class="s">CO₂ evitat per any (t) amb cada manera de controlar la bateria</div><div id="c3"></div></div>
       <div class="chart"><h2>Estalvi per setmana</h2><div class="s">CO₂ evitat (verd) i factura estalviada (gris), %</div><div id="c4"></div></div>
     </div>
     <div class="foot"><p><b>Supòsits.</b> Preu i CO₂ de les 24 hores següents coneguts. Xifres anuals a partir d'11 setmanes de validació
@@ -134,13 +134,14 @@
 
   // 3. estratègies
   { const { g, iw, ih } = svg("c3", 150, { t: 10, r: 34, b: 16, l: 110 }), rows = st.slice(0, 3);
-    const x = d3.scaleLinear().domain([0, 7]).range([0, iw]);
+    const tons = d => d.co2_pct / y.co2_pct * y.co2_t_year;
+    const x = d3.scaleLinear().domain([0, tons(st[3]) * 1.1]).range([0, iw]);
     const y = d3.scaleBand().domain(rows.map(d => d.strategy)).range([0, ih]).padding(0.35);
     g.selectAll("rect").data(rows).join("rect").attr("y", d => y(d.strategy)).attr("height", y.bandwidth()).attr("rx", y.bandwidth() / 2)
-      .attr("width", d => (d.score < 0.01 ? 0 : Math.max(y.bandwidth(), x(d.score)))).attr("fill", d => (d.strategy.startsWith("MPC") ? "#47908B" : "#CFC9BD"));
+      .attr("width", d => (tons(d) < 0.01 ? 0 : Math.max(y.bandwidth(), x(tons(d))))).attr("fill", d => (d.strategy.startsWith("MPC") ? "#47908B" : "#CFC9BD"));
     g.selectAll("text.l").data(rows).join("text").attr("x", -6).attr("y", d => y(d.strategy) + y.bandwidth() / 2 + 3).attr("text-anchor", "end").text(d => d.strategy);
-    g.selectAll("text.v").data(rows).join("text").attr("class", "lab").attr("x", d => x(d.score) + 5).attr("y", d => y(d.strategy) + y.bandwidth() / 2 + 3).text(d => f(d.score, 2));
-    g.append("line").attr("x1", x(st[3].score)).attr("x2", x(st[3].score)).attr("y1", 0).attr("y2", ih).attr("stroke", "#1F2326").attr("stroke-dasharray", "2 2"); }
+    g.selectAll("text.v").data(rows).join("text").attr("class", "lab").attr("x", d => x(tons(d)) + 5).attr("y", d => y(d.strategy) + y.bandwidth() / 2 + 3).text(d => f(tons(d)) + " t");
+    g.append("line").attr("x1", x(tons(st[3]))).attr("x2", x(tons(st[3]))).attr("y1", 0).attr("y2", ih).attr("stroke", "#1F2326").attr("stroke-dasharray", "2 2"); }
 
   // 4. per setmana
   { const { g, iw, ih } = svg("c4", 150, { t: 8, r: 10, b: 16, l: 24 });

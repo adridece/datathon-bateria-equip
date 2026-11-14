@@ -8,10 +8,12 @@
   let state = { ...DEFAULTS }, ctx = null;
 
   // millor pla: mínim de sum(w_t * p_t) recorrent els nivells de càrrega possibles
-  function solve(w, net, soc0, power, reserve) {
+  // endLevel: el pla ha d'acabar amb almenys aquesta energia, perquè buidar la bateria al final no surt gratis
+  function solve(w, net, soc0, power, reserve, endKwh = 0) {
     const H = w.length, minLevel = Math.ceil(reserve * CAP / STEP);
     const start = Math.round(soc0 / STEP);
-    let value = new Float64Array(LEVELS).fill(0);         // al final del dia l'energia que queda no compta
+    const endLevel = Math.min(LEVELS - 1, Math.floor(endKwh / STEP));
+    let value = new Float64Array(LEVELS).map((_, s) => (s >= endLevel ? 0 : Infinity));
     const choice = [];
     for (let t = H - 1; t >= 0; t--) {
       const next = new Float64Array(LEVELS).fill(Infinity), best = new Int16Array(LEVELS);
@@ -28,6 +30,7 @@
       value = next;
       choice[t] = best;
     }
+    if (!isFinite(value[start]) && endKwh > 0) return solve(w, net, soc0, power, reserve, 0);   // escenari massa estret
     const plan = [], socs = [];
     let s = start;
     for (let t = 0; t < H; t++) {
@@ -61,7 +64,7 @@
     const soc0 = k > 0 ? H.soc[k - 1] * CAP : 1000;
     const agentPlan = idx.map(i => H.bat[i]);
     const agentSocs = idx.map(i => H.soc[i]);
-    let res = solve(w, net, soc0, state.power, state.reserve / 100);
+    let res = solve(w, net, soc0, state.power, state.reserve / 100, H.soc[idx[idx.length - 1]] * CAP);
     // si el pla de l'agent també compleix l'escenari i és igual o millor, és el que proposem
     // (el càlcul del navegador va en salts de 10 kWh i l'agent és exacte)
     const cost = plan => plan.reduce((s, p, j) => s + w[j] * p, 0);
@@ -137,5 +140,6 @@
     init() { bind(); },
     update(c) { ctx = c; if (document.getElementById("v-planner").classList.contains("on")) render(); },
     render,
+    solve,
   };
 })();
