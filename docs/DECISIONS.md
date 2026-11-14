@@ -122,3 +122,12 @@ i perseguir el públic seria sobreajustar. Com que el jurat puntua al test priva
 - 11 setmanes de validació (no 12) i "0 infraccions al test públic".
 - El planificador mai proposa un pla pitjor que el de l'agent si el de l'agent compleix l'escenari (càlcul en salts de 10 kWh).
 - La visió general comença a l'hora 0. Informe en una pàgina pròpia (`dashboard/report.html`) i presentació guiada amb portada i resum.
+
+### D-019 · 14/11 · Adrià — 3D més llegible i reproducció contínua
+- L'escomesa principal fa de nus: la xarxa hi entra pel sud (carrer), la bateria és a l'est i les plaques i els centres
+  de transformació queden al nord, així els cables no es creuen. El consum viatja per l'anell soterrat fins a cada centre.
+- Cada tipus de flux té el seu color (solar ambre, xarxa segons el CO₂, càrrega blau, descàrrega vermelló, consum pissarra)
+  i cada centre de transformació porta una etiqueta.
+- La reproducció avança de manera contínua (amb minuts) i interpola els valors entre hores. Velocitats: lenta, normal i ràpida.
+- El mapa ampliat es col·loca sobre tota la pàgina i torna al seu lloc en tancar-lo. Cada secció s'obre a dalt de tot.
+- Traiem la presentació guiada del dashboard (no aportava prou).

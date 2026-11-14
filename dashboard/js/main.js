@@ -27,6 +27,8 @@ let scene;
 function go(name) {
   all(".nav button").forEach(b => b.classList.toggle("on", b.dataset.view === name));
   all(".view").forEach(v => v.classList.toggle("on", v.id === "v-" + name));
+  $("v-" + name).scrollTop = 0;
+  document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false));
   $("title").textContent = VIEWS[name][0];
   $("subtitle").textContent = VIEWS[name][1];
   if (name === "overview") { scene.mount($("stage-small")); setTimeout(() => { drawPlan(); drawCalendar(); }, 60); }
@@ -38,7 +40,7 @@ all(".nav button").forEach(b => b.onclick = () => go(b.dataset.view));
 
 // ---------------------------------------------------------------- reproductor (es repeteix a cada vista amb 3D)
 const PLAYER = `<button class="primary" data-act="play">Reproduir</button>
-  <span class="seg"><button data-speed="600">1×</button><button data-speed="160" class="on">4×</button><button data-speed="45">16×</button></span>
+  <span class="seg"><button data-speed="0.4">Lent</button><button data-speed="1.2" class="on">Normal</button><button data-speed="4">Ràpid</button></span>
   <button data-act="charge">Propera càrrega</button><button data-act="peak">Pic de CO₂</button>
   <button data-act="tour">Presentació guiada</button><button data-act="home">Vista inicial</button>
   <span class="pos num" data-pos></span>`;
@@ -62,8 +64,9 @@ function savedUntil(i) {
 }
 
 const setAll = (sel, fn) => all(sel).forEach(fn);
-function show(i) {
+function show(i, fromPlayer) {
   k = Math.max(week.start, Math.min(week.end - 1, i));
+  if (!fromPlayer) clock = k;
   const t = new Date(H.t[k].replace(" ", "T"));
   const b = H.bat[k];
   const mode = b > 1 ? ["Carregant", COLORS.charge] : b < -1 ? ["Descarregant", COLORS.discharge] : ["En espera", COLORS.muted];
@@ -80,8 +83,7 @@ function show(i) {
   setAll("[data-why]", e => (e.textContent = H.why[k]));
   setAll("[data-pos]", e => (e.textContent = `hora ${k - week.start + 1} de ${week.end - week.start}`));
   setAll("[data-cycles]", e => (e.textContent = f(weekCycles(), 1)));
-  scene.setHour({ hour: +H.t[k].slice(11, 13), load: H.load[k], pv: H.pv[k], busy: (H.load[k] - loadExt[0]) / (loadExt[1] - loadExt[0]),
-                  grid: compare ? H.base[k] : H.grid[k], bat: compare ? 0 : b, soc: compare ? 0 : H.soc[k] }, co2Color(H.co2[k]));
+  sceneAt(k);
   drawPlan();
   window.Planner.update({ H, k, co2Color });
   if (cursor) cursor.attr("x", sx(k) - 1.5);
@@ -127,12 +129,33 @@ const ICON_EXPAND = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none"
 const ICON_CLOSE = '<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M6 6l12 12M18 6L6 18"/></svg>';
 function toggleExpand(stage, force) {
   const on = force ?? !stage.classList.contains("expanded");
+  if (on && !stage._home) {
+    // el traiem de la targeta i el posem sobre tota la pàgina; en tancar torna al seu lloc
+    stage._home = { parent: stage.parentNode, next: stage.nextSibling };
+    document.body.appendChild(stage);
+  } else if (!on && stage._home) {
+    stage._home.parent.insertBefore(stage, stage._home.next);
+    stage._home = null;
+  }
   stage.classList.toggle("expanded", on);
   document.body.classList.toggle("has-expanded", on);
   stage.querySelector('[data-act="full"]').innerHTML = on ? ICON_CLOSE : ICON_EXPAND;
   stage.querySelector('[data-act="full"]').setAttribute("aria-label", on ? "Tancar el mapa ampliat" : "Ampliar el mapa");
   scene.controls.enableZoom = on || stage.id === "stage-big";
+  // pantalla completa de debò (Safari fa servir el prefix webkit)
+  const fs = document.fullscreenElement || document.webkitFullscreenElement;
+  if (on && !fs) {
+    const req = stage.requestFullscreen || stage.webkitRequestFullscreen;
+    if (req) { const r = req.call(stage); if (r && r.catch) r.catch(() => {}); }
+  } else if (!on && fs) {
+    (document.exitFullscreen || document.webkitExitFullscreen).call(document);
+  }
 }
+// si se surt de la pantalla completa amb Esc del navegador, el mapa torna a la seva targeta
+["fullscreenchange", "webkitfullscreenchange"].forEach(ev => document.addEventListener(ev, () => {
+  if (!(document.fullscreenElement || document.webkitFullscreenElement))
+    document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false));
+}));
 
 // ---------------------------------------------------------------- cicles de la bateria
 // un cicle = descarregar l'equivalent a tota la capacitat (2.000 kWh); serveix per vigilar el desgast
@@ -247,9 +270,30 @@ function drawCalendar() {
 }
 
 // ---------------------------------------------------------------- reproducció
-let timer = null, speed = 160;
-function stop() { clearInterval(timer); timer = null; $("chip-time").classList.remove("live"); setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }
-function start() { timer = setInterval(() => (k < week.end - 1 ? show(k + 1) : stop()), speed); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
+// el temps avança de manera contínua: entre dues hores tot canvia suaument (fluxos, bateria, sol)
+let timer = null, speed = 1.2, clock = 0, last = 0;   // speed = hores per segon
+const lerp = (a, b, x) => a + (b - a) * x;
+function sceneAt(c) {
+  const i = Math.min(Math.floor(c), week.end - 1), j = Math.min(i + 1, week.end - 1), x = c - i;
+  const v = key => lerp(H[key][i], H[key][j], x);
+  const hour = (+H.t[i].slice(11, 13) + x) % 24;
+  scene.setHour({ hour, load: v("load"), pv: v("pv"), busy: (v("load") - loadExt[0]) / (loadExt[1] - loadExt[0]),
+                  grid: compare ? v("base") : v("grid"), bat: compare ? 0 : v("bat"), soc: compare ? 0 : v("soc") }, co2Color(v("co2")));
+}
+function frame(now) {
+  if (!timer) return;
+  const dt = Math.min(0.1, (now - last) / 1000);
+  last = now;
+  clock += dt * speed;
+  if (clock >= week.end - 1) { clock = week.end - 1; show(week.end - 1); stop(); return; }
+  if (Math.floor(clock) !== k) show(Math.floor(clock), true);
+  sceneAt(clock);
+  const min = Math.floor((clock % 1) * 60);
+  $("chip-time").textContent = $("chip-time").textContent.replace(/\d\d:\d\d h$/, `${H.t[k].slice(11, 13)}:${String(min).padStart(2, "0")} h`);
+  timer = requestAnimationFrame(frame);
+}
+function stop() { cancelAnimationFrame(timer); timer = null; $("chip-time").classList.remove("live"); setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }
+function start() { last = performance.now(); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
 const next = test => { for (let i = k + 1; i < week.end; i++) if (test(i)) return i; return k; };
 document.addEventListener("click", e => {
   const jump = e.target.closest("[data-go]");
@@ -259,7 +303,6 @@ document.addEventListener("click", e => {
   if (b.dataset.speed) {
     speed = +b.dataset.speed;
     setAll("[data-speed]", x => x.classList.toggle("on", +x.dataset.speed === speed));
-    if (timer) { stop(); start(); }
     return;
   }
   const act = b.dataset.act;
@@ -276,7 +319,6 @@ document.addEventListener("click", e => {
   if (act === "full") toggleExpand(b.closest(".stage"));
   if (act === "csv") downloadPlan();
   if (act === "report") window.Report.open(D);
-  if (act === "demo") { stop(); window.Demo.start(D, go, runTour); }
   if (act === "tour") step >= 0 ? endTour() : runTour();
 });
 
@@ -320,7 +362,6 @@ function runTour() {
 }
 addEventListener("keydown", e => {
   if (["INPUT", "SELECT"].includes(e.target.tagName)) return;
-  if (window.Demo.key(e)) return;
   if (e.code === "Space") { e.preventDefault(); timer ? stop() : start(); }
   if (e.key === "p" || e.key === "P") step >= 0 ? endTour() : runTour();
   if (e.key === "Escape") { endTour(); document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false)); }
@@ -359,7 +400,7 @@ document.addEventListener("change", e => {
     show(k);
   }
 });
-addEventListener("resize", () => { drawPlan(); drawCalendar(); window.Demo.resize(); });
+addEventListener("resize", () => { drawPlan(); drawCalendar(); });
 $("chip-score").textContent = f(D.official.score, 2);
 
 scene = createScene($("stage-small"), window.CAMPUS, COLORS);
