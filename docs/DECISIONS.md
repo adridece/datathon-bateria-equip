@@ -281,3 +281,27 @@ més barata; el de carregar de menys és perdre energia gratis). El model de pre
 - El desplegable natiu de setmanes es veia diferent a cada sistema (Mac, Windows, Linux). Ara és un selector propi amb el
   mateix aspecte a tot arreu: llista amb les 11 setmanes i el CO₂ que estalvia cadascuna, la triada ressaltada, i es pot fer
   servir amb el teclat (fletxes, Enter, Esc). El `<select>` queda amagat perquè la resta del codi segueixi igual.
+
+### D-036 · 14/11 · Adrià — `agents/hard_v3`: model directe de CO₂ a +3..+12 h
+Anàlisi a fons del Mode Difícil amb un banc de proves honest (models entrenats sense les setmanes avaluades; F0, F1 i F2
+reservada) i l'òptim teòric calculat igual (F0 20,28 · F1 18,75):
+- `hard_final` és al 92,7 % de l'òptim. Amb totes les previsions perfectes el mateix LP faria 20,18 (F0): **tot el que falta
+  és error de previsió**, no el mètode. El que més pesa: CO₂ +0,64 (només +3..+5 h ja +0,29), consum net de l'hora actual +0,51,
+  preu +0,27. Els marges de descàrrega ja són als millors valors.
+- El rècord de la web (24,10) és ~97 % de l'òptim; el sostre de la web és ~24,7–24,8 (22,96 / 0,927). **25 no s'hi arriba**
+  ni sabent el futur.
+- Millora trobada: un model directe de CO₂ (LightGBM, la corba de 48 h de CO₂ i 24 h de preu relativa a l'última hora coneguda)
+  barrejat meitat i meitat amb la previsió de `hard_final` a les hores +3..+12. Error −5/−6 %; score F0 +0,08, F1 +0,07,
+  F2 +0,17, 0 infraccions. Descartat: preu (+0,02), horitzó fins a +18 (empitjora F2), pes 0,7 (no millora les tres).
+**Decisió:** `hard_v3` és el nou candidat del Mode Difícil (esperat ~23,1 a la web). Es reentrena amb `python scripts/train_hard_v3.py`.
+
+### D-037 · 14/11 · Adrià — `hard_v3`: detecta si la irradiància és de l'hora actual
+La web diu que `obs` porta "les lectures de la darrera hora de meteo.csv", però no si és l'hora que comença o la que acaba
+d'acabar. Amb la irradiància de la mateixa hora la solar es preveu gairebé exacta (error 33 kW, correlació 0,995) i amb la de
+l'hora anterior no (192 kW). En lloc d'endevinar-ho, l'agent ho comprova sol: compara la solar de l'hora passada amb la
+irradiància que rep ara i amb la de l'hora anterior, i es queda amb la que encaixa (després de 6 hores de sol).
+Si és de l'hora actual, la solar d'ara = 1,629 × irradiància (ajustat amb el train) i el marge de seguretat baixa al 70 %.
+Banc honest (F0 / F1 / F2): si la web dona l'hora passada, igual que abans (18,88 / 17,42 / 17,92: no hi perdem res);
+si dona l'hora actual, 19,02 / 17,55 / 18,20 (+0,14 / +0,13 / +0,28).
+També provat i descartat (no milloren totes les validacions): valor de l'energia al final del pla, decisió amb escenaris,
+variables d'ahir i de fa una setmana a l'hora objectiu per al CO₂.
