@@ -341,7 +341,7 @@ usa `quantile=2` (15% de marge) i pes `0.4` del model directe de CO₂. Respecte
 18,877 → 18,912, F1 17,422 → 17,441 i F2 reservat 17,915 → 17,934, sempre amb 0 infraccions. No s'ha ajustat
 amb dades del leaderboard ni amb cap font externa durant l'avaluació.
 
-### D-040 · 15/11 · Adrià — Dues idees més provades i descartades
+### D-041 · 15/11 · Adrià — Dues idees més provades i descartades
 - **Temperatura de panell i vent** (la web les dona a `obs`): el vent val 0 a totes les dades (el sensor no funciona) i la
   temperatura del panell es correlaciona 0,98 amb la irradiància, que ja fèiem servir. Afegida al model de la solar de l'hora
   actual, l'error passa de 83,2 a 82,6 kW (validació creuada per mesos): no compensa la complexitat.
@@ -350,7 +350,7 @@ amb dades del leaderboard ni amb cap font externa durant l'avaluació.
   el score empitjora a les dues (F0 18,88 → 18,83–18,86; F1 17,42 → 17,38–17,41). Confirma el que va trobar l'Ivan per
   una altra via: la diferència amb l'òptim depèn del futur i no es pot predir amb el que sap l'agent.
 
-### D-041 · 15/11 · Adrià — Preu amb l'historial públic de REE (2024-2025)
+### D-042 · 15/11 · Adrià — Preu amb l'historial públic de REE (2024-2025)
 Els organitzadors ens han confirmat que podem entrenar amb dades públiques de REE d'altres períodes (mai dels dies de test).
 - **Que les dades coincideixin:** el PVPC de l'API pública de REE (`apidatos.ree.es`) dona exactament el nostre
   `precio_pvpc.csv` (diferència 0,00 €/MWh comprovada hora a hora). El CO₂ no: el nostre és 0,37 × la part de generació
@@ -358,7 +358,8 @@ Els organitzadors ens han confirmat que podem entrenar amb dades públiques de R
 - **Període:** gener 2024 – agost 2025 (14.614 h), tot abans del 1/9/2025 on comença el repte; abans de 2024 el PVPC es
   calculava d'una altra manera. Guardat a `data/external/pvpc_2024_2025.csv`.
 - **Model:** un model directe de preu a +3..+12 h (com el de CO₂), barrejat meitat i meitat. Sense l'historial extern no
-  generalitza (F2 empitjora: 17,86); amb l'historial millora les tres validacions creuades:
-  F0 18,88 → 18,94 · F1 17,42 → 17,47 · F2 17,92 → 18,00. 0 infraccions.
+  generalitza (F2 empitjora: 17,86); amb l'historial millora les tres validacions creuades respecte de la versió
+  calibrada de D-040: F0 18,91 → 18,94 · F1 17,44 → 17,47 · F2 17,93 → 18,00 (+0,03 / +0,03 / +0,07). 0 infraccions.
+  Nota: el DIARI diu que el calibratge de D-040 es va buscar sobre F0/F1/F2; si és així, F2 ja no és del tot reservada.
 - La validació creuada és temporal (F0, F1, F2 = una setmana diferent de cada mes, sense barrejar hores veïnes); ajustem amb
   F0 i F1 i F2 només confirma.
