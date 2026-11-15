@@ -3,10 +3,10 @@
   const f = (x, d = 0) => x.toLocaleString("ca-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
   const $ = id => document.getElementById(id);
   const statsHTML = items => items.map(([label, value]) => `<div><span>${label}</span><b class="num">${value}</b></div>`).join("");
-  let D, H, n, now = 0;
+  let D, H, n, now = 0, SIM, nSim;
 
   // series que es poden veure; "sum" vol dir que al passar a dies se sumen (la resta es fa la mitjana)
-  const SERIES = {
+  const SIM_SERIES = {
     grid: { name: "Compra a la xarxa", unit: "kW", color: "#1F2326", get: i => H.grid[i] },
     base: { name: "Compra sense bateria", unit: "kW", color: "#A19C93", dash: "4 3", get: i => H.base[i] },
     load: { name: "Consum del campus", unit: "kW", color: "#3E4A56", get: i => H.load[i] },
@@ -18,7 +18,34 @@
     savedco2: { name: "CO₂ evitat", unit: "kg", color: "#47908B", get: i => (H.base[i] - H.grid[i]) * H.co2[i], sum: true, bars: true },
     savedeur: { name: "Estalvi", unit: "€", color: "#7A5195", get: i => (H.base[i] - H.grid[i]) * H.price[i], sum: true, bars: true },
   };
-  const ex = { keys: ["grid", "base", "co2", "savedco2"], res: "d", range: null };   // per dies es llegeix millor el periode sencer
+  // les dades amb que s'ha fet el model (tot el train): les mateixes variables que veu el control
+  const TRAIN_SERIES = {
+    load: { name: "Consum del campus", unit: "kW", color: "#3E4A56", get: i => H.load[i] },
+    pv: { name: "Solar", unit: "kW", color: "#E69F00", get: i => H.pv[i] },
+    net: { name: "Consum net (consum − solar)", unit: "kW", color: "#1F2326", dash: "4 3", get: i => H.load[i] - H.pv[i] },
+    co2: { name: "CO₂ de la xarxa", unit: "g/kWh", color: "#A9824F", get: i => 1000 * H.co2[i] },
+    price: { name: "Preu", unit: "€/MWh", color: "#7A5195", get: i => 1000 * H.price[i] },
+    irr: { name: "Irradiància", unit: "W/m²", color: "#C9A227", get: i => H.irr[i] },
+    temp: { name: "Temperatura", unit: "°C", color: "#0072B2", get: i => H.temp[i] },
+  };
+  let SERIES = SIM_SERIES, blocks = [];
+  const ex = { ds: "sim", keys: ["grid", "base", "co2", "savedco2"], res: "d", range: null };   // per dies es llegeix millor el periode sencer
+  const DEFAULT_KEYS = { sim: ["grid", "base", "co2", "savedco2"], train: ["load", "pv", "co2"] };
+
+  // trams continus de les dades (setmanes de simulacio o trossos del train)
+  function findBlocks() {
+    if (ex.ds === "sim") return D.weeks.map(w => ({ start: w.start, label: w.label.slice(0, 5) }));
+    const out = [{ start: 0 }];
+    for (let i = 1; i < n; i++) if (new Date(H.t[i].replace(" ", "T")) - new Date(H.t[i - 1].replace(" ", "T")) > 2 * 3600e3) out.push({ start: i });
+    return out.map(b => ({ ...b, label: `${H.t[b.start].slice(8, 10)}/${H.t[b.start].slice(5, 7)}` }));
+  }
+  function useDataset(ds) {
+    ex.ds = ds; ex.range = null; ex.keys = DEFAULT_KEYS[ds];
+    H = ds === "sim" ? SIM : D.train; n = H.t.length; SERIES = ds === "sim" ? SIM_SERIES : TRAIN_SERIES;
+    blocks = findBlocks();
+    document.querySelectorAll("[data-ds]").forEach(x => x.classList.toggle("on", x.dataset.ds === ds));
+    chips(); drawExplorer();
+  }
 
   // punts d'una serie: per hores o sumats/mitjana per dies
   function points(key, lo, hi, res) {
@@ -70,7 +97,7 @@
     });
     const top = units.length * (rowH + gap);
     // separacio entre setmanes (no son seguides al calendari)
-    D.weeks.filter(wk => wk.start > lo && wk.start < hi).forEach(wk => g.append("line").attr("class", "ex-week")
+    blocks.filter(wk => wk.start > lo && wk.start < hi).forEach(wk => g.append("line").attr("class", "ex-week")
       .attr("x1", x(wk.start)).attr("x2", x(wk.start)).attr("y1", 0).attr("y2", top - gap));
     const ticks = res === "d" ? d3.range(lo - (lo % 24), hi, 24) : d3.range(lo, hi).filter(i => +H.t[i].slice(11, 13) === 0);
     const every = Math.max(1, Math.ceil(ticks.length / 12));
@@ -78,7 +105,7 @@
       .call(d3.axisBottom(x).tickValues(ticks.filter((_, j) => j % every === 0)).tickFormat(label).tickSize(0).tickPadding(6))
       .call(a => a.select(".domain").remove());
     // linia d'"ara" (l'hora que es veu al 3D)
-    if (now >= lo && now < hi) g.append("line").attr("class", "ex-now").attr("x1", x(now)).attr("x2", x(now)).attr("y1", 0).attr("y2", top - gap);
+    if (ex.ds === "sim" && now >= lo && now < hi) g.append("line").attr("class", "ex-now").attr("x1", x(now)).attr("x2", x(now)).attr("y1", 0).attr("y2", top - gap);
     // capa per passar el ratoli i clicar (obre aquella hora al 3D)
     const rule = g.append("line").attr("class", "ex-rule").attr("y1", 0).attr("y2", top - gap).style("opacity", 0);
     g.append("rect").attr("width", iw).attr("height", top - gap).attr("fill", "transparent").style("cursor", "pointer")
@@ -89,11 +116,12 @@
         const tip = $("tip");
         tip.innerHTML = `<b>${res === "d" ? label(j) : label(j) + ", " + H.t[j].slice(11, 13) + " h"}</b><br>` +
           ex.keys.map(k => { const p = points(k, j, Math.min(j + (res === "d" ? 24 : 1), n), res)[0]; return `${SERIES[k].name}: ${f(p ? p[1] : 0)} ${SERIES[k].unit.replace(" bateria", "")}`; }).join("<br>") +
-          `<br><span style="opacity:.7">Clic per veure-ho al 3D</span>`;
+          (ex.ds === "sim" ? `<br><span style="opacity:.7">Clic per veure-ho al 3D</span>` : "");
         tip.style.display = "block"; tip.style.left = Math.min(ev.clientX + 14, innerWidth - 300) + "px"; tip.style.top = ev.clientY + 14 + "px";
       })
       .on("mouseleave", () => { rule.style("opacity", 0); $("tip").style.display = "none"; })
       .on("click", ev => {
+        if (ex.ds !== "sim") return;
         const i = Math.max(lo, Math.min(hi - 1, Math.round(x.invert(d3.pointer(ev)[0]))));
         $("tip").style.display = "none";
         document.dispatchEvent(new CustomEvent("explorer:goto", { detail: i }));
@@ -104,7 +132,8 @@
     const cy = d3.scaleLinear().domain(d3.extent(H.co2)).range([ctxH, 0]);
     cg.append("path").datum(d3.range(n)).attr("fill", "#EEEAE3").attr("stroke", "#C9C3B8")
       .attr("d", d3.area().x(i => cx(i)).y0(ctxH).y1(i => cy(H.co2[i])));
-    D.weeks.forEach(wk => cg.append("text").attr("class", "ex-wk").attr("x", cx(wk.start) + 3).attr("y", ctxH + 13).text(wk.label.slice(0, 5)));
+    const lblEvery = Math.max(1, Math.ceil(blocks.length / 12));
+    blocks.filter((_, j) => j % lblEvery === 0).forEach(wk => cg.append("text").attr("class", "ex-wk").attr("x", cx(wk.start) + 3).attr("y", ctxH + 13).text(wk.label));
     const brush = d3.brushX().extent([[0, 0], [iw, ctxH]]).on("end", ev => {
       if (!ev.sourceEvent) return;
       ex.range = ev.selection ? ev.selection.map(v => Math.round(cx.invert(v))) : null;
@@ -118,6 +147,17 @@
 
   // estadistiques del periode triat
   function stats(lo, hi) {
+    if (ex.ds === "train") {
+      const idx = d3.range(lo, hi), mean = k => d3.mean(idx, SERIES[k].get);
+      const flat = idx.filter(i => i > lo && H.load[i] === H.load[i - 1]).length / Math.max(1, idx.length - 1);
+      $("ex-stats").innerHTML = statsHTML([
+        ["Període", `${label(lo)} – ${label(hi - 1)} (${f(idx.length)} h)`], ["Consum mitjà", `${f(mean("load"))} kW`],
+        ["Solar total", `${f(d3.sum(idx, i => H.pv[i]) / 1000, 1)} MWh`], ["CO₂ mitjà de la xarxa", `${f(mean("co2"))} g/kWh`],
+        ["Preu mitjà", `${f(mean("price"))} €/MWh`], ["Temperatura mitjana", `${f(mean("temp"), 1)} °C`],
+        ["Hores amb el comptador repetit", `${f(100 * flat)} %`],
+      ]);
+      return;
+    }
     const idx = d3.range(lo, hi), sum = k => d3.sum(idx, SERIES[k].get), mean = k => d3.mean(idx, SERIES[k].get);
     const charge = idx.filter(i => H.bat[i] > 1).length, dis = idx.filter(i => H.bat[i] < -1).length;
     $("ex-stats").innerHTML = statsHTML([
@@ -140,6 +180,8 @@
   function drawLive() {
     const el = $("live-chart");
     if (!el || !el.clientWidth) return;
+    const keepH = H, keepS = SERIES, keepN = n;
+    H = SIM; SERIES = SIM_SERIES; n = nSim;
     const lo = Math.max(0, now - 48), hi = Math.min(n, now + 25);
     const units = [...new Set(live.keys.map(k => SERIES[k].unit))];
     const rowH = 62, gap = 14, m = { t: 6, r: 12, b: 20, l: 64 };
@@ -179,11 +221,13 @@
       .call(a => a.select(".domain").remove());
     $("live-title").textContent = live.title;
     $("live-legend").innerHTML = live.keys.map(k => `<span><i style="background:${SERIES[k].color}"></i>${SERIES[k].name}</span>`).join("");
+    H = keepH; SERIES = keepS; n = keepN;
   }
 
   window.Explorer = {
     init(data) {
-      D = data; H = data.hours; n = H.t.length;
+      D = data; SIM = data.hours; H = SIM; n = nSim = H.t.length;
+      blocks = findBlocks();
       chips();
       document.addEventListener("click", e => {
         const b = e.target.closest("[data-ex]");
@@ -196,16 +240,19 @@
         const r = e.target.closest("[data-res]");
         if (r) { ex.res = r.dataset.res; document.querySelectorAll("[data-res]").forEach(x => x.classList.toggle("on", x === r)); drawExplorer(); }
         if (e.target.closest("[data-ex-reset]")) { ex.range = null; drawExplorer(); }
+        const ds = e.target.closest("[data-ds]");
+        if (ds && D.train) useDataset(ds.dataset.ds);
       });
     },
     draw: drawExplorer,
     // l'hora que es mira al 3D: mou la linia d'"ara" i el grafic en directe
-    setNow(k) { now = k; drawLive(); if ($("v-trust") && $("v-trust").classList.contains("on")) drawExplorer(); },
+    setNow(k) { now = k; drawLive(); if (ex.ds === "sim" && $("v-trust") && $("v-trust").classList.contains("on")) drawExplorer(); },
     drawLive,
     // el 3D tria que es veu al grafic en directe
     focusLive(keys, title) { live.keys = keys; live.title = title; drawLive(); },
     // obre l'explorador amb unes series i el periode al voltant d'una hora
     open(keys, around) {
+      if (ex.ds !== "sim") useDataset("sim");
       ex.keys = keys; chips();
       if (around != null) ex.range = [Math.max(0, around - 72), Math.min(n, around + 72)];
     },

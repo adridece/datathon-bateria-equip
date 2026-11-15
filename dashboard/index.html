@@ -46,7 +46,8 @@
             <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"><path d="M6 9l6 6 6-6"/></svg></button>
           <ul class="wk-list" role="listbox" hidden></ul>
         </div>
-        <button class="primary" data-act="report">Informe PDF</button>
+        <button class="primary top-play" data-act="play">Reproduir</button>
+        <button data-act="report">Informe PDF</button>
         <span class="chip num" id="chip-time"></span>
       </div>
     </header>
@@ -199,8 +200,8 @@
         <div class="grid">
           <div class="card s12" id="explorer">
             <div class="head"><div><h2>Explorador de dades</h2>
-              <div class="sub">Totes les hores de les 11 setmanes. Trieu què voleu veure, arrossegueu a la franja de baix per triar el període i cliqueu el gràfic per anar a aquella hora al 3D.</div></div>
-              <div class="ex-tools"><span class="seg"><button data-res="d" class="on">Per dies</button><button data-res="h">Per hores</button></span>
+              <div class="sub">La simulació de la bateria (11 setmanes) o les dades amb què s'ha fet el model (tot l'any). Trieu què voleu veure, arrossegueu a la franja de baix per triar el període; a la simulació, un clic us porta a aquella hora al 3D.</div></div>
+              <div class="ex-tools"><span class="seg"><button data-ds="sim" class="on">Simulació</button><button data-ds="train">Dades d'entrenament</button></span><span class="seg"><button data-res="d" class="on">Per dies</button><button data-res="h">Per hores</button></span>
                 <button data-ex-reset>Tot el període</button></div></div>
             <div class="ex-series" id="ex-series"></div>
             <div class="chart" id="ex-chart"></div>

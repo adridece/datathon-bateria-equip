@@ -371,3 +371,13 @@ gestiona l'energia del campus, ordenada per l'ús que en farà i pensada per pre
 - **Decisions com a indicadors vius**: 6 targetes (control, quan carregar, consums flexibles, mida, comptador, fiabilitat)
   calculades per a la setmana triada, amb un estat (correcte / cal revisar-lo), un gràfic de les 11 setmanes i un botó que
   obre les dades a l'explorador. Canvien quan es canvia de setmana.
+
+### D-046 · 15/11 · Adrià — Dades del model, reproducció a tot arreu i revisió de tot el dashboard
+- **Dades amb què s'ha fet el model:** l'explorador té un selector "Simulació" / "Dades d'entrenament". Les dades
+  d'entrenament són tot el train (5.993 h, setembre 2025 – agost 2026): consum, solar, consum net, CO₂, preu,
+  irradiància i temperatura, amb les seves estadístiques (incloses les hores amb el comptador repetit).
+- **Reproduir des de qualsevol secció:** botó a la barra de dalt; tot el que depèn de l'hora (3D, gràfic en directe,
+  línia d'"ara" de l'explorador) avança igual. Quan s'arriba al final de la setmana, tornar a prémer comença de nou.
+- **Revisió:** cap botó en dues línies (comprovat a totes les seccions), cap targeta ni gràfic que surti del seu lloc,
+  dos avisos nous per omplir la targeta d'avisos (hora més cara i comptador sense canvis). Els valors en directe queden
+  sempre dins de la setmana triada (evita un error si es canvia de setmana a mitja reproducció).

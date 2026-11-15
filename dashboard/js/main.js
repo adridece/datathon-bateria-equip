@@ -320,6 +320,13 @@ function events() {
     if (!best || s > best.s) best = { d, s };
   }
   list.push({ i: best.d + 20, color: "#47908B", title: "Millor dia", text: `${f(best.s)} kg de CO₂ evitats en un sol dia.` });
+  // hora mes cara: on mes es nota l'estalvi a la factura
+  const dear = [...idx].sort((a, b) => H.price[b] - H.price[a])[0];
+  list.push({ i: dear, color: "#7A5195", title: "Hora més cara", text: `${f(H.price[dear] * 1000)} €/MWh. ${H.bat[dear] < -1 ? "La bateria hi estalvia " + f(-H.bat[dear] * H.price[dear]) + " €." : "La bateria no hi descarrega: no li queda energia o hi ha hores més brutes."}` });
+  // comptador congelat de nit (dada que cal revisar)
+  const night = idx.filter(i => i > week.start && (+H.t[i].slice(11, 13) >= 23 || +H.t[i].slice(11, 13) <= 5));
+  const frozen = night.filter(i => H.load[i] === H.load[i - 1]);
+  if (frozen.length) list.push({ i: frozen[0], color: "#B0480E", title: "Comptador sense canvis", text: `${f(100 * frozen.length / night.length)} % de les hores de nit repeteixen el consum anterior: cal revisar el comptador.` });
   $("events").innerHTML = list.map(e => `<button class="event" data-go="${e.i}"><i style="background:${e.color}"></i><div><b>${e.title}</b><span>${label(e.i)}</span><span>${e.text}</span></div></button>`).join("");
 }
 
@@ -355,6 +362,8 @@ let timer = null, speed = 1.2, clock = 0, last = 0;   // speed = hores per segon
 const lerp = (a, b, x) => a + (b - a) * x;
 // cada hora té un sol valor (la bateria rep una consigna per hora): en començar l'hora es passa al nou valor en poc temps i suau
 const hourly = (key, c) => {
+  // sempre dins de la setmana triada (el rellotge pot venir d'una altra setmana si s'ha canviat a mitja reproduccio)
+  c = Math.max(week.start, Math.min(week.end - 1, Number.isFinite(c) ? c : week.start));
   const i = Math.min(Math.floor(c), week.end - 1), x = (c - i) / 0.15;
   if (x >= 1 || i === week.start) return H[key][i];
   return lerp(H[key][i - 1], H[key][i], x * x * (3 - 2 * x));
@@ -370,6 +379,7 @@ function sceneAt(c) {
 // la càrrega es guarda al final de cada hora: durant l'hora va de la de l'hora anterior a la nova
 // (la simulació és contínua: la setmana comença amb la càrrega amb què va acabar l'anterior)
 const socAt = c => {
+  c = Math.max(week.start, Math.min(week.end - 1, Number.isFinite(c) ? c : week.start));
   const i = Math.min(Math.floor(c), week.end - 1), x = c - i;
   return lerp(i > 0 ? H.soc[i - 1] : 0.5, H.soc[i], x);
 };
@@ -484,7 +494,10 @@ function goHome() {
   scene.flyTo(scene.views.home);
 }
 function stop() { cancelAnimationFrame(timer); timer = null; scene.setPlaying(false); $("chip-time").classList.remove("live"); setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }
-function start() { last = performance.now(); scene.setPlaying(true); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
+function start() {
+  // si ja s'havia arribat al final de la setmana, torna a començar
+  if (!(clock >= week.start && clock < week.end - 1.01)) { clock = week.start; show(week.start); }
+  last = performance.now(); scene.setPlaying(true); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
 const next = test => { for (let i = k + 1; i < week.end; i++) if (test(i)) return i; return k; };
 document.addEventListener("click", e => {
   const row = e.target.closest("[data-row-week]");
