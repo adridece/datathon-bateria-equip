@@ -67,7 +67,7 @@ millors valors (cap altre valor millora F0 i F1 alhora).
 |---|---|---|---|
 | `dificil_marges` | 18,80 | 17,36 | 17,75 |
 | `dificil_co2_irradiancia`, si la irradiància és de l'hora passada | 18,88 | 17,42 | 17,92 |
-| `dificil_co2_irradiancia`, si la irradiància és de l'hora actual | 19,02 | 17,55 | 18,20 |
+| `dificil_co2_irradiancia`, calibrat fora de mostra | 18,91 | 17,44 | 17,93 |
 | Òptim teòric | 20,28 | 18,75 | – |
 
 ## 7. Què hem provat i descartat
@@ -79,6 +79,8 @@ millors valors (cap altre valor millora F0 i F1 alhora).
 | Decidir amb escenaris (mitjana de diversos plans) | empitjora (18,68–18,85) |
 | Donar valor a l'energia que queda al final del pla | no canvia res |
 | Model propi de la solar de l'hora actual | −3/−6 % d'error, +0,03 |
+| Temperatura de panell i vent | el vent sempre val 0; el panell repeteix la irradiància (error 83,2 → 82,6 kW) |
+| Política apresa (corregir l'acció cap a l'òptim) | l'error de l'acció baixa un 1 % i el score empitjora |
 | Dades de REE dels dies de test | prohibit: les previsions han de sortir de `data/train/` |
 (L'Ivan en va provar més: veure `docs/DIARI.md`, 14/11 vespre i nit.)
 

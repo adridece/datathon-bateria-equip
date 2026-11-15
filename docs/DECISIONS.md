@@ -329,3 +329,23 @@ Ara cada nom diu el mode i què fa diferent: `estandard_lp`, `estandard_robust`,
 figures segueixen el mateix criteri (`train_dificil_*.py`, `tests/bench_dificil.py`, `docs/figures/dificil_*.png`) i els zips
 d'enviament agafen el nom de l'agent. A `agents/README.md` hi ha el nom antic de cada un per relacionar-lo amb els enviaments.
 Comprovat que tot dona el mateix després del canvi (6,08 · 20,93 · banc F0 18,88 · 7/7 proves).
+
+### D-040 · 14/11 · equip — Mode Difícil: calibratge fora de mostra i contracte meteorològic oficial
+La web oficial confirma que el Mode Difícil usa 6.000 kWh, ±1.500 kW, solar ×12, només 3 hores de mercat i que
+`noves_dades_5min` pot incloure irradiància, temperatura ambient, temperatura de panell i vent. Hem afegit aquestes
+columnes al pipeline local i al simulador de proves; el vent del train és constant a zero i la temperatura de panell no
+millora el score per si sola, però així la validació reprodueix el contracte oficial.
+
+Hem buscat el marge de descàrrega i la barreja del model directe de CO₂ en folds F0/F1 fora de mostra. El candidat final
+usa `quantile=2` (15% de marge) i pes `0.4` del model directe de CO₂. Respecte de la versió anterior, millora F0
+18,877 → 18,912, F1 17,422 → 17,441 i F2 reservat 17,915 → 17,934, sempre amb 0 infraccions. No s'ha ajustat
+amb dades del leaderboard ni amb cap font externa durant l'avaluació.
+
+### D-040 · 15/11 · Adrià — Dues idees més provades i descartades
+- **Temperatura de panell i vent** (la web les dona a `obs`): el vent val 0 a totes les dades (el sensor no funciona) i la
+  temperatura del panell es correlaciona 0,98 amb la irradiància, que ja fèiem servir. Afegida al model de la solar de l'hora
+  actual, l'error passa de 83,2 a 82,6 kW (validació creuada per mesos): no compensa la complexitat.
+- **Política apresa** (un model corregeix l'acció del LP cap a la de l'òptim, après a una validació i provat a l'altra, amb
+  previsions fetes sense veure aquelles setmanes): l'error de l'acció només baixa d'un 1 % (200 → 198 kW i 183 → 181 kW) i
+  el score empitjora a les dues (F0 18,88 → 18,83–18,86; F1 17,42 → 17,38–17,41). Confirma el que va trobar l'Ivan per
+  una altra via: la diferència amb l'òptim depèn del futur i no es pot predir amb el que sap l'agent.
