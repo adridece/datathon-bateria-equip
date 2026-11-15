@@ -67,20 +67,32 @@
     const sz = D.sizing.filter(s => s.power_kw === 500).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
     const now = sz.find(s => s.capacity_kwh === 2000);
     const best = sz.filter(s => s.payback < 10).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
+    // consum congelat: hores de nit amb el mateix valor que l'hora anterior
+    const night = H.t.map((x, i) => i).filter(i => i > 0 && (+H.t[i].slice(11, 13) >= 23 || +H.t[i].slice(11, 13) <= 5));
+    const frozen = night.filter(i => H.load[i] === H.load[i - 1]).length / night.length;
+    // moure 100 kW de consum 3 h al dia de les hores mes brutes a les mes netes
+    let gap = 0, ndays = 0;
+    for (let d0 = 0; d0 + 24 <= H.t.length; d0 += 24) {
+      const c = H.co2.slice(d0, d0 + 24).slice().sort((a, b) => a - b);
+      gap += d3.mean(c.slice(-3)) - d3.mean(c.slice(0, 3)); ndays++;
+    }
+    const shiftT = gap / ndays * 100 * 3 * 365 / 1000;
     const rows = [
-      { d: "Operar la bateria amb control predictiu", view: "strategy",
-        c: `Evita ${f(tons(st[2]))} t de CO₂ i ${eur(y.eur_year)} l'any, el ${f(100 * st[2].co2_pct / st[3].co2_pct)} % del que s'evitaria coneixent el futur. Un horari fix per hores només n'evita ${f(tons(st[1]))} t.` },
-      { d: "Carregar a les hores de sol, descarregar al matí i al vespre", view: "strategy",
-        c: `Les hores amb més càrrega (${top.join(", ")} h) són les de menys CO₂; les de descàrrega (${bot.join(", ")} h), les de més CO₂ i preu.` },
-      { d: `Ampliar la bateria a ${f(best.capacity_kwh)} kWh amb el mateix inversor`, view: "sizing",
-        c: `Passaria de ${f(now.co2_t_year)} a ${f(best.co2_t_year)} t de CO₂ l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh). Per sobre de 6.000 kWh el CO₂ gairebé no baixa.` },
-      { d: "Posar-la en marxa amb les previsions públiques de REE", view: "trust",
-        c: `Amb un 50 % d'error a les previsions de preu i CO₂ encara conserva el ${f(100 * r[r.length - 1].score / r[0].score)} % de l'estalvi: no cal una previsió perfecta.` },
-      { d: "Respectar sempre els límits de la bateria", view: "trust", go: "#t-weeks",
-        c: `Mai demana més de 500 kW ni més energia de la que hi cap o en queda: ${f(D.yearly.violations)} infraccions en les 11 setmanes. Un horari fix en faria ${f(st[1].violations)}.` },
+      { d: "Mantenir el control predictiu de la bateria", view: "strategy", impact: `${f(tons(st[2]))} t CO₂ i ${eur(y.eur_year)} l'any`,
+        c: `És el ${f(100 * st[2].co2_pct / st[3].co2_pct)} % del que s'evitaria coneixent el futur. Un horari fix per hores només n'evita ${f(tons(st[1]))} t.` },
+      { d: "Carregar a les hores de sol i descarregar al matí i al vespre", view: "strategy", impact: "regla d'operació",
+        c: `Les hores de més càrrega (${top.join(", ")} h) són les de menys CO₂; les de descàrrega (${bot.join(", ")} h), les de més CO₂ i preu.` },
+      { d: "Programar els consums flexibles a les hores netes", view: "live", go: "#signal", impact: `~${f(shiftT, 1)} t CO₂ l'any per cada 100 kW`,
+        c: `Moure 100 kW de consum (climatització, equips de laboratori, càrrega de vehicles) 3 h al dia de les hores més brutes a les més netes. El semàfor del directe diu quan.` },
+      { d: `Ampliar la bateria a ${f(best.capacity_kwh)} kWh amb el mateix inversor`, view: "sizing", impact: `+${f(best.co2_t_year - now.co2_t_year)} t CO₂ l'any`,
+        c: `Passaria de ${f(now.co2_t_year)} a ${f(best.co2_t_year)} t l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh). Per sobre de 6.000 kWh ja no compensa.` },
+      { d: "Revisar el comptador del campus", view: "trust", go: "#meter-note", impact: `${f(100 * frozen)} % de les hores de nit`,
+        c: `De nit el comptador repeteix el mateix valor: el consum real no queda registrat. Sense dades bones no es pot saber quanta energia es fa servir de nit.` },
+      { d: "Operar amb les previsions públiques de REE", view: "trust", impact: `${f(100 * r[r.length - 1].score / r[0].score)} % de l'estalvi amb 50 % d'error`,
+        c: `No cal una previsió perfecta del preu i del CO₂: amb errors grans la bateria segueix estalviant gairebé el mateix. Mai supera els límits de la bateria (${f(D.yearly.violations)} infraccions).` },
     ];
     $("decisions").innerHTML = rows.map((r, i) => `<div class="decision"><div class="n">${String(i + 1).padStart(2, "0")}</div>
-      <div><b>${r.d}</b><p>${r.c}</p></div>
+      <div><b>${r.d}</b><p>${r.c}</p></div><span class="impact num">${r.impact}</span>
       <button data-goto="${r.view}" data-sel="${r.go || ""}">Veure l'evidència</button></div>`).join("");
   }
 
@@ -465,10 +477,10 @@
   // ---------------------------------------------------------------- API
   const drawn = {};
   const draw = {
-    overview: () => { kpis(); decisions(); counterfactual(); },
+    overview: () => { kpis(); decisions(); },
     strategy: () => { strategyBars("c-strategy", 300); profile("c-profile", false); hourBoxes(); scatter(); polish(); heat(); },
     sizing: () => sizing(),
-    trust: () => robust(),
+    trust: () => { robust(); counterfactual(); },
     live: () => {},
     planner: () => {},
   };
@@ -476,7 +488,7 @@
   window.Charts = {
     downloadWeeks,
     init(data) { D = data; sizingSetup(); },
-    setWeek(w) { wk = w; if (current === "overview") counterfactual(); },
+    setWeek(w) { wk = w; if (current === "trust") counterfactual(); },
     show(view) {
       current = view;
       // es redibuixen en entrar, perquè l'animació es vegi i la mida sigui la bona

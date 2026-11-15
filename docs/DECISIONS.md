@@ -349,3 +349,13 @@ amb dades del leaderboard ni amb cap font externa durant l'avaluació.
   previsions fetes sense veure aquelles setmanes): l'error de l'acció només baixa d'un 1 % (200 → 198 kW i 183 → 181 kW) i
   el score empitjora a les dues (F0 18,88 → 18,83–18,86; F1 17,42 → 17,38–17,41). Confirma el que va trobar l'Ivan per
   una altra via: la diferència amb l'òptim depèn del futur i no es pot predir amb el que sap l'agent.
+
+### D-044 · 15/11 · Adrià — El dashboard és l'eina d'UPC Sostenible, no la nostra presentació
+El dashboard parlava de nosaltres ("Què n'hem après i què li recomanem", "pla de l'agent"). Ara és una eina feta per a qui
+gestiona l'energia del campus, ordenada per l'ús que en farà i pensada per prendre decisions (criteri de la Tukey):
+- **En directe** (què fa la bateria ara i per què) → **Decisions** (què convé fer, l'impacte en t/€ i l'evidència)
+  → **Històric** (setmana a setmana, amb/sense bateria, calendari, fiabilitat, historial i qualitat de les dades)
+  → **Anàlisi** (quan i per què carregar) → **Simulador** (què passaria si...) → **Inversió** (quanta bateria convé).
+- Decisions noves, calculades amb les dades: programar els consums flexibles a les hores netes (~7,8 t CO₂/any per cada
+  100 kW moguts 3 h al dia) i revisar el comptador, que de nit repeteix el mateix valor (86 % de les hores de nit).
+- Sense paraules nostres: "agent" passa a "pla actual de la bateria"; l'informe diu "Decisions per a UPC Sostenible".

@@ -16,12 +16,12 @@ const loadExt = d3.extent(H.load);
 
 // ---------------------------------------------------------------- vistes
 const VIEWS = {
-  live: ["Campus en directe", "El Campus Nord real en 3D: què fa la bateria a cada hora i per què"],
-  overview: ["Conclusions", "Què n'hem après i què li recomanem a UPC Sostenible"],
-  strategy: ["Estratègia", "Com s'ha de controlar la bateria i per què"],
-  sizing: ["Mida de la bateria", "Quina bateria li convé comprar a la UPC"],
-  trust: ["Rendiment", "Com rendeix setmana a setmana, com aguanta i com evoluciona"],
-  planner: ["Planificador", "Prova escenaris i mira com canviaria el pla de la bateria"],
+  live: ["En directe", "Què fa la bateria del Campus Nord ara mateix i per què"],
+  overview: ["Decisions", "Què convé fer, amb l'impacte i l'evidència de cada decisió"],
+  trust: ["Històric", "Com ha funcionat la bateria setmana a setmana i dia a dia"],
+  strategy: ["Anàlisi", "Quan i per què convé carregar i descarregar"],
+  planner: ["Simulador", "Què passaria si canvien el preu, el CO₂ o les condicions de la bateria"],
+  sizing: ["Inversió", "Quanta bateria convé tenir i quan es recupera la inversió"],
 };
 let scene;
 function go(name) {
@@ -31,7 +31,7 @@ function go(name) {
   document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false));
   $("title").textContent = VIEWS[name][0];
   $("subtitle").textContent = VIEWS[name][1];
-  if (name === "overview") setTimeout(drawCalendar, 60);
+  if (name === "trust") setTimeout(drawCalendar, 60);
   if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(() => { drawStrip(); drawPlan(); }, 450); }   // es torna a dibuixar quan la vista ja és oberta
   window.Charts.show(name);
   if (name === "planner") stop();   // l'escenari no s'ha de moure mentre es prova

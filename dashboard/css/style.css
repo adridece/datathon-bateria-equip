@@ -276,7 +276,7 @@ body.demo-on .view.on .grid > .card { animation: none; }
 
 /* ---------- conclusions i decisions ---------- */
 .decisions { display: flex; flex-direction: column; }
-.decision { display: grid; grid-template-columns: 34px 1fr auto; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--dt-line); }
+.decision { display: grid; grid-template-columns: 34px 1fr 190px auto; gap: 14px; align-items: center; padding: 12px 0; border-top: 1px solid var(--dt-line); }
 .decision:first-child { border-top: 0; }
 .decision .n { font: 500 13px var(--dt-mono); color: var(--dt-accent); }
 .decision b { font-size: 14.5px; }
@@ -377,3 +377,6 @@ table.t tr.now-row td { color: var(--dt-accent); }
 .wk-list li:hover, .wk-list li:focus { background: var(--dt-soft); }
 .wk-list li[aria-selected="true"] { background: var(--dt-accent-soft, #E4F1EF); color: var(--dt-accent); }
 .wk-list li[aria-selected="true"] b { color: var(--dt-accent); }
+
+.decision .impact { font-size: 12.5px; color: var(--dt-accent); text-align: right; line-height: 1.35; }
+@media (max-width: 900px) { .decision { grid-template-columns: 28px 1fr; } .decision .impact { grid-column: 2; text-align: left; } }
