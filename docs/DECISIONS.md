@@ -389,3 +389,11 @@ gestiona l'energia del campus, ordenada per l'ús que en farà i pensada per pre
   següents), **El dia** (rellotge amb llegenda) i **Consums flexibles** (semàfor).
 - El dashboard és l'eina que fa servir l'equip d'UPC Sostenible, no una presentació "per a ells": fora "Decisions per a
   UPC Sostenible" i "Informe per a UPC Sostenible"; els títols diuen el que hi ha ("Decisions", "Informe de la bateria").
+
+### D-048 · 15/11 · Adrià — Cap gràfic tallat i animacions iguals a tots els botons
+- Comprovació automàtica de tots els textos dels gràfics a les sis seccions (i a l'explorador amb totes les sèries, amb
+  la simulació i amb les dades d'entrenament), a amplada normal i a ~1.150 px: quatre textos sortien del gràfic (les
+  unitats de l'explorador i del gràfic en directe, i dues etiquetes d'Anàlisi). Ara cap.
+- Animacions coherents: canvi de color suau a tots els botons, petit efecte en prémer, ombra al botó principal,
+  selectors amb transició, llista de setmanes que s'obre amb animació, canvi de secció amb fos i targetes de decisió que
+  responen al ratolí. "Reproduir" i "Pausa" ocupen el mateix i el botó no salta. Es respecta "reduir moviment".

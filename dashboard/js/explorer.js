@@ -66,7 +66,7 @@
     if (!el || !el.clientWidth) return;
     const [lo, hi] = ex.range || [0, n];
     const units = [...new Set(ex.keys.map(k => SERIES[k].unit))];
-    const rowH = 96, gap = 18, ctxH = 46, m = { t: 6, r: 16, b: 22, l: 64 };
+    const rowH = 96, gap = 22, ctxH = 46, m = { t: 16, r: 16, b: 22, l: 64 };   // a dalt hi va l'etiqueta d'unitat
     const w = el.clientWidth, h = m.t + units.length * (rowH + gap) + ctxH + 28 + m.b;
     el.innerHTML = "";
     const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${w} ${h}`).attr("width", "100%");
@@ -81,7 +81,7 @@
       const y = d3.scaleLinear().domain(d3.extent([0, ...all])).nice().range([rowH, 0]);
       gg.append("g").attr("class", "grid").call(d3.axisLeft(y).ticks(3).tickSize(-iw).tickFormat("")).call(a => a.select(".domain").remove());
       gg.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(3).tickSize(0).tickPadding(6).tickFormat(v => f(v))).call(a => a.select(".domain").remove());
-      gg.append("text").attr("class", "ex-unit").attr("x", -m.l + 2).attr("y", -1).text(u);
+      gg.append("text").attr("class", "ex-unit").attr("x", -m.l + 2).attr("y", -5).text(u);
       keys.forEach(k => {
         const s = SERIES[k], pts = points(k, lo, hi, res);
         if (s.bars) {
@@ -184,7 +184,7 @@
     H = SIM; SERIES = SIM_SERIES; n = nSim;
     const lo = Math.max(0, now - 48), hi = Math.min(n, now + 25);
     const units = [...new Set(live.keys.map(k => SERIES[k].unit))];
-    const rowH = 62, gap = 14, m = { t: 6, r: 12, b: 20, l: 64 };
+    const rowH = 62, gap = 20, m = { t: 16, r: 12, b: 20, l: 64 };
     const w = el.clientWidth, h = m.t + units.length * (rowH + gap) + m.b;
     el.innerHTML = "";
     const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${w} ${h}`).attr("width", "100%");
@@ -198,7 +198,7 @@
       const all = keys.flatMap(k => d3.range(lo, hi).map(SERIES[k].get));
       const y = d3.scaleLinear().domain(d3.extent([0, ...all])).nice().range([rowH, 0]);
       gg.append("g").attr("class", "axis").call(d3.axisLeft(y).ticks(2).tickSize(0).tickPadding(6).tickFormat(v => f(v))).call(a => a.select(".domain").remove());
-      gg.append("text").attr("class", "ex-unit").attr("x", -m.l + 2).attr("y", -1).text(u);
+      gg.append("text").attr("class", "ex-unit").attr("x", -m.l + 2).attr("y", -5).text(u);
       keys.forEach(k => {
         const s = SERIES[k];
         if (s.bars) {

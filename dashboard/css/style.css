@@ -448,3 +448,26 @@ button { white-space: nowrap; }
 .batt-right { display: flex; align-items: baseline; gap: 10px; }
 .batt-right .batt-kwh { position: static; display: inline; color: var(--dt-muted); text-shadow: none; font-size: 12px; }
 .batt-line .batt-state { white-space: normal; height: auto; }
+
+/* ---------- animacions dels botons, iguals a tot arreu ---------- */
+button { transition: background-color .22s var(--dt-ease), color .22s var(--dt-ease), border-color .22s var(--dt-ease),
+                     box-shadow .22s var(--dt-ease), transform .14s var(--dt-ease), opacity .22s; }
+button:hover:not(.on):not(.primary) { background-color: var(--dt-soft); }
+button.primary:hover { box-shadow: 0 4px 14px rgba(71, 144, 139, .28); }
+button:active { transform: scale(.96); }
+[data-act="play"] { min-width: 96px; text-align: center; }          /* "Reproduir" i "Pausa" ocupen el mateix */
+.seg button { transition: background-color .25s var(--dt-ease), color .25s var(--dt-ease), box-shadow .25s; }
+.seg button.on { box-shadow: 0 1px 4px rgba(31, 35, 38, .12); }
+.nav button { transition: background-color .22s var(--dt-ease), color .22s var(--dt-ease), transform .14s var(--dt-ease); }
+.nav button svg { transition: transform .25s var(--dt-ease); }
+.nav button:hover svg { transform: translateX(2px); }
+.ex-series button i { transition: opacity .22s var(--dt-ease), transform .22s var(--dt-ease); }
+.ex-series button.on i { transform: scale(1.15); }
+.dcard { transition: border-color .25s var(--dt-ease), box-shadow .25s var(--dt-ease), transform .25s var(--dt-ease); }
+.dcard:hover { border-color: #CFC9BD; box-shadow: 0 6px 18px rgba(31, 35, 38, .06); transform: translateY(-1px); }
+.event { transition: background-color .2s var(--dt-ease), transform .14s var(--dt-ease); }
+.wk-list:not([hidden]) { animation: drop .18s var(--dt-ease) both; }
+@keyframes drop { from { opacity: 0; transform: translateY(-6px) scale(.98); } to { opacity: 1; transform: none; } }
+.view.on { animation: viewIn .28s var(--dt-ease) both; }
+@keyframes viewIn { from { opacity: 0; } to { opacity: 1; } }
+@media (prefers-reduced-motion: reduce) { .wk-list:not([hidden]), .view.on { animation: none; } .dcard:hover { transform: none; } }

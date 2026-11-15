@@ -116,7 +116,7 @@
   function strategyBars(id, h) {
     const st = D.strategies, rows = st.slice(0, 3), y0 = D.yearly;
     const tons = s => s.co2_pct / y0.co2_pct * y0.co2_t_year, euros = s => s.cost_pct / y0.cost_pct * y0.eur_year;
-    const { g, iw, ih } = frame(id, h, { t: 22, r: 96, b: 26, l: 170 });
+    const { g, iw, ih } = frame(id, h, { t: 32, r: 96, b: 26, l: 170 });
     const x = d3.scaleLinear().domain([0, tons(st[3]) * 1.1]).range([0, iw]);
     const y = d3.scaleBand().domain(rows.map(r => r.strategy)).range([0, ih]).padding(0.35);
     const bh = Math.min(30, y.bandwidth());   // barres de gruix fix encara que la targeta sigui alta
@@ -147,7 +147,7 @@
       : [{ key: "battery_kw", title: "Bateria (kW)", h: 140, bars: true }, { key: "co2_g", title: "CO₂ xarxa (g/kWh)", h: 70, color: C.co2 },
          { key: "price_eur_mwh", title: "Preu (€/MWh)", h: 70, color: C.price }];
     const total = d3.sum(panels, p => p.h + 22) + 28;
-    const { g, iw } = frame(id, total, { t: 8, r: 90, b: 0, l: 44 });
+    const { g, iw } = frame(id, total, { t: 8, r: 128, b: 0, l: 44 });
     const x = d3.scaleBand().domain(d3.range(24)).range([0, iw]).padding(0.22);
     let y0 = 0;
     panels.forEach(pn => {
