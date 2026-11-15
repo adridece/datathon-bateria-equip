@@ -363,3 +363,17 @@ Els organitzadors ens han confirmat que podem entrenar amb dades públiques de R
   Nota: el DIARI diu que el calibratge de D-040 es va buscar sobre F0/F1/F2; si és així, F2 ja no és del tot reservada.
 - La validació creuada és temporal (F0, F1, F2 = una setmana diferent de cada mes, sense barrejar hores veïnes); ajustem amb
   F0 i F1 i F2 només confirma.
+
+### D-043 · 15/11 · Adrià — Molt més historial públic: què ajuda i què no
+Hem baixat tot l'historial públic de REE d'abans del repte que hem pogut (`scripts/download_ree.py`) i l'hem provat amb la
+validació creuada temporal (F0/F1/F2), quedant-nos només amb el que millora:
+- **CO₂ 2019–2025 reconstruït** amb la generació per tecnologia de REE (cada 5 min). Calibrat amb la meitat dels dies del
+  train i comprovat amb l'altra meitat: error mitjà 1,75 %, correlació 0,999 (abans, sense calibrar, un 5 %).
+- **Preu:** el PVPC de juny 2021 a 2023 **empitjora** (F1 17,47 → 17,47, F2 18,00 → 17,98): l'any 2022 de crisi energètica
+  es comporta diferent. Ens quedem amb 2024–2025. Abans de juny de 2021 REE no publica aquest PVPC.
+- **CO₂:** amb l'historial des de 2024 F1 empitjora; **des de juny de 2021 millora les tres**: F0 18,944 → 18,960,
+  F1 17,471 → 17,472, F2 18,002 → 18,033. Guany petit però consistent.
+- **Horitzó del model de CO₂ fins a +16 h** amb aquest historial: F0 empitjora (18,944) → es queda a +12 h.
+Lliçó: més dades no sempre és millor; només val la pena si són del mateix règim. 0 infraccions, checker vàlid.
+Aquesta branca inclou també els canvis pendents de la sessió de calibratge (D-040) a `src/data.py`,
+`scripts/train_dificil_marges.py` i `tests/evaluate_dificil.py`: sense ells l'agent no es pot reentrenar des del repo.

@@ -20,8 +20,12 @@ import train_dificil_marges as base  # noqa: E402
 FOLDER = ROOT / "agents" / "dificil_co2_irradiancia"
 DIRECT = {"first": 3, "last": 12, "weight": 0.5, "seeds": 3}
 PRICE_DIRECT = {"first": 3, "last": 12, "weight": 0.5, "seeds": 3}
-# PVPC public de REE (gener 2024 - agost 2025), abans del periode del repte: mateixa font que precio_pvpc.csv
-EXTERNAL_PRICE = ROOT / "data" / "external" / "pvpc_2024_2025.csv"
+# PVPC public de REE (juny 2021 - agost 2025), abans del periode del repte: mateixa font que precio_pvpc.csv
+EXTERNAL_PRICES = sorted((ROOT / "data" / "external").glob("pvpc_*.csv"))
+# CO2 reconstruit amb la generacio publica de REE i calibrat amb dies del train (error 1,75 % en dies no usats)
+EXTERNAL_CO2 = ROOT / "data" / "external" / "co2_ree_2019_2025.csv"
+CO2_FROM = "2021-06-01"     # des de quan fem servir l'historial extern de CO2
+PRICE_FROM = "2024-01-01"   # el PVPC de 2021-2023 (crisi energetica) empitjora la validacio
 PARAMS = {"objective": "l1", "learning_rate": 0.05, "num_leaves": 31, "min_data_in_leaf": 50, "feature_fraction": 0.8,
           "bagging_fraction": 0.8, "bagging_freq": 1, "verbose": -1}
 
@@ -33,15 +37,29 @@ def load_agent_module(folder):
     return mod
 
 
+def co2_blocks(d):
+    """Trams continus amb CO2, preu i irradiancia: els del train i, si hi son, els externs (sense irradiancia)."""
+    blocks = [(b.co2_kg_per_kwh.tolist(), b.precio_eur_per_kwh.tolist(), b.irr_wm2.fillna(0.0).tolist(), b.index)
+              for b in contiguous_blocks(d)]
+    if EXTERNAL_CO2.exists() and EXTERNAL_PRICES:
+        co2 = pd.read_csv(EXTERNAL_CO2, parse_dates=["Fecha"]).set_index("Fecha").co2_kg_per_kwh
+        price = pd.concat([pd.read_csv(p, parse_dates=["Fecha"]).set_index("Fecha").precio_eur_per_kwh for p in EXTERNAL_PRICES])
+        both = pd.concat([co2, price[~price.index.duplicated()]], axis=1, join="inner").dropna()
+        both = both[(both.index >= CO2_FROM) & (both.index < d.index.min())]
+        cut = both.index.to_series().diff() > pd.Timedelta("2h")
+        for _, g in both.groupby(cut.cumsum()):
+            if len(g) > 72:
+                blocks.append((g.co2_kg_per_kwh.tolist(), g.precio_eur_per_kwh.tolist(), [float("nan")] * len(g), g.index))
+    return blocks
+
+
 def direct_dataset(d, agent):
     """Les mateixes variables que l'agent calcula a cada hora i el CO2 real a +j, relatiu a l'ultima hora coneguda."""
     hours = list(range(DIRECT["first"], DIRECT["last"] + 1))
     X, y = [], []
-    for b in contiguous_blocks(d):
-        c, p = b.co2_kg_per_kwh.tolist(), b.precio_eur_per_kwh.tolist()
-        irr = b.irr_wm2.fillna(0.0).tolist()
-        for t in range(48, len(b) - hours[-1] - 1):
-            ts = b.index[t]
+    for c, p, irr, index in co2_blocks(d):
+        for t in range(48, len(c) - hours[-1] - 1):
+            ts = index[t]
             rows = agent.co2_direct_rows(c[t - 48:t], p[t - 24:t], c[t:t + 3], p[t:t + 3], ts.hour, ts.dayofweek,
                                          ts.month, irr[t - 1], irr[t - 25], hours)
             for row, j in zip(rows, hours):
@@ -59,9 +77,9 @@ def pv_per_irr(d):
 def price_series(d):
     """Trams continus de preu: els del train i, si hi es, el PVPC public d'abans del repte."""
     series = [b.precio_eur_per_kwh for b in contiguous_blocks(d)]
-    if EXTERNAL_PRICE.exists():
-        ext = pd.read_csv(EXTERNAL_PRICE, parse_dates=["Fecha"]).set_index("Fecha").precio_eur_per_kwh
-        ext = ext[ext.index < d.index.min()]          # mai res del periode del repte
+    for path in EXTERNAL_PRICES:
+        ext = pd.read_csv(path, parse_dates=["Fecha"]).set_index("Fecha").precio_eur_per_kwh
+        ext = ext[(ext.index >= PRICE_FROM) & (ext.index < d.index.min())]   # mai res del periode del repte
         cut = ext.index.to_series().diff() > pd.Timedelta("2h")
         series += [g for _, g in ext.groupby(cut.cumsum()) if len(g) > 72]
     return series

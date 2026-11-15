@@ -13,3 +13,7 @@ submissions/*.zip
 .vscode/
 .claude/
 docs/SKILLS_INSTAL*.md
+
+# historial brut de REE (es regenera amb scripts/download_ree.py)
+data/external/ree_generacio_horaria*.csv
+data/external/*.npy
