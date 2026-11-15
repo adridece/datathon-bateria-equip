@@ -56,6 +56,7 @@
 </style>
 <script src="vendor/d3.min.js"></script>
 <script src="data/data.js"></script>
+<script src="js/mode.js"></script>
 </head>
 <body>
 <div class="bar"><button onclick="window.close()">Tancar</button><button class="primary" onclick="window.print()">Desar en PDF</button></div>
@@ -63,25 +64,26 @@
 <div class="sheet" id="p2"></div>
 <script>
   // l'informe es genera amb les mateixes dades i càlculs que el dashboard
-  const D = window.DATA, yr = D.yearly, st = D.strategies, rob = D.robustness, W = D.weekly, P = D.profile;
+  const D = window.DATA, yr = D.yearly, st = D.strategies, rob = D.robustness, W = D.weekly, P = D.profile, M = window.MODE;
   const f = (x, d = 0) => x.toLocaleString("ca-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
   const eur = x => (Math.abs(x) >= 10000 ? f(x / 1000) + " k€" : f(x) + " €");
   const tons = s => s.co2_pct / yr.co2_pct * yr.co2_t_year;
-  const sz = D.sizing.filter(s => s.power_kw === 500).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
-  const best = sz.filter(s => s.payback < 10).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
-  const cur = sz.find(s => s.capacity_kwh === 2000);
+  const sz = D.sizing.filter(s => s.power_kw === M.power_kw).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
+  const cur = sz.find(s => s.capacity_kwh === M.cap_kwh), fast = sz.filter(s => s.payback < 10);
+  const best = (fast.length ? fast : [cur]).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
+  const known = M.market_hours >= 24 ? "les 24 hores següents (publicats per REE el dia abans)" : `les ${M.market_hours} hores següents i preveu la resta del dia amb models entrenats amb el train`;
   const chargeH = [...P].sort((a, b) => b.battery_kw - a.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
   const dischargeH = [...P].sort((a, b) => a.battery_kw - b.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
   const keep = 100 * rob[rob.length - 1].score / rob[0].score;
   const today = new Date().toLocaleDateString("ca-ES", { day: "numeric", month: "long", year: "numeric" });
-  const header = n => `<header><img src="static/logo-datathon.png" alt=""><div><div class="team">UPC SOSTENIBLE</div><div>Bateria del Campus Nord</div></div>
+  const header = n => `<header><img src="static/logo-datathon.png" alt=""><div><div class="team">UPC SOSTENIBLE</div><div>Bateria del Campus Nord · ${M.label}</div></div>
       <div class="meta">Informe de la bateria<br>${today}<span class="page">${n} / 2</span></div></header>`;
   const decisions = [
     ["Operar la bateria amb control predictiu", `Evita ${f(tons(st[2]))} t de CO₂ i ${eur(yr.eur_year)} l'any, el ${f(100 * st[2].co2_pct / st[3].co2_pct)} % del que s'evitaria coneixent el futur. Un horari fix només n'evita ${f(tons(st[1]))} t.`],
     ["Carregar a les hores de sol, descarregar al matí i al vespre", `Carrega sobretot a les ${chargeH.join(", ")} h, les de menys CO₂, i descarrega a les ${dischargeH.join(", ")} h, les de més CO₂ i preu.`],
-    [`Ampliar la bateria a ${f(best.capacity_kwh)} kWh`, `Amb el mateix inversor de 500 kW passaria de ${f(cur.co2_t_year)} a ${f(best.co2_t_year)} t de CO₂ l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh).`],
+    [`Ampliar la bateria a ${f(best.capacity_kwh)} kWh`, `Amb el mateix inversor de ${f(M.power_kw)} kW passaria de ${f(cur.co2_t_year)} a ${f(best.co2_t_year)} t de CO₂ l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh).`],
     ["Posar-la en marxa amb les previsions de REE", `Amb un 50 % d'error a les previsions de preu i CO₂ encara conserva el ${f(keep)} % de l'estalvi.`],
-    ["Respectar sempre els límits de la bateria", `Mai demana més de 500 kW ni més energia de la que hi cap o en queda: ${f(yr.violations)} infraccions. Un horari fix en faria ${f(st[1].violations)}.`],
+    ["Respectar sempre els límits de la bateria", `Mai demana més de ${f(M.power_kw)} kW ni més energia de la que hi cap o en queda: ${f(yr.violations)} infraccions. Un horari fix en faria ${f(st[1].violations)}.`],
     ["Moure els consums flexibles a les hores netes", `El dashboard avisa quan la xarxa és de les més netes del dia: és el moment de fer servir equips que es poden programar.`],
   ];
 
@@ -129,14 +131,14 @@
         <h2>Com seguir-lo un cop en marxa</h2>
         <ul><li>Cada mes, regenerar les dades i comprovar que el CO₂ evitat i la part de l'òptim no baixen.</li>
           <li>Si una setmana estalvia molt menys, mirar si la xarxa va variar poc o si va fallar el comptador.</li>
-          <li>Revisar el desgast: uns ${f(d3.sum(W, w => w.cycles) * 8760 / 1848, 0)} cicles complets l'any.</li></ul></div>
+          <li>Revisar el desgast: uns ${f(d3.sum(W, w => w.cycles) * 8760 / yr.hours, 0)} cicles complets l'any.</li></ul></div>
       <div><h2>Com funciona el control</h2>
-        <ul><li>Cada hora mira el preu i el CO₂ de les 24 hores següents (publicats per REE el dia abans).</li>
+        <ul><li>Cada hora mira el preu i el CO₂ de ${known}.</li>
           <li>Busca el pla de càrrega que més redueix el 70 % CO₂ + 30 % factura, amb programació lineal.</li>
           <li>Aplica només la primera hora i a l'hora següent torna a planificar amb dades noves.</li>
-          <li>No demana mai més de 500 kW ni més energia de la que hi cap o en queda.</li></ul>
+          <li>No demana mai més de ${f(M.power_kw)} kW ni més energia de la que hi cap o en queda (bateria de ${f(M.cap_kwh)} kWh).</li></ul>
         <h2 style="margin-top:10px">Supòsits i dades</h2>
-        <ul><li>Preu i CO₂ de les 24 h següents coneguts; consum i solar futurs, no.</li>
+        <ul><li>${M.market_hours >= 24 ? "Preu i CO₂ de les 24 h següents coneguts" : `Preu i CO₂ només de les ${M.market_hours} h següents; la solar és ${f(M.pv_scale)} vegades l'actual`}; consum i solar futurs, no.</li>
           <li>Rendiment del 90 % per cicle i sense degradació, com el simulador oficial.</li>
           <li>Cost de la bateria (350 €/kWh) orientatiu, sense manteniment ni subvencions.</li>
           <li>Ubicació de la bateria i dels centres de transformació: proposta.</li>
@@ -155,7 +157,7 @@
   // 1. perfil horari
   { const { g, iw, ih } = svg("c1");
     const x = d3.scaleBand().domain(d3.range(24)).range([0, iw]).padding(0.2);
-    const y = d3.scaleLinear().domain([-500, 500]).range([ih, 0]);
+    const y = d3.scaleLinear().domain([-M.power_kw, M.power_kw]).range([ih, 0]);
     const yc = d3.scaleLinear().domain(d3.extent(P, d => d.co2_g)).nice().range([ih, 0]);
     g.selectAll("rect").data(P).join("rect").attr("x", d => x(d.hour)).attr("width", x.bandwidth()).attr("rx", 1.5)
       .attr("y", d => y(Math.max(0, d.battery_kw))).attr("height", d => Math.abs(y(d.battery_kw) - y(0)))
@@ -169,10 +171,10 @@
 
   // 2. mida de la bateria
   { const { g, iw, ih } = svg("c2", Hd, { t: 8, r: 40, b: 18, l: 24 }), rows = D.sizing;
-    const x = d3.scaleLinear().domain([0, 8000]).range([0, iw]);
+    const x = d3.scaleLinear().domain([0, d3.max(rows, d => d.capacity_kwh)]).range([0, iw]);
     const y = d3.scaleLinear().domain([0, d3.max(rows, d => d.co2_t_year) * 1.08]).range([ih, 0]);
-    [250, 500, 1000].forEach(p => {
-      const pr = rows.filter(d => d.power_kw === p), on = p === 500;
+    [...new Set(rows.map(d => d.power_kw))].forEach(p => {
+      const pr = rows.filter(d => d.power_kw === p), on = p === M.power_kw;
       g.append("path").datum(pr).attr("fill", "none").attr("stroke", on ? "#47908B" : "#CFC9BD").attr("stroke-width", on ? 2 : 1.4)
         .attr("d", d3.line().x(d => x(d.capacity_kwh)).y(d => y(d.co2_t_year)).curve(d3.curveMonotoneX));
       const l = pr[pr.length - 1];
@@ -182,7 +184,7 @@
     g.append("text").attr("class", "lab").attr("x", x(best.capacity_kwh) + 6).attr("y", y(best.co2_t_year) + 12)
       .text(`recomanada: ${f(best.capacity_kwh)} kWh`);
     axis(g, d3.axisLeft(y).ticks(4));
-    axis(g, d3.axisBottom(x).ticks(4).tickFormat(v => f(v) + " kWh"), `translate(0,${ih})`); }
+    axis(g, d3.axisBottom(x).ticks(4).tickFormat(v => f(v / 1000) + " MWh"), `translate(0,${ih})`); }
 
   // 3. estratègies, en tones per any
   { const { g, iw, ih } = svg("c3", 130, { t: 10, r: 50, b: 16, l: 92 }), rows = st.slice(0, 3);

@@ -30,10 +30,36 @@ def make_agent(name: str, cap: float = 2000.0, pmax: float = 500.0, w_co2: float
     return agent
 
 
-def replay(agent, data: pd.DataFrame, cap: float = 2000.0, pmax: float = 500.0) -> pd.DataFrame:
+class HardEnv(CampusBatteryEnv):
+    """Com la web al Mode Dificil (igual que tests/evaluate_dificil.py): nomes unes hores de mercat,
+    la meteo de l'ultima hora i la mida de la bateria dins d'obs."""
+
+    def __init__(self, data, spec, market_hours=3):
+        self.market_hours = market_hours
+        cols = ["irr_wm2", "temp_c", "panel_c", "wind_ms"]
+        self.meteo = data.reindex(columns=cols).fillna(0.0).reset_index(drop=True)
+        super().__init__(data[BASE_COLS], spec=spec)
+
+    def _get_obs(self):
+        obs = super()._get_obs()
+        if obs is None:
+            return None
+        obs["preus_properes_24h"] = obs["preus_properes_24h"][:self.market_hours]
+        obs["co2_properes_24h"] = obs["co2_properes_24h"][:self.market_hours]
+        m = self.meteo.iloc[max(self.t - 1, 0)]
+        obs["noves_dades_5min"].update({"irradiancia_wm2": float(m.irr_wm2), "temp_ambient_c": float(m.temp_c),
+                                        "temp_panel_c": float(m.panel_c), "vent_ms": float(m.wind_ms)})
+        obs["cap_max_kwh"], obs["power_max_kw"] = self.cap, self.power
+        return obs
+
+
+def replay(agent, data: pd.DataFrame, cap: float = 2000.0, pmax: float = 500.0, market_hours: int = 24) -> pd.DataFrame:
     spec = {"capacity_kwh": cap, "power_kw": pmax, "efficiency": 0.9, "soc_init": 0.5,
             "soc_min": 0.0, "soc_max": 1.0, "dt_hours": 1}
-    env = CampusBatteryEnv(data[BASE_COLS], spec=spec)
+    if market_hours < 24:
+        env = HardEnv(data, spec, market_hours)
+    else:
+        env = CampusBatteryEnv(data[BASE_COLS], spec=spec)
     obs, done = env.reset(), False
     soc_before = []
     while not done:

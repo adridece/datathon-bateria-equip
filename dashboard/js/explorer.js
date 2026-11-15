@@ -166,7 +166,7 @@
       ["Compra amb / sense bateria", `${f(sum("grid") / 1000)} / ${f(sum("base") / 1000)} MWh`],
       ["CO₂ mitjà de la xarxa", `${f(mean("co2"))} g/kWh`], ["Preu mitjà", `${f(mean("price"))} €/MWh`],
       ["Hores carregant / descarregant", `${f(charge)} / ${f(dis)}`],
-      ["Cicles complets", f(d3.sum(idx, i => Math.max(0, -H.bat[i])) / 2000, 1)],
+      ["Cicles complets", f(d3.sum(idx, i => Math.max(0, -H.bat[i])) / window.MODE.cap_kwh, 1)],
     ]);
   }
 

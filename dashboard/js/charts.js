@@ -7,6 +7,7 @@
   const $ = id => document.getElementById(id);
   const T = 700, ease = d3.easeCubicOut;
   let D;
+  const M = window.MODE;   // mida de la bateria del mode actiu
   const statsHTML = items => items.map(([label, value]) => `<div><span>${label}</span><b class="num">${value}</b></div>`).join("");
 
   function frame(id, h, m = { t: 12, r: 16, b: 28, l: 44 }) {
@@ -41,7 +42,7 @@
       { cls: "hero", label: "CO₂ evitat per any (estimació)", v: y.co2_t_year, fmt: v => f(v) + " t", delta: `−${f(y.co2_pct, 1)} % d'emissions` },
       { cls: "", label: "Estalvi a la factura per any (estimació)", v: y.eur_year, fmt: v => eur(v), delta: `−${f(y.cost_pct, 1)} % de cost` },
       { cls: "", label: "Energia moguda a hores netes per any", v: out / 1000, fmt: v => f(v) + " MWh", delta: "descarregada al vespre i al matí", n: true },
-      { cls: "", label: "Cicles complets per any", v: out / 2000, fmt: v => f(v), delta: "desgast de la bateria", n: true },
+      { cls: "", label: "Cicles complets per any", v: out / M.cap_kwh, fmt: v => f(v), delta: "desgast de la bateria", n: true },
     ];
     $("kpis").innerHTML = cards.map((c, i) => `<div class="card kpi s3 ${c.cls}"><div class="label">${c.label}</div>` +
       `<div class="value" id="kv${i}">0</div><span class="delta ${c.n ? "neutral" : ""}">${c.delta}</span>${i < 2 ? `<svg id="ks${i}" width="96" height="34"></svg>` : ""}</div>`).join("");
@@ -78,13 +79,14 @@
     const flexKg = d3.sum(win, x => x.gap) * 100 * 3;                 // 100 kW moguts 3 h cada dia de la setmana
     const prof = d3.range(24).map(h => d3.mean(hourIdx(w, i => +H.t[i].slice(11, 13) === h), i => H.bat[i]));
     const chargeH = d3.range(24).sort((a, b) => prof[b] - prof[a]).slice(0, 3).sort((a, b) => a - b);
-    const sz = D.sizing.filter(s => s.power_kw === 500).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
-    const now = sz.find(s => s.capacity_kwh === 2000), best = sz.filter(s => s.payback < 10).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
+    const sz = D.sizing.filter(s => s.power_kw === M.power_kw).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
+    const now = sz.find(s => s.capacity_kwh === M.cap_kwh), fast = sz.filter(s => s.payback < 10);
+    const best = (fast.length ? fast : [now]).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
     const cards = [
       { t: "Control de la bateria", v: `${f(W[wi].co2_kg)} kg CO₂`, s: `aquesta setmana; amb un horari fix, ${f(W[wi].rules_co2_kg)} kg`,
         tag: `${f(Math.min(100, W[wi].of_best_pct))} % del màxim`, ok: true, spark: W.map(x => x.co2_kg), keys: ["grid", "base", "savedco2"] },
       { t: "Quan carregar", v: `${chargeH.join(", ")} h`, s: "hores de més càrrega aquesta setmana (les més netes)",
-        tag: `${f(d3.sum(idx, i => Math.max(0, -H.bat[i])) / 2000, 1)} cicles`, ok: true, spark: prof, bars: true, keys: ["bat", "co2"] },
+        tag: `${f(d3.sum(idx, i => Math.max(0, -H.bat[i])) / M.cap_kwh, 1)} cicles`, ok: true, spark: prof, bars: true, keys: ["bat", "co2"] },
       { t: "Consums flexibles", v: `${hours}–${hours + 3} h`, s: `la franja més neta més habitual; moure-hi 100 kW evitaria ${f(flexKg)} kg aquesta setmana`,
         tag: `~${f(flexKg / 1000 * 52, 1)} t/any`, ok: true, spark: D.weeks.map(x => d3.sum(windows(x), y => y.gap) * 300), keys: ["co2", "load"] },
       { t: "Mida de la bateria", v: `${f(best.capacity_kwh)} kWh`, s: `amb el mateix inversor: +${f(best.co2_t_year - now.co2_t_year)} t CO₂ l'any, retorn en ${f(best.payback, 1)} anys`,
@@ -153,7 +155,7 @@
     panels.forEach(pn => {
       const gg = g.append("g").attr("transform", `translate(0,${y0})`);
       const ext = d3.extent(p, r => r[pn.key]);
-      const y = pn.bars ? d3.scaleLinear().domain([-500, 500]).range([pn.h, 0]) : d3.scaleLinear().domain([ext[0] * 0.92, ext[1] * 1.05]).range([pn.h, 0]);
+      const y = pn.bars ? d3.scaleLinear().domain([-M.power_kw, M.power_kw]).range([pn.h, 0]) : d3.scaleLinear().domain([ext[0] * 0.92, ext[1] * 1.05]).range([pn.h, 0]);
       gridY(gg, y, iw, pn.bars ? 4 : 2);
       gg.append("text").attr("x", iw + 10).attr("y", 12).text(pn.title);
       if (pn.bars) {
@@ -189,7 +191,7 @@
     const { g, iw, ih } = frame("c-box", 260, { t: 10, r: 16, b: 28, l: 44 });
     const x = d3.scaleBand().domain(d3.range(24)).range([0, iw]).padding(0.3);
     const y = d3.scaleLinear().domain([0, d3.max(H.co2) * 1040]).nice().range([ih, 0]);   // kg/kWh a g/kWh
-    const col = d3.scaleLinear().domain([-500, 0, 500]).range([C.discharge, "#DDD8CF", C.charge]).clamp(true);
+    const col = d3.scaleLinear().domain([-M.power_kw, 0, M.power_kw]).range([C.discharge, "#DDD8CF", C.charge]).clamp(true);
     gridY(g, y, iw, 4, d => d + " g");
     axisX(g, x, ih, s => d3.axisBottom(s).tickValues(d3.range(0, 24, 3)).tickFormat(h => h + " h"));
 
@@ -386,7 +388,7 @@
     // un dia per columna, una hora per fila: així cap a l'amplada
     const x = d3.scaleBand().domain(days).range([0, iw]).paddingInner(0.08);
     const y = d3.scaleBand().domain(d3.range(24)).range([0, ih]).paddingInner(0.08);
-    const col = d3.scaleLinear().domain([-500, 0, 500]).range([C.discharge, "#F3F0EA", C.charge]);
+    const col = d3.scaleLinear().domain([-M.power_kw, 0, M.power_kw]).range([C.discharge, "#F3F0EA", C.charge]);
     const cells = [];
     days.forEach(d0 => { for (let h = 0; h < 24 && d0 + h < n; h++) cells.push([d0, h, H.bat[d0 + h]]); });
     g.selectAll("rect").data(cells).join("rect").attr("x", c => x(c[0])).attr("y", c => y(c[1])).attr("rx", 2)
@@ -398,7 +400,7 @@
   }
 
   // ---------------------------------------------------------------- mida de la bateria
-  const size = { cap: 2000, pow: 500, cost: 350 };
+  const size = { cap: M.cap_kwh, pow: M.power_kw, cost: 350 };
   function sizingSetup() {
     const caps = [...new Set(D.sizing.map(r => r.capacity_kwh))], pows = [...new Set(D.sizing.map(r => r.power_kw))];
     const seg = (id, vals, key) => {
@@ -419,7 +421,6 @@
     $("cost-v").textContent = f(size.cost);
     const rows = D.sizing.map(r => ({ ...r, invest: r.capacity_kwh * size.cost, payback: (r.capacity_kwh * size.cost) / r.eur_year }));
     const cur = rows.find(r => r.capacity_kwh === size.cap && r.power_kw === size.pow);
-    const base = rows.find(r => r.capacity_kwh === 2000 && r.power_kw === 500);
     const ok = rows.filter(r => r.power_kw === size.pow && r.payback < 10);
     const best = ok.length ? ok.reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a)) : null;
     $("size-kpis").innerHTML = `<span class="k">CO₂ evitat</span><span class="v">${f(cur.co2_t_year)} t/any</span>` +

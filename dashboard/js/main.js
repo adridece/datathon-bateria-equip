@@ -2,6 +2,7 @@
 import { createScene } from "./scene.js";
 
 const D = window.DATA, H = D.hours;
+const MODE = window.MODE;   // mida de la bateria i pesos del mode actiu
 const COLORS = { accent: "#47908B", solar: "#E69F00", charge: "#0072B2", discharge: "#D55E00", muted: "#6E6A63" };
 const CO2_RAMP = ["#C9D6CF", "#C9B48A", "#A9824F", "#7A5532", "#4A3220"];
 const DAYS = ["dg", "dl", "dt", "dc", "dj", "dv", "ds"];
@@ -116,7 +117,7 @@ function drawStrip() {
   svg.selectAll("rect.c").data(idx).join("rect").attr("x", i => sx(i)).attr("y", 0).attr("width", bw + 0.5).attr("height", 22).attr("fill", i => co2Color(H.co2[i]));
   svg.selectAll("rect.b").data(idx.filter(i => Math.abs(H.bat[i]) > 1)).join("rect")
     .attr("x", i => sx(i) + bw * 0.15).attr("width", Math.max(1, bw * 0.7)).attr("rx", 1)
-    .attr("y", i => (H.bat[i] > 0 ? 40 - 13 * H.bat[i] / 500 : 40)).attr("height", i => 13 * Math.abs(H.bat[i]) / 500)
+    .attr("y", i => (H.bat[i] > 0 ? 40 - 13 * H.bat[i] / MODE.power_kw : 40)).attr("height", i => 13 * Math.abs(H.bat[i]) / MODE.power_kw)
     .attr("fill", i => (H.bat[i] > 0 ? COLORS.charge : COLORS.discharge));
   idx.filter(i => H.t[i].endsWith("00:00")).forEach(i => {
     const d = new Date(H.t[i].replace(" ", "T"));
@@ -216,11 +217,11 @@ function toggleExpand(stage, force) {
 }));
 
 // ---------------------------------------------------------------- cicles de la bateria
-// un cicle = descarregar l'equivalent a tota la capacitat (2.000 kWh); serveix per vigilar el desgast
+// un cicle = descarregar l'equivalent a tota la capacitat de la bateria; serveix per vigilar el desgast
 function weekCycles() {
   let out = 0;
   for (let i = week.start; i < week.end; i++) out += Math.max(0, -H.bat[i]);
-  return out / 2000;
+  return out / MODE.cap_kwh;
 }
 
 // ---------------------------------------------------------------- pla de les properes 24 h
@@ -232,13 +233,13 @@ function planAgreement(idx) {
   // mateix model d'error que a Fiabilitat: l'hora actual es coneix i l'error creix com més lluny mirem
   const N = 20, rnd = d3.randomNormal.source(d3.randomLcg(0.42))(0, 1);
   const err = j => 1 + 0.2 * Math.sqrt(j / 23) * rnd();
-  const net = idx.map(i => Math.max(0, H.load[i] - H.pv[i]));
-  const soc0 = (k > 0 ? H.soc[k - 1] : 0.5) * 2000;
+  const net = idx.map(i => H.load[i] - H.pv[i]);
+  const soc0 = (k > 0 ? H.soc[k - 1] : 0.5) * MODE.cap_kwh;
   const kind = p => (p > 20 ? 1 : p < -20 ? -1 : 0);
   const hits = idx.map(() => 0);
   for (let s = 0; s < N; s++) {
-    const w = idx.map((i, j) => 0.7 * H.co2[i] * err(j) / 0.0921 + 0.3 * H.price[i] * err(j) / 0.1568);
-    window.Planner.solve(w, net, soc0, 500, 0, H.soc[idx[idx.length - 1]] * 2000).plan.forEach((p, j) => { if (kind(p) === kind(H.bat[idx[j]])) hits[j]++; });
+    const w = idx.map((i, j) => 0.7 * H.co2[i] * err(j) / MODE.co2_ref + 0.3 * H.price[i] * err(j) / MODE.price_ref);
+    window.Planner.solve(w, net, soc0, MODE.power_kw, 0, H.soc[idx[idx.length - 1]] * MODE.cap_kwh).plan.forEach((p, j) => { if (kind(p) === kind(H.bat[idx[j]])) hits[j]++; });
   }
   const out = hits.map(h => h / N);
   agreeCache.set(k, out);
@@ -264,7 +265,7 @@ function drawPlan() {
   const svg = d3.select(el).append("svg").attr("viewBox", `0 0 ${w} ${h}`).attr("width", "100%");
   const g = svg.append("g").attr("transform", `translate(${m.l},${m.t})`);
   const x = d3.scaleBand().domain(idx).range([0, iw]).padding(0.18);
-  const y = d3.scaleLinear().domain([-500, 500]).range([ih, 0]);
+  const y = d3.scaleLinear().domain([-MODE.power_kw, MODE.power_kw]).range([ih, 0]);
   // franja de CO2 a dalt i barres de la bateria
   g.selectAll("rect.c").data(idx).join("rect").attr("x", i => x(i)).attr("y", 0).attr("width", x.bandwidth())
     .attr("height", 8).attr("rx", 3).attr("fill", i => co2Color(H.co2[i]));
@@ -328,8 +329,10 @@ function events() {
   const label = i => { const d = new Date(H.t[i].replace(" ", "T")); return `${DAYS[d.getDay()]} ${d.getDate()}/${d.getMonth() + 1}, ${H.t[i].slice(11, 13)} h`; };
   const off = idx.filter(i => H.load[i] < 50);
   if (off.length) list.push({ i: off[0], color: "#D55E00", title: "Fallada del comptador", text: `${off.length} hores amb consum 0. La bateria no descarrega per no perdre energia.` });
-  const low = idx.filter(i => H.load[i] >= 50 && H.load[i] - H.pv[i] < 500);
-  if (low.length) list.push({ i: low[0], color: "#E69F00", title: "Consum baix", text: `${low.length} hores amb menys de 500 kW de consum net (cap de setmana o festiu).` });
+  const sun = idx.filter(i => H.pv[i] > H.load[i]);
+  if (MODE.pv_scale > 1 && sun.length) list.push({ i: sun[0], color: "#E69F00", title: "Excedent solar", text: `${sun.length} hores amb més solar que consum. La bateria guarda l'excedent gratis.` });
+  const low = idx.filter(i => H.load[i] >= 50 && H.load[i] - H.pv[i] < 500 && H.pv[i] <= H.load[i]);
+  if (low.length && MODE.pv_scale === 1) list.push({ i: low[0], color: "#E69F00", title: "Consum baix", text: `${low.length} hores amb menys de 500 kW de consum net (cap de setmana o festiu).` });
   const peaks = [...idx].sort((a, b) => H.co2[b] - H.co2[a]).slice(0, 1);
   peaks.forEach(i => list.push({ i, color: "#7A5532", title: "Pic de CO₂ de la setmana", text: `${f(H.co2[i] * 1000)} g/kWh. La bateria ${H.bat[i] < -1 ? "descarrega " + f(-H.bat[i]) + " kW" : "ja és buida"}.` }));
   const clean = [...idx].sort((a, b) => H.co2[a] - H.co2[b])[0];
@@ -422,13 +425,13 @@ function battery(c) {
   const soc = socAt(c), b = hourly("bat", c), eta = Math.sqrt(0.9);
   el.querySelector(".batt-fill").style.width = (100 * soc).toFixed(1) + "%";
   el.querySelector(".batt-fill").className = "batt-fill" + (b > 1 ? " charging" : b < -1 ? " discharging" : "");
-  el.querySelector(".batt-kwh").textContent = `${f(2000 * soc)} kWh`;
+  el.querySelector(".batt-kwh").textContent = `${f(MODE.cap_kwh * soc)} kWh`;
   let state = "En espera";
   if (b > 1) {
-    const hrs = (1 - soc) * 2000 / (b * eta);
+    const hrs = (1 - soc) * MODE.cap_kwh / (b * eta);
     state = `Carregant ${f(b)} kW` + (soc < 0.99 ? `: plena en ${hrs < 1 ? f(hrs * 60) + " min" : f(hrs, 1) + " h"}` : "");
   } else if (b < -1) {
-    const hrs = soc * 2000 * eta / -b;
+    const hrs = soc * MODE.cap_kwh * eta / -b;
     state = `Descarregant ${f(-b)} kW` + (soc > 0.01 ? `: buida en ${hrs < 1 ? f(hrs * 60) + " min" : f(hrs, 1) + " h"}` : "");
   } else state = soc > 0.99 ? "Plena, esperant una hora bruta" : soc < 0.01 ? "Buida, esperant una hora neta" : "En espera";
   el.querySelector(".batt-state").textContent = state;
@@ -453,7 +456,7 @@ function drawClock() {
     .attr("fill", h => co2Color(H.co2[d0 + h])).attr("opacity", 0).transition().duration(500).delay(h => h * 15).attr("opacity", 1);
   // dins: què fa la bateria (blau carrega, vermelló descarrega), més llarg com més potència
   g.selectAll("path.bat").data(hours.filter(h => Math.abs(H.bat[d0 + h]) > 1)).join("path").attr("class", "bat")
-    .attr("d", h => arc({ innerRadius: CLK.rBat, outerRadius: CLK.rBat + 4 + 24 * Math.abs(H.bat[d0 + h]) / 500, startAngle: a(h) + 0.02, endAngle: a(h + 1) - 0.02 }))
+    .attr("d", h => arc({ innerRadius: CLK.rBat, outerRadius: CLK.rBat + 4 + 24 * Math.abs(H.bat[d0 + h]) / MODE.power_kw, startAngle: a(h) + 0.02, endAngle: a(h + 1) - 0.02 }))
     .attr("fill", h => (H.bat[d0 + h] > 0 ? COLORS.charge : COLORS.discharge)).attr("opacity", 0).transition().duration(500).delay(h => 200 + h * 15).attr("opacity", 0.85);
   [0, 6, 12, 18].forEach(h => g.append("text").attr("class", "tick")
     .attr("x", Math.sin(a(h)) * 50).attr("y", -Math.cos(a(h)) * 50 + 3).attr("text-anchor", "middle").text(h + " h"));
@@ -569,8 +572,10 @@ document.addEventListener("click", e => {
 // ---------------------------------------------------------------- presentació guiada
 const tour = [
   { view: "home", hour: null, text: () => `Campus Nord de la UPC: ${window.CAMPUS.buildings.length} edificis reals i un consum d'entre 1 i 2,5 MW.` },
-  { view: "solar", hour: i => +H.t[i].slice(11, 13) === 13, text: () => "Les plaques solars dels aularis A cobreixen menys d'un 10 % del consum, fins i tot al migdia." },
-  { view: "battery", hour: i => H.bat[i] > 200, text: () => "La bateria (2 MWh, 500 kW) carrega quan l'electricitat de la xarxa és neta i barata." },
+  { view: "solar", hour: i => +H.t[i].slice(11, 13) === 13, text: () => (MODE.pv_scale > 1
+    ? `Al Mode difícil hi ha ${f(MODE.pv_scale)} vegades més plaques: al migdia sobra energia solar i la bateria la guarda.`
+    : "Les plaques solars dels aularis A cobreixen menys d'un 10 % del consum, fins i tot al migdia.") },
+  { view: "battery", hour: i => H.bat[i] > 200, text: () => `La bateria (${f(MODE.cap_kwh / 1000)} MWh, ${f(MODE.power_kw)} kW) carrega quan l'electricitat de la xarxa és neta i barata.` },
   { view: "grid", hour: i => H.bat[i] < -200, text: () => "Quan la xarxa és bruta i cara, descarrega. El color de la línia de la xarxa indica el CO₂ de cada hora." },
   { view: "home", hour: "end", text: () => { const s = savedUntil(week.end - 1); return `Aquesta setmana: ${f(s.co2)} kg de CO₂ i ${f(s.eur)} € estalviats.`; } },
 ];
@@ -707,6 +712,12 @@ document.addEventListener("pointerup", e => {
   if (moved > 5) return;                       // era un arrossegament de la camera
   const u = scene.pick(e.clientX, e.clientY);
   if (u && FOCUS[u.kind]) window.Explorer.focusLive(...FOCUS[u.kind]);
+});
+// interruptor de mode a la barra superior: cada mode té les seves dades i la seva bateria
+all("#modesw button").forEach(b => {
+  b.classList.toggle("on", b.dataset.challenge === MODE.key);
+  b.setAttribute("aria-pressed", b.dataset.challenge === MODE.key);
+  b.onclick = () => { if (b.dataset.challenge !== MODE.key) window.setMode(b.dataset.challenge); };
 });
 window.Planner.init();
 setWeek(0);
