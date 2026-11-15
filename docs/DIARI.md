@@ -104,6 +104,7 @@
   Provat i descartat: pla amb escenaris en dues etapes (+0,01 / +0,04, més lent).
 - **15/11 matí** — Enviaments: `dificil_co2_irradiancia` (amb REE) 22,70 · `dificil_co2_ree` 22,83. Cap supera el 22,96.
   Entregues finals (D-051): `estandard_robust` i `dificil_marges`.
+- **15/11 migdia** — Zips finals a `entregues/`: `estandard_robust.zip` i `dificil_marges.zip` (els dos passen el checker).
 
 ## Conclusions de l'anàlisi exploratòria (`notebooks/01_eda.ipynb`)
 - **Consum net gairebé sempre > 500 kW (99,5 %):** el campus consumeix una mitjana de ~1.120 kW i la generació solar arriba com a màxim a ~145 kW. La bateria mai no exporta excedents a la xarxa i no cal predir el consum futur.
