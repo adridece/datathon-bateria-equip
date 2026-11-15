@@ -72,20 +72,28 @@ def build_dataset(d, agent, profiles):
     for b in contiguous_blocks(d):
         price, co2 = b.precio_eur_per_kwh.tolist(), b.co2_kg_per_kwh.tolist()
         load, pv = b.load_kw.tolist(), b.pv_kw.tolist()
-        irr, temp = b.irr_wm2.tolist(), b.temp_c.tolist()
+        irr, temp, panel = b.irr_wm2.tolist(), b.temp_c.tolist(), b.panel_c.tolist()
         n = len(b)
         for t in range(n - 2):
             ts = b.index[t]
             hour, dow, month = ts.hour, ts.dayofweek, ts.month
             irr_last = irr[t - 1] if t > 0 else float("nan")
+            pv_args = (pv[:t], irr[:t], temp[:t])
+            if "panel" in agent.pv_rows.__code__.co_varnames:
+                pv_rows = agent.pv_rows(*pv_args, panel[:t], hour, month,
+                                        profiles["pv_clear"].get(str(month)),
+                                        profiles["pv_mean"].get(str(month)))
+            else:
+                pv_rows = agent.pv_rows(*pv_args, hour, month,
+                                        profiles["pv_clear"].get(str(month)),
+                                        profiles["pv_mean"].get(str(month)))
             rows = {
                 "price": agent.market_rows(price[:t], co2[:t], price[t:t + 3], co2[t:t + 3], hour, dow, month,
                                            irr_last, profiles["price_profile"].get(str(month))),
                 "co2": agent.market_rows(co2[:t], price[:t], co2[t:t + 3], price[t:t + 3], hour, dow, month,
                                          irr_last, profiles["co2_profile"].get(str(month))),
                 "load": agent.load_rows(load[:t], temp[:t], hour, dow, month, profiles["load_profile"]),
-                "pv": agent.pv_rows(pv[:t], irr[:t], temp[:t], hour, month, profiles["pv_clear"].get(str(month)),
-                                    profiles["pv_mean"].get(str(month))),
+                "pv": pv_rows,
             }
             real = {"price": price, "co2": co2, "load": load, "pv": pv}
             for name in X:
@@ -136,7 +144,8 @@ def last_days(d, hours=72):
                     "load": [round(float(x), 1) for x in tail.load_kw],
                     "pv": [round(float(x), 1) for x in tail.pv_kw],
                     "irr": [round(float(x), 1) if x == x else None for x in tail.irr_wm2],
-                    "temp": [round(float(x), 2) if x == x else None for x in tail.temp_c]}
+                    "temp": [round(float(x), 2) if x == x else None for x in tail.temp_c],
+                    "panel": [round(float(x), 2) if x == x else None for x in tail.panel_c]}
     return out
 
 

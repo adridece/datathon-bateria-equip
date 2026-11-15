@@ -100,7 +100,7 @@
   irradiància d'`obs` és la de l'hora passada (la mateixa hora que `ultima_solar_kw`), el mercat és de 3 h i el test comença
   l'hora després del train (24/09 00:00). El nostre simulador local reprodueix la web.
   Historial de la web (Mode Dificil): La Datoneta 22,02 · **22,96** (`dificil_marges`) · 22,75 · 22,76 (`dificil_co2_irradiancia`).
-- **15/11 matí** — `dificil_co2_ree` (D-043): model directe de CO₂ amb 2,5 anys de REE. F0 20,71 → 20,79, F1 17,54 → 17,57.
+- **15/11 matí** — `dificil_co2_ree` (D-044): model directe de CO₂ amb 2,5 anys de REE. F0 20,71 → 20,79, F1 17,54 → 17,57.
   Provat i descartat: pla amb escenaris en dues etapes (+0,01 / +0,04, més lent).
 
 ## Conclusions de l'anàlisi exploratòria (`notebooks/01_eda.ipynb`)

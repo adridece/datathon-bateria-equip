@@ -53,9 +53,13 @@ def build_hourly(extra_meteo: bool = True) -> pd.DataFrame:
         met = _read("meteo.csv")
         irr = [c for c in met.columns if c.endswith("IRRADIANCIA (W/m2)")]
         tamb = [c for c in met.columns if "TEMPERATURA AMBIENTE" in c]
+        tpanel = [c for c in met.columns if "TEMPERATURA PANEL" in c]
+        wind = [c for c in met.columns if "VELOCIDAD VIENTO" in c]
         m = pd.DataFrame({
             "irr_wm2": met[irr[0]] if irr else np.nan,
             "temp_c": met[tamb[0]] if tamb else np.nan,
+            "panel_c": met[tpanel[0]] if tpanel else np.nan,
+            "wind_ms": met[wind[0]] if wind else np.nan,
         }).resample("1h").mean()
         df = df.join(m, how="left")
     df.index.name = "Fecha"

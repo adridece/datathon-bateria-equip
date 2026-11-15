@@ -364,7 +364,21 @@ Els organitzadors ens han confirmat que podem entrenar amb dades públiques de R
 - La validació creuada és temporal (F0, F1, F2 = una setmana diferent de cada mes, sense barrejar hores veïnes); ajustem amb
   F0 i F1 i F2 només confirma.
 
-### D-043 · 15/11 · Ivan — `agents/dificil_co2_ree`: model directe de CO₂ amb l'històric públic de REE (2023-2025)
+### D-043 · 15/11 · Adrià — Molt més historial públic: què ajuda i què no
+Hem baixat tot l'historial públic de REE d'abans del repte que hem pogut (`scripts/download_ree.py`) i l'hem provat amb la
+validació creuada temporal (F0/F1/F2), quedant-nos només amb el que millora:
+- **CO₂ 2019–2025 reconstruït** amb la generació per tecnologia de REE (cada 5 min). Calibrat amb la meitat dels dies del
+  train i comprovat amb l'altra meitat: error mitjà 1,75 %, correlació 0,999 (abans, sense calibrar, un 5 %).
+- **Preu:** el PVPC de juny 2021 a 2023 **empitjora** (F1 17,47 → 17,47, F2 18,00 → 17,98): l'any 2022 de crisi energètica
+  es comporta diferent. Ens quedem amb 2024–2025. Abans de juny de 2021 REE no publica aquest PVPC.
+- **CO₂:** amb l'historial des de 2024 F1 empitjora; **des de juny de 2021 millora les tres**: F0 18,944 → 18,960,
+  F1 17,471 → 17,472, F2 18,002 → 18,033. Guany petit però consistent.
+- **Horitzó del model de CO₂ fins a +16 h** amb aquest historial: F0 empitjora (18,944) → es queda a +12 h.
+Lliçó: més dades no sempre és millor; només val la pena si són del mateix règim. 0 infraccions, checker vàlid.
+Aquesta branca inclou també els canvis pendents de la sessió de calibratge (D-040) a `src/data.py`,
+`scripts/train_dificil_marges.py` i `tests/evaluate_dificil.py`: sense ells l'agent no es pot reentrenar des del repo.
+
+### D-044 · 15/11 · Ivan — `agents/dificil_co2_ree`: model directe de CO₂ amb l'històric públic de REE (2023-2025)
 On perdem més punts és el CO₂ de les hores +3..+12, i amb el train només tenim ~3 setmanes per mes.
 - **Font:** la web de demanda en temps real de REE (`demanda.ree.es`) dona la generació de cada tecnologia cada 5 minuts
   i el factor d'emissió de cadascuna (el cicle combinat, 0,37). Emissions / generació, ajustat amb dies del train:
@@ -375,4 +389,3 @@ On perdem més punts és el CO₂ de les hores +3..+12, i amb el train només te
   barrejat meitat i meitat. Error del model directe a +3..+12 h: F0 10,2 → 10,0 g/kWh, F1 12,0 → 10,6.
   Score (mateixos models base, F0 / F1): 20,71 → 20,79 · 17,54 → 17,57. 0 infraccions, ~17 s per 1.848 h, zip de 8 MB.
 **Decisió:** candidat per enviar al Mode Dificil. Es reentrena amb `python scripts/train_dificil_co2_ree.py`.
-
