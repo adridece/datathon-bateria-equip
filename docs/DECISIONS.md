@@ -359,3 +359,15 @@ gestiona l'energia del campus, ordenada per l'ús que en farà i pensada per pre
 - Decisions noves, calculades amb les dades: programar els consums flexibles a les hores netes (~7,8 t CO₂/any per cada
   100 kW moguts 3 h al dia) i revisar el comptador, que de nit repeteix el mateix valor (86 % de les hores de nit).
 - Sense paraules nostres: "agent" passa a "pla actual de la bateria"; l'informe diu "Decisions per a UPC Sostenible".
+
+### D-045 · 15/11 · Adrià — Dashboard viu: explorador de dades, gràfic en directe i decisions com a indicadors
+- **Fora els comentaris**: les caixes de text sota els gràfics i les franges de dalt passen a ser indicadors (etiqueta i
+  xifra) calculats amb les dades. Fora l'interruptor "Sense bateria" del 3D.
+- **Explorador de dades** (Històric): totes les hores de les 11 setmanes; es tria què es veu (10 sèries), per dies o per
+  hores, i amb una franja es tria el període. Mostra les estadístiques del període (CO₂ i € estalviats, compra amb i sense
+  bateria, preu i CO₂ mitjans, hores de càrrega, cicles). Un clic al gràfic obre aquella hora al 3D.
+- **Gràfic en directe** (En directe): les últimes 48 h i el pla de les 24 següents, que avança amb la reproducció.
+- **El 3D serveix per analitzar**: clicar la bateria, la xarxa, les plaques o un edifici canvia què mostra el gràfic en directe.
+- **Decisions com a indicadors vius**: 6 targetes (control, quan carregar, consums flexibles, mida, comptador, fiabilitat)
+  calculades per a la setmana triada, amb un estat (correcte / cal revisar-lo), un gràfic de les 11 setmanes i un botó que
+  obre les dades a l'explorador. Canvien quan es canvia de setmana.

@@ -378,3 +378,38 @@ table.t tr.now-row td { color: var(--dt-accent); }
 @media (max-width: 900px) { .decision { grid-template-columns: 28px 1fr; } .decision .impact { grid-column: 2; text-align: left; } }
 
 .take b { color: var(--dt-accent); font-weight: 600; }
+
+/* indicadors sota els gràfics (substitueixen els comentaris) */
+.stats { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin-top: 12px; }
+.stats div { background: var(--dt-soft); border-radius: var(--dt-r-sm); padding: 8px 10px; display: flex; flex-direction: column; gap: 2px; }
+.stats span { font-size: 11.5px; color: var(--dt-muted); }
+.stats b { font-size: 15px; font-weight: 500; color: var(--dt-text, #1F2326); }
+
+/* ---------- explorador de dades i grafic en directe ---------- */
+.ex-tools { display: flex; gap: 8px; align-items: center; }
+.ex-series { display: flex; flex-wrap: wrap; gap: 6px; margin: 10px 0 6px; }
+.ex-series button { display: inline-flex; align-items: center; gap: 6px; font-size: 12.5px; padding: 5px 10px; background: #fff; color: var(--dt-muted); }
+.ex-series button i { width: 9px; height: 9px; border-radius: 50%; opacity: .35; }
+.ex-series button.on { background: var(--dt-soft); color: var(--dt-text, #1F2326); border-color: #CFC9BD; }
+.ex-series button.on i { opacity: 1; }
+.ex-unit { font: 500 10.5px var(--dt-mono); fill: var(--dt-muted); }
+.ex-wk { font-size: 10px; fill: var(--dt-muted); }
+.ex-week { stroke: #D8D2C7; stroke-dasharray: 2 3; }
+.ex-now { stroke: var(--dt-accent); stroke-width: 1.6; }
+.ex-rule { stroke: #1F2326; stroke-width: 1; }
+.ex-brush .selection { fill: var(--dt-accent); fill-opacity: .15; stroke: var(--dt-accent); }
+.live-legend { margin: 6px 0 2px; }
+
+/* ---------- decisions com a indicadors ---------- */
+.dgrid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 10px; }
+.dcard { border: 1px solid var(--dt-line); border-radius: var(--dt-r, 16px); padding: 14px; display: flex; flex-direction: column; gap: 4px; min-height: 196px; }
+.dtop { display: flex; justify-content: space-between; align-items: center; gap: 8px; font-size: 13px; color: var(--dt-muted); }
+.dtop em { font-style: normal; font-size: 11px; padding: 2px 8px; border-radius: 999px; white-space: nowrap; }
+.dtop em.ok { background: var(--dt-accent-soft, #E4F1EF); color: var(--dt-accent); }
+.dtop em.warn { background: #FBE9DD; color: #B0480E; }
+.dcard b { font-size: 24px; font-weight: 500; }
+.dcard p { margin: 0; font-size: 12.5px; color: var(--dt-muted); line-height: 1.4; min-height: 35px; }
+.dcard .spark { width: 100%; height: 40px; margin-top: auto; }
+.dcard button { align-self: flex-start; font-size: 12.5px; padding: 5px 12px; }
+@media (max-width: 1100px) { .dgrid { grid-template-columns: repeat(2, 1fr); } }
+@media (max-width: 700px) { .dgrid { grid-template-columns: 1fr; } }

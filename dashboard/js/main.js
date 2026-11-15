@@ -8,6 +8,7 @@ const DAYS = ["dg", "dl", "dt", "dc", "dj", "dv", "ds"];
 const MONTHS = ["gener", "febrer", "març", "abril", "maig", "juny", "juliol", "agost", "setembre", "octubre", "novembre", "desembre"];
 const $ = id => document.getElementById(id);
 const all = sel => document.querySelectorAll(sel);
+const statsHTML = items => items.map(([label, value]) => `<div><span>${label}</span><b class="num">${value}</b></div>`).join("");
 const f = (x, d = 0) => x.toLocaleString("ca-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
 
 const co2Ext = d3.extent(H.co2);
@@ -32,7 +33,8 @@ function go(name) {
   $("title").textContent = VIEWS[name][0];
   $("subtitle").textContent = VIEWS[name][1];
   if (name === "trust") setTimeout(drawCalendar, 60);
-  if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(() => { drawStrip(); drawPlan(); }, 450); }   // es torna a dibuixar quan la vista ja és oberta
+  if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(() => { drawStrip(); drawPlan(); window.Explorer.drawLive(); }, 450); }
+  if (name === "trust") setTimeout(() => window.Explorer.draw(), 80);   // es torna a dibuixar quan la vista ja és oberta
   window.Charts.show(name);
   if (name === "planner") stop();   // l'escenari no s'ha de moure mentre es prova
   if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color }), 30);
@@ -49,7 +51,6 @@ all("[data-player]").forEach(p => (p.innerHTML = PLAYER));
 
 // ---------------------------------------------------------------- setmana i hora actual
 let week = D.weeks[0], k = week.start;
-let compare = false;   // true: el 3D ensenya el campus sense bateria
 D.weeks.forEach((w, i) => {
   const [dd, mm, yy] = w.label.split("/");
   $("week").add(new Option(`Setmana del ${+dd} de ${MONTHS[+mm - 1]} ${yy}`, i));
@@ -83,6 +84,7 @@ function show(i, fromPlayer) {
   setAll("[data-pos]", e => (e.textContent = `hora ${k - week.start + 1} de ${week.end - week.start}`));
   setAll("[data-cycles]", e => (e.textContent = f(weekCycles(), 1)));
   sceneAt(k);
+  window.Explorer.setNow(k);
   drawPlan();
   window.Planner.update({ H, k, co2Color });
   if (cursor) cursor.attr("x", sx(k) - 1.5);
@@ -271,9 +273,8 @@ function drawPlan() {
       `${H.why[i]}<br>CO₂ ${f(H.co2[i] * 1000)} g/kWh, preu ${f(H.price[i] * 1000)} €/MWh.<br>` +
       `Amb un 20 % d'error a les previsions, la decisió es manté en ${f(agree[j] * 100)} % dels escenaris.`);
   const firstHours = d3.mean(agree.slice(0, 6));
-  $("plan-take").innerHTML = `Amb previsions de preu i CO₂ que fallen fins a un 20 % (20 escenaris, el mateix model d'error que a Fiabilitat), la decisió d'ara es manté en un <b>${f(agree[0] * 100)} %</b> dels casos, ` +
-    `les de les properes 6 hores en un ${f(firstHours * 100)} % i les de tot el dia en un ${f(d3.mean(agree) * 100)} %. ` +
-    `Com que el pla es refà cada hora, el que compta és que la decisió d'ara sigui sòlida. Passa el ratolí per una hora per veure'n el motiu.`;
+  $("plan-take").innerHTML = statsHTML([["Decisió d'ara segura", `${f(agree[0] * 100)} %`], ["Properes 6 h", `${f(firstHours * 100)} %`],
+    ["Tot el dia", `${f(d3.mean(agree) * 100)} %`], ["Amb previsions que fallen", "fins a un 20 %"]]);
   // preu com a línia fina amb el seu propi eix
   const yp = d3.scaleLinear().domain(d3.extent(idx, i => H.price[i])).nice().range([ih, 14]);
   g.append("path").datum(idx).attr("fill", "none").attr("stroke", "#7A5195").attr("stroke-width", 1.6).attr("stroke-dasharray", "3 3")
@@ -363,7 +364,7 @@ function sceneAt(c) {
   const v = key => hourly(key, c);
   const hour = (+H.t[i].slice(11, 13) + (c - i)) % 24;
   scene.setHour({ hour, load: v("load"), pv: v("pv"), busy: (v("load") - loadExt[0]) / (loadExt[1] - loadExt[0]),
-                  grid: compare ? v("base") : v("grid"), bat: compare ? 0 : v("bat"), soc: compare ? 0 : socAt(c) }, co2Color(v("co2")));
+                  grid: v("grid"), bat: v("bat"), soc: socAt(c) }, co2Color(v("co2")));
 }
 // ---------------------------------------------------------------- xifres en directe i rellotge del dia
 // la càrrega es guarda al final de cada hora: durant l'hora va de la de l'hora anterior a la nova
@@ -494,6 +495,8 @@ document.addEventListener("click", e => {
     if (ev.dataset.sel) setTimeout(() => document.querySelector(ev.dataset.sel)?.scrollIntoView({ block: "center", behavior: "smooth" }), 400);
     return;
   }
+  const dec = e.target.closest("[data-dec]");
+  if (dec) { window.Explorer.open(window.Charts.decisionData(+dec.dataset.dec).keys, week.start + 84); go("trust"); return; }
   const jump = e.target.closest("[data-go]");
   if (jump) { show(+jump.dataset.go); return; }
   const b = e.target.closest("[data-act],[data-speed]");
@@ -516,6 +519,7 @@ document.addEventListener("click", e => {
   if (act === "zoom-out") scene.zoom(0.8);
   if (act === "full") toggleExpand(b.closest(".stage"));
   if (act === "csv") downloadPlan();
+  if (act === "open-explorer") { window.Explorer.open(["grid", "base", "co2", "savedco2"], k); go("trust"); }
   if (act === "csv-weeks") window.Charts.downloadWeeks();
   if (act === "report") window.Report.open(D);
   if (act === "tour") step >= 0 ? endTour() : runTour();
@@ -628,16 +632,41 @@ document.addEventListener("pointermove", e => {
 d3.select("#ramp").attr("viewBox", "0 0 56 8").selectAll("rect").data(CO2_RAMP).join("rect")
   .attr("x", (_, i) => i * 11.2).attr("width", 11.6).attr("height", 8).attr("fill", c => c);
 document.addEventListener("change", e => {
-  if (e.target.matches("[data-compare]")) {
-    compare = e.target.checked;
-    setAll("[data-compare]", x => (x.checked = compare));
-    show(k);
-  }
 });
 addEventListener("resize", () => { drawPlan(); drawCalendar(); });
 
 scene = createScene($("stage-big"), window.CAMPUS, COLORS);
 window.Charts.init(D, { co2Color });
+window.Explorer.init(D);
+
+// des de l'explorador: anar a una hora concreta al 3D
+document.addEventListener("explorer:goto", e => {
+  const i = e.detail, wi = D.weeks.findIndex(w => i >= w.start && i < w.end);
+  if (wi < 0) return;
+  stop();
+  if (D.weeks[wi] !== week) setWeek(wi);
+  go("live");
+  show(i);
+});
+
+// clic (sense arrossegar) a un element del 3D: el grafic en directe mostra les seves dades
+const FOCUS = {
+  battery: [["bat", "soc"], "Bateria: potència i càrrega"],
+  grid: [["grid", "base", "co2"], "Escomesa: compra a la xarxa i CO₂"],
+  pv: [["pv", "load"], "Plaques solars i consum del campus"],
+  building: [["load", "pv"], "Consum del campus i solar"],
+  ct: [["load", "pv"], "Consum del campus i solar"],
+};
+let downAt = null;
+document.addEventListener("pointerdown", e => { downAt = e.target.tagName === "CANVAS" ? [e.clientX, e.clientY] : null; });
+document.addEventListener("pointerup", e => {
+  if (!downAt || e.target.tagName !== "CANVAS") return;
+  const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]);
+  downAt = null;
+  if (moved > 5) return;                       // era un arrossegament de la camera
+  const u = scene.pick(e.clientX, e.clientY);
+  if (u && FOCUS[u.kind]) window.Explorer.focusLive(...FOCUS[u.kind]);
+});
 window.Planner.init();
 setWeek(0);
 go("live");

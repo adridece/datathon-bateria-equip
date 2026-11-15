@@ -58,8 +58,8 @@
         <div class="grid" id="kpis"></div>
         <div class="card decisions-card" style="margin-top:16px">
           <div class="head"><div><h2>Decisions per a UPC Sostenible</h2>
-            <div class="sub">Què convé fer amb la bateria i el campus, quin impacte té cada decisió i on en trobareu l'evidència</div></div></div>
-          <div class="decisions" id="decisions"></div>
+            <div class="sub">Cada indicador es calcula per a la setmana triada a dalt; el gràfic petit compara les 11 setmanes (la triada, en verd)</div></div></div>
+          <div class="dgrid" id="decisions"></div>
         </div>
       </section>
 
@@ -82,7 +82,6 @@
               <div class="hud-why" data-why>-</div>
             </div>
             <div class="overlay maptools">
-              <label class="switch"><input type="checkbox" data-compare> Sense bateria</label>
               <button data-act="zoom-in" aria-label="Apropar">+</button><button data-act="zoom-out" aria-label="Allunyar">−</button>
               <button data-act="full" aria-label="Pantalla completa"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 9V4h5M20 9V4h-5M4 15v5h5M20 15v5h-5"/></svg></button>
             </div>
@@ -111,7 +110,14 @@
           <svg class="strip" id="strip"></svg>
           <div class="legend"><span>CO₂ de la xarxa: net<svg class="ramp" id="ramp"></svg>brut</span>
             <span><i style="background:var(--dt-charge)"></i>càrrega</span><span><i style="background:var(--dt-discharge)"></i>descàrrega</span>
-            <span>Clic o arrossega la franja per moure't. Espai per reproduir, + i − o la roda per fer zoom on hi ha el ratolí, botó dret per desplaçar, 0 per a la vista inicial, P per a la presentació guiada</span></div>
+            <span>Clic a la bateria, la xarxa, les plaques o un edifici per veure'n les dades a sota. Clic o arrossega la franja per moure't. Espai per reproduir, + i − o la roda per fer zoom on hi ha el ratolí, botó dret per desplaçar, 0 per a la vista inicial, P per a la presentació guiada</span></div>
+        </div>
+        <div class="card" style="margin-top:16px">
+          <div class="head"><div><h2 id="live-title">Compra a la xarxa i CO₂</h2>
+            <div class="sub">Les últimes 48 hores i el pla de les 24 següents, al ritme de la reproducció. Cliqueu un element del 3D per canviar què es mostra.</div></div>
+            <button data-act="open-explorer">Analitzar a l'històric</button></div>
+          <div class="legend live-legend" id="live-legend"></div>
+          <div class="chart" id="live-chart"></div>
         </div>
               <div class="grid" style="margin-top:16px">
           <div class="card s8">
@@ -119,7 +125,7 @@
               <div class="sub">Què farà la bateria a partir d'ara (barres), amb el CO₂ de la xarxa (franja de dalt), el preu (línia), com de segura és cada decisió i com es carrega (a baix)</div></div>
               <button data-act="csv">Descarregar CSV</button></div>
             <div class="plan-sum" id="plan-sum"></div>
-            <div class="chart" id="c-plan"></div><p class="take" id="plan-take"></p>
+            <div class="chart" id="c-plan"></div><div class="stats" id="plan-take"></div>
           </div>
           <div class="card s4">
             <h2>Avisos de la setmana</h2><div class="sub">Clica un avís per anar a aquella hora</div>
@@ -137,15 +143,15 @@
             <div class="sub">CO₂ de la xarxa (g/kWh) a cada hora del dia en diagrames de caixa de Tukey, amb els 77 dies de validació. La caixa conté
             la meitat central dels dies, la línia és la mediana i els punts són dies atípics. Si les osques de dues hores no se solapen, les seves medianes són diferents de debò. Color: <span style="color:#0072B2">la bateria carrega</span>,
             <span style="color:#D55E00">descarrega</span> o gris si gairebé no fa res.</div></div></div>
-            <div class="chart" id="c-box"></div><p class="take" id="box-take"></p></div>
+            <div class="chart" id="c-box"></div><div class="stats" id="box-take"></div></div>
           <div class="card s6"><h2>Quan compensa més la bateria</h2>
             <div class="sub">Cada punt és un dia: diferència entre l'hora més bruta i la més neta de la xarxa, i CO₂ evitat.
             La recta és la recta resistent de Tukey (medianes de tres grups), que no es deixa enganyar pels dies extrems.</div>
-            <div class="chart" id="c-scatter"></div><p class="take" id="scatter-take"></p></div>
+            <div class="chart" id="c-scatter"></div><div class="stats" id="scatter-take"></div></div>
           <div class="card s6"><h2>Què depèn de l'hora i què del dia</h2>
             <div class="sub">Polit de medianes de Tukey sobre la taula dia × hora del CO₂ de la xarxa (77 dies): separa l'efecte
             de l'hora (a dalt) del nivell de cada dia (a baix), en g/kWh respecte del nivell típic.</div>
-            <div class="chart" id="c-polish"></div><p class="take" id="polish-take"></p></div>
+            <div class="chart" id="c-polish"></div><div class="stats" id="polish-take"></div></div>
           <div class="card s12"><h2>Cada hora de cada dia de validació</h2><div class="sub">Blau és càrrega i vermelló descàrrega. El patró es repeteix tot l'any</div><div class="chart" id="c-heat"></div></div>
         </div>
       </section>
@@ -167,7 +173,7 @@
             <h2>Pla de l'escenari comparat amb el pla actual</h2>
             <div class="sub">Barres plenes: pla amb l'escenari. Contorn discontinu: pla actual de la bateria. A sota, la càrrega (verd: escenari, gris: actual).</div>
             <div class="plan-sum" id="pl-kpis"></div>
-            <div class="chart" id="c-planner"></div><p class="take" id="a-planner"></p>
+            <div class="chart" id="c-planner"></div>
           </div>
         </div>
       </section>
@@ -183,7 +189,7 @@
               <input type="range" id="cost" min="150" max="600" step="25" value="350"></div>
             <div class="rows" id="size-kpis"></div>
           </div>
-          <div class="card s8"><h2>Més capacitat ajuda fins a unes 4 hores de potència</h2><div class="sub">CO₂ evitat per any segons la capacitat; cada línia és una potència</div><div class="chart" id="c-size"></div><p class="take" id="a-size"></p></div>
+          <div class="card s8"><h2>Més capacitat ajuda fins a unes 4 hores de potència</h2><div class="sub">CO₂ evitat per any segons la capacitat; cada línia és una potència</div><div class="chart" id="c-size"></div></div>
           <div class="card s12"><h2>Inversió i retorn</h2><div class="sub">Amb la potència triada, vida útil suposada de 15 anys</div><table class="t" id="t-size"></table></div>
         </div>
       </section>
@@ -191,14 +197,23 @@
       <!-- 5. fiabilitat -->
       <section class="view" id="v-trust">
         <div class="grid">
+          <div class="card s12" id="explorer">
+            <div class="head"><div><h2>Explorador de dades</h2>
+              <div class="sub">Totes les hores de les 11 setmanes. Trieu què voleu veure, arrossegueu a la franja de baix per triar el període i cliqueu el gràfic per anar a aquella hora al 3D.</div></div>
+              <div class="ex-tools"><span class="seg"><button data-res="d" class="on">Per dies</button><button data-res="h">Per hores</button></span>
+                <button data-ex-reset>Tot el període</button></div></div>
+            <div class="ex-series" id="ex-series"></div>
+            <div class="chart" id="ex-chart"></div>
+            <div class="stats" id="ex-stats"></div>
+          </div>
           <div class="card s12"><div class="head"><div><h2>Setmana a setmana</h2>
             <div class="sub">Les 11 setmanes de validació simulades seguides, com el simulador oficial (la bateria passa la càrrega d'una setmana a la següent). "De l'òptim": part del màxim que es podria estalviar coneixent el futur. Clica una setmana per obrir-la al 3D.</div></div>
             <button data-act="csv-weeks">Descarregar CSV</button></div>
-            <table class="t perf" id="t-weeks"></table><p class="take" id="weeks-take"></p></div>
+            <table class="t perf" id="t-weeks"></table><div class="stats" id="weeks-take"></div></div>
   <div class="card s12">
             <div class="head"><div><h2>Què guanya el campus amb la bateria</h2>
               <div class="sub">Quant més o menys compra el campus a la xarxa cada hora per tenir la bateria (setmana triada). Color: CO₂ de la xarxa aquella hora, clar net i fosc brut. A sota, el CO₂ evitat acumulat</div></div></div>
-            <div class="chart" id="c-counter"></div><p class="take" id="counter-take"></p>
+            <div class="chart" id="c-counter"></div><div class="stats" id="counter-take"></div>
           </div>
           <div class="card s12">
             <h2>Calendari d'estalvi</h2><div class="sub">CO₂ evitat cada dia de les 11 setmanes de validació (més fosc, més estalvi). Clica un dia per veure'l al campus en 3D.</div>
@@ -227,6 +242,7 @@
 <div id="tip"></div>
 <script src="js/charts.js"></script>
 <script src="js/planner.js"></script>
+<script src="js/explorer.js"></script>
 <script src="js/report.js"></script>
 <script type="module" src="js/main.js"></script>
 </body>
