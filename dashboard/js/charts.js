@@ -7,6 +7,7 @@
   const $ = id => document.getElementById(id);
   const T = 700, ease = d3.easeCubicOut;
   let D;
+  const statsHTML = items => items.map(([label, value]) => `<div><span>${label}</span><b class="num">${value}</b></div>`).join("");
 
   function frame(id, h, m = { t: 12, r: 16, b: 28, l: 44 }) {
     const el = $(id), w = el.clientWidth;
@@ -59,43 +60,70 @@
   }
 
   // ---------------------------------------------------------------- conclusions i decisions (el que demana la Tukey)
+  // decisions com a indicadors vius: cada targeta mostra la setmana triada i les 11 setmanes en petit
   function decisions() {
-    const st = D.strategies, p = D.profile, r = D.robustness, H = D.hours, y = D.yearly;
-    const tons = s => s.co2_pct / y.co2_pct * y.co2_t_year;
-    const top = [...p].sort((a, b) => b.battery_kw - a.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
-    const bot = [...p].sort((a, b) => a.battery_kw - b.battery_kw).slice(0, 3).map(x => x.hour).sort((a, b) => a - b);
+    const H = D.hours, W = D.weekly, y = D.yearly, r = D.robustness;
+    const w = wk || D.weeks[0], wi = D.weeks.indexOf(w), idx = d3.range(w.start, w.end);
+    const weekOf = i => D.weeks[i], hourIdx = (week, fn) => d3.range(week.start, week.end).filter(fn);
+    // hores de nit amb el mateix consum que l'hora anterior (comptador congelat)
+    const frozen = week => { const n = hourIdx(week, i => i > week.start && (+H.t[i].slice(11, 13) >= 23 || +H.t[i].slice(11, 13) <= 5));
+      return n.filter(i => H.load[i] === H.load[i - 1]).length / n.length; };
+    // millor finestra de 3 hores seguides (menys CO2 de mitjana) de cada dia de la setmana
+    const windows = week => d3.range(week.start, week.end - 23, 24).map(d0 => {
+      const best = d3.minIndex(d3.range(22), h => H.co2[d0 + h] + H.co2[d0 + h + 1] + H.co2[d0 + h + 2]);
+      const c = H.co2.slice(d0, d0 + 24).slice().sort((a, b) => a - b);
+      return { h: best, gap: d3.mean(c.slice(-3)) - d3.mean(c.slice(0, 3)) };
+    });
+    const win = windows(w), hours = d3.rollups(win, v => v.length, x => x.h).sort((a, b) => b[1] - a[1])[0][0];
+    const flexKg = d3.sum(win, x => x.gap) * 100 * 3;                 // 100 kW moguts 3 h cada dia de la setmana
+    const prof = d3.range(24).map(h => d3.mean(hourIdx(w, i => +H.t[i].slice(11, 13) === h), i => H.bat[i]));
+    const chargeH = d3.range(24).sort((a, b) => prof[b] - prof[a]).slice(0, 3).sort((a, b) => a - b);
     const sz = D.sizing.filter(s => s.power_kw === 500).map(s => ({ ...s, payback: s.capacity_kwh * 350 / s.eur_year }));
-    const now = sz.find(s => s.capacity_kwh === 2000);
-    const best = sz.filter(s => s.payback < 10).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
-    const rows = [
-      { d: "Operar la bateria amb control predictiu", view: "strategy",
-        c: `Evita ${f(tons(st[2]))} t de CO₂ i ${eur(y.eur_year)} l'any, el ${f(100 * st[2].co2_pct / st[3].co2_pct)} % del que s'evitaria coneixent el futur. Un horari fix per hores només n'evita ${f(tons(st[1]))} t.` },
-      { d: "Carregar a les hores de sol, descarregar al matí i al vespre", view: "strategy",
-        c: `Les hores amb més càrrega (${top.join(", ")} h) són les de menys CO₂; les de descàrrega (${bot.join(", ")} h), les de més CO₂ i preu.` },
-      { d: `Ampliar la bateria a ${f(best.capacity_kwh)} kWh amb el mateix inversor`, view: "sizing",
-        c: `Passaria de ${f(now.co2_t_year)} a ${f(best.co2_t_year)} t de CO₂ l'any i es recuperaria en ${f(best.payback, 1)} anys (a 350 €/kWh). Per sobre de 6.000 kWh el CO₂ gairebé no baixa.` },
-      { d: "Posar-la en marxa amb les previsions públiques de REE", view: "trust",
-        c: `Amb un 50 % d'error a les previsions de preu i CO₂ encara conserva el ${f(100 * r[r.length - 1].score / r[0].score)} % de l'estalvi: no cal una previsió perfecta.` },
-      { d: "Respectar sempre els límits de la bateria", view: "trust", go: "#t-weeks",
-        c: `Mai demana més de 500 kW ni més energia de la que hi cap o en queda: ${f(D.yearly.violations)} infraccions en les 11 setmanes. Un horari fix en faria ${f(st[1].violations)}.` },
+    const now = sz.find(s => s.capacity_kwh === 2000), best = sz.filter(s => s.payback < 10).reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a));
+    const cards = [
+      { t: "Control de la bateria", v: `${f(W[wi].co2_kg)} kg CO₂`, s: `aquesta setmana; amb un horari fix, ${f(W[wi].rules_co2_kg)} kg`,
+        tag: `${f(Math.min(100, W[wi].of_best_pct))} % del màxim`, ok: true, spark: W.map(x => x.co2_kg), keys: ["grid", "base", "savedco2"] },
+      { t: "Quan carregar", v: `${chargeH.join(", ")} h`, s: "hores de més càrrega aquesta setmana (les més netes)",
+        tag: `${f(d3.sum(idx, i => Math.max(0, -H.bat[i])) / 2000, 1)} cicles`, ok: true, spark: prof, bars: true, keys: ["bat", "co2"] },
+      { t: "Consums flexibles", v: `${hours}–${hours + 3} h`, s: `la franja més neta més habitual; moure-hi 100 kW evitaria ${f(flexKg)} kg aquesta setmana`,
+        tag: `~${f(flexKg / 1000 * 52, 1)} t/any`, ok: true, spark: D.weeks.map(x => d3.sum(windows(x), y => y.gap) * 300), keys: ["co2", "load"] },
+      { t: "Mida de la bateria", v: `${f(best.capacity_kwh)} kWh`, s: `amb el mateix inversor: +${f(best.co2_t_year - now.co2_t_year)} t CO₂ l'any, retorn en ${f(best.payback, 1)} anys`,
+        tag: "inversió", ok: true, spark: sz.map(x => x.co2_t_year), go: "sizing" },
+      { t: "Comptador del campus", v: `${f(100 * frozen(w))} %`, s: "de les hores de nit d'aquesta setmana repeteixen el valor anterior",
+        tag: frozen(w) > 0.5 ? "cal revisar-lo" : "correcte", ok: frozen(w) <= 0.5, spark: D.weeks.map(frozen), keys: ["load"] },
+      { t: "Fiabilitat del control", v: `${f(100 * r[r.length - 1].score / r[0].score)} %`, s: "de l'estalvi es manté amb un 50 % d'error a les previsions de preu i CO₂",
+        tag: `${f(y.violations)} infraccions`, ok: true, spark: r.map(x => x.score), go: "trust" },
     ];
-    $("decisions").innerHTML = rows.map((r, i) => `<div class="decision"><div class="n">${String(i + 1).padStart(2, "0")}</div>
-      <div><b>${r.d}</b><p>${r.c}</p></div>
-      <button data-goto="${r.view}" data-sel="${r.go || ""}">Veure l'evidència</button></div>`).join("");
+    $("decisions").innerHTML = cards.map((c, i) => `<div class="dcard">
+        <div class="dtop"><span>${c.t}</span><em class="${c.ok ? "ok" : "warn"}">${c.tag}</em></div>
+        <b class="num">${c.v}</b><p>${c.s}</p>
+        <svg class="spark" id="spark${i}" viewBox="0 0 220 40" preserveAspectRatio="none"></svg>
+        <button ${c.go ? `data-goto="${c.go}"` : `data-dec="${i}"`}>Veure les dades</button></div>`).join("");
+    cards.forEach((c, i) => {
+      const s = d3.select("#spark" + i), xs = d3.scaleBand().domain(d3.range(c.spark.length)).range([0, 220]).padding(0.25);
+      const ys = d3.scaleLinear().domain(d3.extent([0, ...c.spark])).range([38, 2]);
+      const hi = c.bars ? -1 : (c.spark.length === D.weeks.length ? wi : -1);   // la setmana triada, ressaltada
+      s.selectAll("rect").data(c.spark).join("rect").attr("x", (_, j) => xs(j)).attr("width", xs.bandwidth()).attr("rx", 1.5)
+        .attr("y", v => ys(Math.max(0, v))).attr("height", v => Math.max(1, Math.abs(ys(v) - ys(0))))
+        .attr("fill", (v, j) => (c.bars ? (v >= 0 ? C.charge : C.discharge) : j === hi ? C.accent : "#D8D2C7"));
+    });
+    decisionData = cards;
   }
+  let decisionData = [];
+
 
   // ---------------------------------------------------------------- estratègies
   function strategyBars(id, h) {
     const st = D.strategies, rows = st.slice(0, 3), y0 = D.yearly;
     const tons = s => s.co2_pct / y0.co2_pct * y0.co2_t_year, euros = s => s.cost_pct / y0.cost_pct * y0.eur_year;
-    const { g, iw, ih } = frame(id, h, { t: 22, r: 96, b: 26, l: 170 });
+    const { g, iw, ih } = frame(id, h, { t: 32, r: 96, b: 26, l: 170 });
     const x = d3.scaleLinear().domain([0, tons(st[3]) * 1.1]).range([0, iw]);
     const y = d3.scaleBand().domain(rows.map(r => r.strategy)).range([0, ih]).padding(0.35);
     const bh = Math.min(30, y.bandwidth());   // barres de gruix fix encara que la targeta sigui alta
     axisX(g, x, ih, s => d3.axisBottom(s).ticks(5).tickFormat(v => v + " t"));
     g.selectAll("text.n").data(rows).join("text").attr("x", -12).attr("y", r => y(r.strategy) + y.bandwidth() / 2 + 4)
       .attr("text-anchor", "end").style("font-size", "12.5px").style("fill", r => (r.strategy.startsWith("MPC") ? C.text : C.muted))
-      .text(r => ({ "Regles per hores": "Horari fix", "MPC + programació lineal": "Control predictiu" })[r.strategy] || r.strategy);   // noms per a UPC Sostenible
+      .text(r => ({ "Regles per hores": "Horari fix", "MPC + programació lineal": "Control predictiu" })[r.strategy] || r.strategy);   // noms entenedors
     g.selectAll("rect").data(rows).join("rect").attr("y", r => y(r.strategy) + (y.bandwidth() - bh) / 2).attr("height", bh).attr("rx", bh / 2)
       .attr("fill", r => (r.strategy.startsWith("MPC") ? C.accent : C.ref)).attr("width", 0)
       .transition().duration(T).ease(ease).delay((_, i) => i * 90).attr("width", r => (tons(r) < 0.01 ? 0 : Math.max(bh, x(tons(r)))));
@@ -119,7 +147,7 @@
       : [{ key: "battery_kw", title: "Bateria (kW)", h: 140, bars: true }, { key: "co2_g", title: "CO₂ xarxa (g/kWh)", h: 70, color: C.co2 },
          { key: "price_eur_mwh", title: "Preu (€/MWh)", h: 70, color: C.price }];
     const total = d3.sum(panels, p => p.h + 22) + 28;
-    const { g, iw } = frame(id, total, { t: 8, r: 90, b: 0, l: 44 });
+    const { g, iw } = frame(id, total, { t: 8, r: 128, b: 0, l: 44 });
     const x = d3.scaleBand().domain(d3.range(24)).range([0, iw]).padding(0.22);
     let y0 = 0;
     panels.forEach(pn => {
@@ -188,9 +216,8 @@
     const usual = d3.greatest(d3.rollups(days, v => v.length, h => h), r => r[1]);
     const other = days.filter(h => h !== usual[0]).length / days.length;
     const wide = d3.greatest(stats, s => s.hi - s.lo);
-    $("box-take").innerHTML = `A les ${wide.h} h el CO₂ va de ${f(wide.lo)} a ${f(wide.hi)} g/kWh segons el dia, i ` +
-      `<b>${f(other * 100)} % dels dies</b> l'hora més neta no és la de sempre (les ${usual[0]} h). ` +
-      `Per això la bateria decideix amb la previsió de cada dia i no amb un horari fix.`;
+    $("box-take").innerHTML = statsHTML([["Hora més variable", `${wide.h} h: ${f(wide.lo)}–${f(wide.hi)} g/kWh`],
+      ["Dies amb l'hora neta diferent de la habitual", `${f(other * 100)} %`], ["Hora neta habitual", `${usual[0]} h`]]);
   }
 
   // ---------------------------------------------------------------- amb bateria i sense (setmana triada)
@@ -230,9 +257,9 @@
     g2.append("g").attr("class", "axis").attr("transform", `translate(0,${low})`)
       .call(d3.axisBottom(x).tickValues(days).tickFormat(i => H.t[i].slice(8, 10) + "/" + H.t[i].slice(5, 7)).tickSize(0).tickPadding(8))
       .call(s => s.select(".domain").remove());
-    $("counter-take").innerHTML = `Aquesta setmana la bateria evita <b>${f(acc)} kg de CO₂</b> i <b>${f(eur)} €</b>. ` +
-      `Les barres que pugen (compra més per carregar) són clares, hores netes; les que baixen (compra menys) són fosques, hores brutes: ` +
-      `el consum total gairebé no canvia, el que canvia és <b>quan</b> es compra.`;
+    const up = idx.filter(i => H.grid[i] - H.base[i] > 1), dn = idx.filter(i => H.base[i] - H.grid[i] > 1);
+    $("counter-take").innerHTML = statsHTML([["CO₂ evitat la setmana", `${f(acc)} kg`], ["Estalvi la setmana", `${f(eur)} €`],
+      ["CO₂ quan compra més", `${f(d3.mean(up, i => H.co2[i]) * 1000)} g/kWh`], ["CO₂ quan compra menys", `${f(d3.mean(dn, i => H.co2[i]) * 1000)} g/kWh`]]);
   }
 
   // ---------------------------------------------------------------- dia a dia: quan compensa més
@@ -270,9 +297,8 @@
       .append("title").text(p => `${D.hours.t[p.d0].slice(0, 10)}: ${f(p.x)} g/kWh de diferència, ${f(p.y)} kg evitats`);
     const lo = d3.quantile(pts.map(p => p.x).sort(d3.ascending), 0.25), hi = d3.quantile(pts.map(p => p.x).sort(d3.ascending), 0.75);
     const yLo = d3.median(pts.filter(p => p.x <= lo), p => p.y), yHi = d3.median(pts.filter(p => p.x >= hi), p => p.y);
-    $("scatter-take").innerHTML = `Cada 10 g/kWh més de diferència dins del dia, la bateria evita uns <b>${f(b * 10)} kg</b> més. ` +
-      `Els dies més variables n'evita ${f(yHi)} kg i els més plans ${f(yLo)} kg (medianes): ` +
-      `com més renovables hi hagi a la xarxa, més valdrà la bateria.`;
+    $("scatter-take").innerHTML = statsHTML([["Per cada 10 g/kWh més de variació", `+${f(b * 10)} kg`],
+      ["Dies més variables (mediana)", `${f(yHi)} kg/dia`], ["Dies més plans (mediana)", `${f(yLo)} kg/dia`]]);
   }
 
   // ---------------------------------------------------------------- polit de medianes (dia de la setmana × hora)
@@ -308,9 +334,8 @@
     };
     panel(0, 110, d3.range(24), P.col, h => h + " h", 3);
     panel(145, 75, d3.range(m.length), P.row, i => H.t[i * 24].slice(8, 10) + "/" + H.t[i * 24].slice(5, 7), 14);
-    $("polish-take").innerHTML = `Nivell típic ${f(P.all)} g/kWh. L'hora explica el <b>${f(ssH / tot * 100)} %</b> de la variació, ` +
-      `el nivell de cada dia el ${f(ssD / tot * 100)} % i la forma pròpia de cada dia el ${f(ssR / tot * 100)} %. ` +
-      `Un horari fix només aprofita la part de l'hora; la previsió diària aprofita també la resta.`;
+    $("polish-take").innerHTML = statsHTML([["Nivell típic", `${f(P.all)} g/kWh`], ["Explicat per l'hora", `${f(ssH / tot * 100)} %`],
+      ["Pel nivell del dia", `${f(ssD / tot * 100)} %`], ["Per la forma del dia", `${f(ssR / tot * 100)} %`]]);
   }
 
   // ---------------------------------------------------------------- rendiment setmana a setmana
@@ -331,10 +356,9 @@
     // diferència mitjana entre l'hora més bruta i la més neta de cada dia d'una setmana (g/kWh)
     const spread = w => { const H = D.hours, wk = D.weeks[W.indexOf(w)];
       return d3.mean(d3.range(wk.start, wk.end, 24), d0 => { const v = H.co2.slice(d0, d0 + 24); return (d3.max(v) - d3.min(v)) * 1000; }); };
-    $("weeks-take").innerHTML = `Totes les setmanes estalvia CO₂ i diners. La millor és la del ${best.label.slice(0, 5)} (${f(best.co2_pct, 1)} %), ` +
-      `quan el CO₂ de la xarxa variava ${f(spread(best))} g/kWh de mitjana dins del dia; la més fluixa, la del ${worst.label.slice(0, 5)} ` +
-      `(${f(worst.co2_pct, 1)} %), amb només ${f(spread(worst))} g/kWh. ` +
-      `Cada setmana arriba al màxim que es podria treure coneixent el futur.`;
+    $("weeks-take").innerHTML = statsHTML([["Millor setmana", `${best.label.slice(0, 5)}: ${f(best.co2_pct, 1)} %`],
+      ["Variació del CO₂ dins del dia", `${f(spread(best))} g/kWh`], ["Setmana més fluixa", `${worst.label.slice(0, 5)}: ${f(worst.co2_pct, 1)} %`],
+      ["Variació del CO₂ dins del dia", `${f(spread(worst))} g/kWh`]]);
   }
   function downloadWeeks() {
     const rows = [["setmana", "co2_evitat_kg", "co2_pct", "estalvi_eur", "factura_pct", "de_optim_pct", "horari_fix_co2_kg", "cicles"]]
@@ -398,15 +422,8 @@
     const base = rows.find(r => r.capacity_kwh === 2000 && r.power_kw === 500);
     const ok = rows.filter(r => r.power_kw === size.pow && r.payback < 10);
     const best = ok.length ? ok.reduce((a, b) => (b.co2_t_year > a.co2_t_year ? b : a)) : null;
-    let txt = `Amb <b>${f(size.cap)} kWh i ${f(size.pow)} kW</b> s'evitarien <b>${f(cur.co2_t_year)} t de CO₂</b> i ${eur(cur.eur_year)} l'any`;
-    if (size.cap !== 2000 || size.pow !== 500) {
-      const dlt = cur.co2_t_year - base.co2_t_year;
-      txt += ` (${dlt >= 0 ? "+" : "−"}${f(Math.abs(dlt))} t respecte a la bateria del repte)`;
-    }
-    txt += `, i la inversió es recuperaria en ${f(cur.payback, 1)} anys.`;
-    if (best) txt += ` Amb ${f(size.pow)} kW, l'opció que evita més CO₂ i es recupera en menys de 10 anys és <b>${f(best.capacity_kwh)} kWh</b>.`;
-    $("a-size").innerHTML = txt;
     $("size-kpis").innerHTML = `<span class="k">CO₂ evitat</span><span class="v">${f(cur.co2_t_year)} t/any</span>` +
+      (best ? `<span class="k">Millor opció (< 10 anys)</span><span class="v">${f(best.capacity_kwh)} kWh</span>` : "") +
       `<span class="k">Estalvi</span><span class="v">${eur(cur.eur_year)}/any</span><span class="k">Inversió</span><span class="v">${eur(cur.invest)}</span>` +
       `<span class="k">Retorn</span><span class="v">${f(cur.payback, 1)} anys</span>`;
 
@@ -465,10 +482,10 @@
   // ---------------------------------------------------------------- API
   const drawn = {};
   const draw = {
-    overview: () => { kpis(); decisions(); counterfactual(); },
+    overview: () => { kpis(); decisions(); },
     strategy: () => { strategyBars("c-strategy", 300); profile("c-profile", false); hourBoxes(); scatter(); polish(); heat(); },
     sizing: () => sizing(),
-    trust: () => robust(),
+    trust: () => { robust(); counterfactual(); },
     live: () => {},
     planner: () => {},
   };
@@ -476,7 +493,9 @@
   window.Charts = {
     downloadWeeks,
     init(data) { D = data; sizingSetup(); },
-    setWeek(w) { wk = w; if (current === "overview") counterfactual(); },
+    setWeek(w) { wk = w; if (current === "trust") counterfactual(); if (current === "overview") decisions(); },
+    // series i setmana d'una targeta de decisio, per obrir-les a l'explorador
+    decisionData(i) { return decisionData[i]; },
     show(view) {
       current = view;
       // es redibuixen en entrar, perquè l'animació es vegi i la mida sigui la bona

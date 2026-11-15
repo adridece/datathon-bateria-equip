@@ -8,6 +8,7 @@ const DAYS = ["dg", "dl", "dt", "dc", "dj", "dv", "ds"];
 const MONTHS = ["gener", "febrer", "març", "abril", "maig", "juny", "juliol", "agost", "setembre", "octubre", "novembre", "desembre"];
 const $ = id => document.getElementById(id);
 const all = sel => document.querySelectorAll(sel);
+const statsHTML = items => items.map(([label, value]) => `<div><span>${label}</span><b class="num">${value}</b></div>`).join("");
 const f = (x, d = 0) => x.toLocaleString("ca-ES", { minimumFractionDigits: d, maximumFractionDigits: d });
 
 const co2Ext = d3.extent(H.co2);
@@ -16,12 +17,12 @@ const loadExt = d3.extent(H.load);
 
 // ---------------------------------------------------------------- vistes
 const VIEWS = {
-  live: ["Campus en directe", "El Campus Nord real en 3D: què fa la bateria a cada hora i per què"],
-  overview: ["Conclusions", "Què n'hem après i què li recomanem a UPC Sostenible"],
-  strategy: ["Estratègia", "Com s'ha de controlar la bateria i per què"],
-  sizing: ["Mida de la bateria", "Quina bateria li convé comprar a la UPC"],
-  trust: ["Rendiment", "Com rendeix setmana a setmana, com aguanta i com evoluciona"],
-  planner: ["Planificador", "Prova escenaris i mira com canviaria el pla de la bateria"],
+  live: ["En directe", "Què fa la bateria del Campus Nord ara mateix i per què"],
+  overview: ["Decisions", "Què convé fer, amb l'impacte i l'evidència de cada decisió"],
+  trust: ["Històric", "Com ha funcionat la bateria setmana a setmana i dia a dia"],
+  strategy: ["Anàlisi", "Quan i per què convé carregar i descarregar"],
+  planner: ["Simulador", "Què passaria si canvien el preu, el CO₂ o les condicions de la bateria"],
+  sizing: ["Inversió", "Quanta bateria convé tenir i quan es recupera la inversió"],
 };
 let scene;
 function go(name) {
@@ -31,8 +32,9 @@ function go(name) {
   document.querySelectorAll(".stage.expanded").forEach(s => toggleExpand(s, false));
   $("title").textContent = VIEWS[name][0];
   $("subtitle").textContent = VIEWS[name][1];
-  if (name === "overview") setTimeout(drawCalendar, 60);
-  if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(() => { drawStrip(); drawPlan(); }, 450); }   // es torna a dibuixar quan la vista ja és oberta
+  if (name === "trust") setTimeout(drawCalendar, 60);
+  if (name === "live") { scene.mount($("stage-big")); drawStrip(); setTimeout(() => { drawStrip(); drawPlan(); window.Explorer.drawLive(); }, 450); }
+  if (name === "trust") setTimeout(() => window.Explorer.draw(), 80);   // es torna a dibuixar quan la vista ja és oberta
   window.Charts.show(name);
   if (name === "planner") stop();   // l'escenari no s'ha de moure mentre es prova
   if (name === "planner") setTimeout(() => window.Planner.update({ H, k, co2Color }), 30);
@@ -49,7 +51,6 @@ all("[data-player]").forEach(p => (p.innerHTML = PLAYER));
 
 // ---------------------------------------------------------------- setmana i hora actual
 let week = D.weeks[0], k = week.start;
-let compare = false;   // true: el 3D ensenya el campus sense bateria
 D.weeks.forEach((w, i) => {
   const [dd, mm, yy] = w.label.split("/");
   $("week").add(new Option(`Setmana del ${+dd} de ${MONTHS[+mm - 1]} ${yy}`, i));
@@ -74,6 +75,16 @@ function show(i, fromPlayer) {
   $("chip-time").textContent = `${DAYS[t.getDay()]} ${t.getDate()}/${t.getMonth() + 1}, ${H.t[k].slice(11, 16)} h`;
   setAll("[data-mode]", e => (e.innerHTML = `<i style="width:8px;height:8px;border-radius:50%;background:${mode[1]}"></i>${mode[0]} <span class="num">${b > 1 ? "+" : ""}${f(b)} kW</span>`));
   setAll("[data-why]", e => (e.textContent = H.why[k]));
+  if ($("batt-why")) $("batt-why").textContent = "Per què: " + H.why[k].replace(/^[^:]*:\s*/, "");
+  // nivell de l'hora respecte de les 24 h seguents (el que fa servir el control per decidir)
+  const level = (arr, i) => {
+    const ahead = arr.slice(i, Math.min(i + 24, week.end)), r = ahead.filter(v => v < arr[i]).length / ahead.length;
+    return r < 0.33 ? ["baix", "lo"] : r < 0.67 ? ["mitjà", "mid"] : ["alt", "hi"];
+  };
+  [["lvl-co2", H.co2], ["lvl-price", H.price]].forEach(([id, arr]) => {
+    const el = $(id); if (!el) return;
+    const [txt, cls] = level(arr, k); el.textContent = txt; el.className = "lvl " + cls;
+  });
   liveNumbers(fromPlayer ? clock : k);
   drawClock();
   signal();
@@ -81,8 +92,13 @@ function show(i, fromPlayer) {
   setAll("[data-saved]", e => (e.innerHTML = `${f(sv.co2)} kg CO₂<br>${f(sv.eur)} €`));
   setAll("[data-clock]", e => (e.textContent = $("chip-time").textContent));
   setAll("[data-pos]", e => (e.textContent = `hora ${k - week.start + 1} de ${week.end - week.start}`));
+  // controls del 3D en gran: setmana, barra de temps
+  setAll("[data-wklabel]", e => (e.textContent = week.label.slice(0, 5)));
+  setAll("[data-scrub]", e => { e.max = week.end - week.start - 1; e.value = k - week.start; });
+  setAll("[data-scrub-label]", e => (e.textContent = `${k - week.start + 1} / ${week.end - week.start} h`));
   setAll("[data-cycles]", e => (e.textContent = f(weekCycles(), 1)));
   sceneAt(k);
+  window.Explorer.setNow(k);
   drawPlan();
   window.Planner.update({ H, k, co2Color });
   if (cursor) cursor.attr("x", sx(k) - 1.5);
@@ -125,6 +141,14 @@ function setWeek(i) {
   show(week.start);
 }
 $("week").onchange = e => { stop(); setWeek(+e.target.value); };
+// barra de temps del 3D en gran: moure-la va a aquella hora (sense aturar si s'estava reproduint)
+document.addEventListener("input", e => {
+  if (!e.target.matches("[data-scrub]")) return;
+  const playing = !!timer;
+  if (playing) stop();
+  show(week.start + +e.target.value);
+  if (playing) start();
+});
 
 // ---------------------------------------------------------------- selector de setmanes propi
 // el <select> natiu es veu diferent a cada sistema; aquest es veu igual a Mac, Windows i Linux
@@ -271,9 +295,8 @@ function drawPlan() {
       `${H.why[i]}<br>CO₂ ${f(H.co2[i] * 1000)} g/kWh, preu ${f(H.price[i] * 1000)} €/MWh.<br>` +
       `Amb un 20 % d'error a les previsions, la decisió es manté en ${f(agree[j] * 100)} % dels escenaris.`);
   const firstHours = d3.mean(agree.slice(0, 6));
-  $("plan-take").innerHTML = `Amb previsions de preu i CO₂ que fallen fins a un 20 % (20 escenaris, el mateix model d'error que a Fiabilitat), la decisió d'ara es manté en un <b>${f(agree[0] * 100)} %</b> dels casos, ` +
-    `les de les properes 6 hores en un ${f(firstHours * 100)} % i les de tot el dia en un ${f(d3.mean(agree) * 100)} %. ` +
-    `Com que el pla es refà cada hora, el que compta és que la decisió d'ara sigui sòlida. Passa el ratolí per una hora per veure'n el motiu.`;
+  $("plan-take").innerHTML = statsHTML([["Decisió d'ara segura", `${f(agree[0] * 100)} %`], ["Properes 6 h", `${f(firstHours * 100)} %`],
+    ["Tot el dia", `${f(d3.mean(agree) * 100)} %`], ["Amb previsions que fallen", "fins a un 20 %"]]);
   // preu com a línia fina amb el seu propi eix
   const yp = d3.scaleLinear().domain(d3.extent(idx, i => H.price[i])).nice().range([ih, 14]);
   g.append("path").datum(idx).attr("fill", "none").attr("stroke", "#7A5195").attr("stroke-width", 1.6).attr("stroke-dasharray", "3 3")
@@ -319,6 +342,13 @@ function events() {
     if (!best || s > best.s) best = { d, s };
   }
   list.push({ i: best.d + 20, color: "#47908B", title: "Millor dia", text: `${f(best.s)} kg de CO₂ evitats en un sol dia.` });
+  // hora mes cara: on mes es nota l'estalvi a la factura
+  const dear = [...idx].sort((a, b) => H.price[b] - H.price[a])[0];
+  list.push({ i: dear, color: "#7A5195", title: "Hora més cara", text: `${f(H.price[dear] * 1000)} €/MWh. ${H.bat[dear] < -1 ? "La bateria hi estalvia " + f(-H.bat[dear] * H.price[dear]) + " €." : "La bateria no hi descarrega: no li queda energia o hi ha hores més brutes."}` });
+  // comptador congelat de nit (dada que cal revisar)
+  const night = idx.filter(i => i > week.start && (+H.t[i].slice(11, 13) >= 23 || +H.t[i].slice(11, 13) <= 5));
+  const frozen = night.filter(i => H.load[i] === H.load[i - 1]);
+  if (frozen.length) list.push({ i: frozen[0], color: "#B0480E", title: "Comptador sense canvis", text: `${f(100 * frozen.length / night.length)} % de les hores de nit repeteixen el consum anterior: cal revisar el comptador.` });
   $("events").innerHTML = list.map(e => `<button class="event" data-go="${e.i}"><i style="background:${e.color}"></i><div><b>${e.title}</b><span>${label(e.i)}</span><span>${e.text}</span></div></button>`).join("");
 }
 
@@ -354,6 +384,8 @@ let timer = null, speed = 1.2, clock = 0, last = 0;   // speed = hores per segon
 const lerp = (a, b, x) => a + (b - a) * x;
 // cada hora té un sol valor (la bateria rep una consigna per hora): en començar l'hora es passa al nou valor en poc temps i suau
 const hourly = (key, c) => {
+  // sempre dins de la setmana triada (el rellotge pot venir d'una altra setmana si s'ha canviat a mitja reproduccio)
+  c = Math.max(week.start, Math.min(week.end - 1, Number.isFinite(c) ? c : week.start));
   const i = Math.min(Math.floor(c), week.end - 1), x = (c - i) / 0.15;
   if (x >= 1 || i === week.start) return H[key][i];
   return lerp(H[key][i - 1], H[key][i], x * x * (3 - 2 * x));
@@ -363,12 +395,13 @@ function sceneAt(c) {
   const v = key => hourly(key, c);
   const hour = (+H.t[i].slice(11, 13) + (c - i)) % 24;
   scene.setHour({ hour, load: v("load"), pv: v("pv"), busy: (v("load") - loadExt[0]) / (loadExt[1] - loadExt[0]),
-                  grid: compare ? v("base") : v("grid"), bat: compare ? 0 : v("bat"), soc: compare ? 0 : socAt(c) }, co2Color(v("co2")));
+                  grid: v("grid"), bat: v("bat"), soc: socAt(c) }, co2Color(v("co2")));
 }
 // ---------------------------------------------------------------- xifres en directe i rellotge del dia
 // la càrrega es guarda al final de cada hora: durant l'hora va de la de l'hora anterior a la nova
 // (la simulació és contínua: la setmana comença amb la càrrega amb què va acabar l'anterior)
 const socAt = c => {
+  c = Math.max(week.start, Math.min(week.end - 1, Number.isFinite(c) ? c : week.start));
   const i = Math.min(Math.floor(c), week.end - 1), x = c - i;
   return lerp(i > 0 ? H.soc[i - 1] : 0.5, H.soc[i], x);
 };
@@ -389,7 +422,7 @@ function battery(c) {
   const soc = socAt(c), b = hourly("bat", c), eta = Math.sqrt(0.9);
   el.querySelector(".batt-fill").style.width = (100 * soc).toFixed(1) + "%";
   el.querySelector(".batt-fill").className = "batt-fill" + (b > 1 ? " charging" : b < -1 ? " discharging" : "");
-  el.querySelector(".batt-kwh").textContent = `${f(2000 * soc)} de 2.000 kWh`;
+  el.querySelector(".batt-kwh").textContent = `${f(2000 * soc)} kWh`;
   let state = "En espera";
   if (b > 1) {
     const hrs = (1 - soc) * 2000 / (b * eta);
@@ -453,10 +486,10 @@ function signal() {
   const rank = ahead.filter(v => v < H.co2[k]).length / ahead.length;
   const best = k + d3.minIndex(ahead), less = 100 * (1 - H.co2[best] / H.co2[k]);
   const [cls, title, text] = rank <= 0.25
-    ? ["go", "Bon moment per consumir", "Ara la xarxa és de les més netes de les properes 24 h."]
+    ? ["go", "Bon moment", "Ara la xarxa és de les més netes de les properes 24 h."]
     : rank >= 0.6
-      ? ["stop", "Millor esperar si es pot", `A les ${H.t[best].slice(11, 13)} h la xarxa serà un ${f(less)} % més neta.`]
-      : ["wait", "Moment normal", `L'hora més neta de les properes 24 h és a les ${H.t[best].slice(11, 13)} h.`];
+      ? ["stop", "Millor esperar", `A les ${H.t[best].slice(11, 13)} h la xarxa serà un ${f(less)} % més neta.`]
+      : ["wait", "Moment normal", `La millor hora de les properes 24 h és a les ${H.t[best].slice(11, 13)} h.`];
   el.className = "signal " + cls;
   el.querySelector("b").textContent = title;
   el.querySelector("p").textContent = text;
@@ -483,7 +516,10 @@ function goHome() {
   scene.flyTo(scene.views.home);
 }
 function stop() { cancelAnimationFrame(timer); timer = null; scene.setPlaying(false); $("chip-time").classList.remove("live"); setAll("[data-act=play]", b => (b.textContent = "Reproduir")); }
-function start() { last = performance.now(); scene.setPlaying(true); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
+function start() {
+  // si ja s'havia arribat al final de la setmana, torna a començar
+  if (!(clock >= week.start && clock < week.end - 1.01)) { clock = week.start; show(week.start); }
+  last = performance.now(); scene.setPlaying(true); timer = requestAnimationFrame(frame); $("chip-time").classList.add("live"); setAll("[data-act=play]", b => (b.textContent = "Pausa")); }
 const next = test => { for (let i = k + 1; i < week.end; i++) if (test(i)) return i; return k; };
 document.addEventListener("click", e => {
   const row = e.target.closest("[data-row-week]");
@@ -494,6 +530,8 @@ document.addEventListener("click", e => {
     if (ev.dataset.sel) setTimeout(() => document.querySelector(ev.dataset.sel)?.scrollIntoView({ block: "center", behavior: "smooth" }), 400);
     return;
   }
+  const dec = e.target.closest("[data-dec]");
+  if (dec) { window.Explorer.open(window.Charts.decisionData(+dec.dataset.dec).keys, week.start + 84); go("trust"); return; }
   const jump = e.target.closest("[data-go]");
   if (jump) { show(+jump.dataset.go); return; }
   const b = e.target.closest("[data-act],[data-speed]");
@@ -515,7 +553,14 @@ document.addEventListener("click", e => {
   if (act === "zoom-in") scene.zoom(1.25);
   if (act === "zoom-out") scene.zoom(0.8);
   if (act === "full") toggleExpand(b.closest(".stage"));
+  if (act === "restart") { stop(); show(week.start); }
+  if (act === "wk-prev" || act === "wk-next") {
+    const i = D.weeks.indexOf(week) + (act === "wk-next" ? 1 : -1);
+    if (i >= 0 && i < D.weeks.length) { const playing = !!timer; stop(); setWeek(i); if (playing) start(); }
+  }
+  if (act === "hud-min") { b.closest(".hud-live").classList.toggle("mini"); b.textContent = b.closest(".hud-live").classList.contains("mini") ? "+" : "–"; }
   if (act === "csv") downloadPlan();
+  if (act === "open-explorer") { window.Explorer.open(["grid", "base", "co2", "savedco2"], k); go("trust"); }
   if (act === "csv-weeks") window.Charts.downloadWeeks();
   if (act === "report") window.Report.open(D);
   if (act === "tour") step >= 0 ? endTour() : runTour();
@@ -628,16 +673,41 @@ document.addEventListener("pointermove", e => {
 d3.select("#ramp").attr("viewBox", "0 0 56 8").selectAll("rect").data(CO2_RAMP).join("rect")
   .attr("x", (_, i) => i * 11.2).attr("width", 11.6).attr("height", 8).attr("fill", c => c);
 document.addEventListener("change", e => {
-  if (e.target.matches("[data-compare]")) {
-    compare = e.target.checked;
-    setAll("[data-compare]", x => (x.checked = compare));
-    show(k);
-  }
 });
 addEventListener("resize", () => { drawPlan(); drawCalendar(); });
 
 scene = createScene($("stage-big"), window.CAMPUS, COLORS);
 window.Charts.init(D, { co2Color });
+window.Explorer.init(D);
+
+// des de l'explorador: anar a una hora concreta al 3D
+document.addEventListener("explorer:goto", e => {
+  const i = e.detail, wi = D.weeks.findIndex(w => i >= w.start && i < w.end);
+  if (wi < 0) return;
+  stop();
+  if (D.weeks[wi] !== week) setWeek(wi);
+  go("live");
+  show(i);
+});
+
+// clic (sense arrossegar) a un element del 3D: el grafic en directe mostra les seves dades
+const FOCUS = {
+  battery: [["bat", "soc"], "Bateria: potència i càrrega"],
+  grid: [["grid", "base", "co2"], "Escomesa: compra a la xarxa i CO₂"],
+  pv: [["pv", "load"], "Plaques solars i consum del campus"],
+  building: [["load", "pv"], "Consum del campus i solar"],
+  ct: [["load", "pv"], "Consum del campus i solar"],
+};
+let downAt = null;
+document.addEventListener("pointerdown", e => { downAt = e.target.tagName === "CANVAS" ? [e.clientX, e.clientY] : null; });
+document.addEventListener("pointerup", e => {
+  if (!downAt || e.target.tagName !== "CANVAS") return;
+  const moved = Math.hypot(e.clientX - downAt[0], e.clientY - downAt[1]);
+  downAt = null;
+  if (moved > 5) return;                       // era un arrossegament de la camera
+  const u = scene.pick(e.clientX, e.clientY);
+  if (u && FOCUS[u.kind]) window.Explorer.focusLive(...FOCUS[u.kind]);
+});
 window.Planner.init();
 setWeek(0);
 go("live");
