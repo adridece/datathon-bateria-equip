@@ -24,7 +24,7 @@ sys.path.insert(0, str(ROOT))
 from src.data import contiguous_blocks, load_hourly  # noqa: E402
 from src.evaluate import BASE_COLS, CampusBatteryEnv, load_agent, valid_split  # noqa: E402
 
-AGENTS = ["estandard_robust", "estandard_robust_pesos_test"]
+AGENTS = ["estandard_robust"]
 WEEK = 168
 
 
@@ -143,7 +143,6 @@ def main():
         gap = t2[name] - t2.oracle
         print(f"  {name}: score {t2[name].mean():.4f} ± {t2[name].std():.4f} | "
               f"gap mitja {gap.mean():.4f}, pitjor {gap.min():.4f}")
-    print(f"  diferencia mitjana test_weights - robust: {(t2.estandard_robust_pesos_test - t2.estandard_robust).mean():+.4f}")
 
     # 3. robustesa (sobre el primer test simulat)
     print("\n3) Robustesa")
@@ -161,8 +160,7 @@ def main():
     for p in pos:
         cut.iloc[p:p + 6, cut.columns.get_loc("load_kw")] = 0.0
     o = oracle_score(cut)
-    s_lp, _, _ = simulate(load_agent(ROOT / "agents" / "estandard_lp"), cut)
-    out = [f"estandard_lp {s_lp:.4f}"]
+    out = []
     for name in AGENTS:
         s, infr, _ = simulate(load_agent(ROOT / "agents" / name), cut)
         out.append(f"{name} {s:.4f} ({infr} infr)")

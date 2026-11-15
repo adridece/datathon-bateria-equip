@@ -443,3 +443,14 @@ On perdem més punts és el CO₂ de les hores +3..+12, i amb el train només te
   barrejat meitat i meitat. Error del model directe a +3..+12 h: F0 10,2 → 10,0 g/kWh, F1 12,0 → 10,6.
   Score (mateixos models base, F0 / F1): 20,71 → 20,79 · 17,54 → 17,57. 0 infraccions, ~17 s per 1.848 h, zip de 8 MB.
 **Decisió:** candidat per enviar al Mode Dificil. Es reentrena amb `python scripts/train_dificil_co2_ree.py`.
+
+### D-051 · 15/11 · equip — Les dues entregues finals i neteja del repositori
+Per al jurat triem l'agent que millor generalitza de cada mode:
+- **Estàndard: `estandard_robust`.** És a l'òptim a la validació (6,08) i el més estable a la prova de generalització (D-029),
+  sobretot si hi ha talls del comptador. No depèn de cap dada del test (a diferència de `estandard_robust_pesos_test`).
+- **Difícil: `dificil_marges` (22,96).** El públic és l'altra meitat de les mateixes setmanes que el privat, i aquí és el
+  millor dels nostres: les versions amb dades de REE milloraven a la validació local però a la web van treure menys
+  (`dificil_co2_ree` 22,83, `dificil_co2_irradiancia` 22,70–22,76).
+Al repositori només hi deixem aquests dos agents i el que cal per entrenar-los i validar-los. La resta d'agents, scripts i
+dades externes de REE són a l'historial de git (fins a la branca `agent` del 15/11 al matí).
+

@@ -102,6 +102,8 @@
   Historial de la web (Mode Dificil): La Datoneta 22,02 · **22,96** (`dificil_marges`) · 22,75 · 22,76 (`dificil_co2_irradiancia`).
 - **15/11 matí** — `dificil_co2_ree` (D-050): model directe de CO₂ amb 2,5 anys de REE. F0 20,71 → 20,79, F1 17,54 → 17,57.
   Provat i descartat: pla amb escenaris en dues etapes (+0,01 / +0,04, més lent).
+- **15/11 matí** — Enviaments: `dificil_co2_irradiancia` (amb REE) 22,70 · `dificil_co2_ree` 22,83. Cap supera el 22,96.
+  Entregues finals (D-051): `estandard_robust` i `dificil_marges`.
 
 ## Conclusions de l'anàlisi exploratòria (`notebooks/01_eda.ipynb`)
 - **Consum net gairebé sempre > 500 kW (99,5 %):** el campus consumeix una mitjana de ~1.120 kW i la generació solar arriba com a màxim a ~145 kW. La bateria mai no exporta excedents a la xarxa i no cal predir el consum futur.

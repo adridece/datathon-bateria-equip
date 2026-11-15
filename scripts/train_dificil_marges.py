@@ -21,7 +21,7 @@ from src.data import contiguous_blocks, load_hourly  # noqa: E402
 
 FOLDER = ROOT / "agents" / "dificil_marges"
 # cada model nomes s'entrena (i es fa servir) fins a aquesta hora +j: mes lluny no millora res
-NEAR_HOURS = {"price": 8, "co2": 8, "load": 2, "pv": 2}
+NEAR_HOURS = {"price": 23, "co2": 8, "load": 2, "pv": 2}
 LGB_PARAMS = {"objective": "l1", "learning_rate": 0.05, "num_leaves": 15, "min_data_in_leaf": 50,
               "feature_fraction": 0.9, "bagging_fraction": 0.8, "bagging_freq": 1, "lambda_l2": 1.0,
               "verbose": -1, "seed": 0}
