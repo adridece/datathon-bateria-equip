@@ -14,6 +14,7 @@
 <script src="vendor/d3.min.js"></script>
 <script src="data/data.js"></script>
 <script src="data/campus.js"></script>
+<script src="js/mode.js"></script>
 </head>
 <body>
 <div class="app">
@@ -40,6 +41,10 @@
     <header class="topbar">
       <div><h1 id="title">Campus en directe</h1><p id="subtitle"></p></div>
       <div class="right">
+        <div class="seg modesw" id="modesw" role="group" aria-label="Mode del repte">
+          <button data-challenge="estandard" title="Bateria de 2.000 kWh i ±500 kW, 24 h de mercat">Estàndard</button>
+          <button data-challenge="dificil" title="Bateria de 6.000 kWh i ±1.500 kW, solar ×12, 3 h de mercat">Difícil</button>
+        </div>
         <div class="wkpick" id="wkpick">
           <select id="week" aria-hidden="true" tabindex="-1"></select>
           <button class="wk-btn" aria-haspopup="listbox" aria-expanded="false" aria-label="Setmana que es mostra"><span id="wk-label"></span>
@@ -191,7 +196,7 @@
             <div class="ctrl"><div class="l">Reserva mínima per a emergències: <b class="num" id="pl-reserve-v"></b></div><input type="range" id="pl-reserve" min="0" max="60" step="5"></div>
             <div class="ctrl"><div class="l">Potència màxima de l'inversor: <b class="num" id="pl-power-v"></b></div><input type="range" id="pl-power" min="100" max="500" step="50"></div>
             <div class="ctrl"><div class="l">Prioritat: <b class="num" id="pl-weight-v"></b></div><input type="range" id="pl-weight" min="0" max="100" step="10"></div>
-            <p class="note">El pla es recalcula al moment amb programació dinàmica (nivells de 10 kWh), des de l'hora triada al panell de dalt.</p>
+            <p class="note">El pla es recalcula al moment amb programació dinàmica (nivells de <span id="pl-step">10</span> kWh), des de l'hora triada al panell de dalt.</p>
           </div>
           <div class="card s8">
             <h2>Pla de l'escenari comparat amb el pla actual</h2>

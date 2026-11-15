@@ -8,7 +8,11 @@ python scripts/serve_dashboard.py
 ```
 S'obre sol al navegador (http://localhost:8000). Funciona sense internet. Per parar-lo: `Ctrl + C`.
 
-Si canvia l'agent o les dades, regenereu les xifres amb:
+A la barra superior hi ha un interruptor **Estàndard / Difícil**. Estàndard mostra `estandard_robust` (2.000 kWh, ±500 kW);
+Difícil mostra `dificil_marges` (6.000 kWh, ±1.500 kW, solar ×12 i només 3 h de mercat, com la web). El mode queda a
+l'adreça (`http://localhost:8000/#dificil`), així es pot compartir l'enllaç.
+
+Si canvia algun agent o les dades, regenereu les xifres dels dos modes amb (el primer cop tarda uns 10 minuts):
 ```
 python scripts/build_dashboard_data.py
 ```

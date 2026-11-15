@@ -454,3 +454,18 @@ Per al jurat triem l'agent que millor generalitza de cada mode:
 Al repositori només hi deixem aquests dos agents i el que cal per entrenar-los i validar-los. La resta d'agents, scripts i
 dades externes de REE són a l'historial de git (fins a la branca `agent` del 15/11 al matí).
 
+### D-052 · 15/11 · Ivan — Dashboard amb els dos modes: interruptor Estàndard / Difícil
+Com que el jurat només valora el Mode Difícil, el dashboard ha de poder ensenyar-lo. Ara hi ha un interruptor a la barra
+superior per canviar entre els dos agents de l'entrega:
+- **Dades:** `scripts/build_dashboard_data.py` genera `dashboard/data/data.js` amb una clau per mode (`estandard`, `dificil`).
+  El Difícil es simula com a la web (`src/replay.py`, igual que `tests/evaluate_dificil.py`): 6.000 kWh, ±1.500 kW,
+  solar ×12, 3 h de mercat i meteo a `obs`. També hi ha per mode l'òptim teòric (ara amb la xarxa dins del LP, així
+  l'excedent solar es guarda gratis), la mida de bateria (2–12 MWh, 750–3.000 kW) i la robustesa.
+- **Mida de la bateria:** cap valor fix de 2.000 kWh o 500 kW al JavaScript. Tot llegeix `window.MODE` (bateria, planificador,
+  acord del pla, cicles, gràfics, informe PDF). El planificador del navegador també té en compte l'excedent solar i, amb la
+  bateria gran, fa servir nivells de 30 kWh perquè vagi igual de ràpid.
+- **Com es canvia:** el mode és a l'adreça (`#dificil`) i el botó recarrega la pàgina. Així cada vista es dibuixa amb
+  les dades bones des del principi, l'informe surt del mateix mode i l'enllaç es pot compartir.
+- **Xifres (validació, 7 dies per mes):** Estàndard 6,08 (òptim 6,08). Difícil 20,85, òptim 22,34, 0 infraccions. Al Difícil
+  els models s'han entrenat amb tot el train, inclosos aquests dies: el valor honest és el del banc (D-051).
+
