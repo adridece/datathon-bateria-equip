@@ -4,7 +4,7 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <meta name="color-scheme" content="light only">
-<title>UPC Sostenible | Bateria del Campus Nord</title>
+<title>Bateria del Campus Nord | UPC Sostenible</title>
 <link rel="icon" type="image/png" href="static/logo-datathon.png">
 <link rel="stylesheet" href="css/style.css">
 <script type="importmap">
@@ -58,7 +58,7 @@
       <section class="view" id="v-overview">
         <div class="grid" id="kpis"></div>
         <div class="card decisions-card" style="margin-top:16px">
-          <div class="head"><div><h2>Decisions per a UPC Sostenible</h2>
+          <div class="head"><div><h2>Decisions</h2>
             <div class="sub">Cada indicador es calcula per a la setmana triada a dalt; el gràfic petit compara les 11 setmanes (la triada, en verd)</div></div></div>
           <div class="dgrid" id="decisions"></div>
         </div>
@@ -91,20 +91,37 @@
             <div class="overlay caption" id="caption"></div>
           </div>
           <aside class="now" aria-live="polite">
-            <div class="signal" id="signal" title="Consell per a la gent del campus: quan convé fer servir els consums que es poden moure"><i></i><div><b></b><p></p></div></div>
-            <div class="batt" id="batt">
-              <div class="batt-top"><span>Bateria</span><b class="num" data-soc>-</b></div>
-              <div class="batt-body"><div class="batt-fill"></div><span class="num batt-kwh"></span></div>
-              <div class="batt-state"></div>
-            </div>
-            <svg class="clock24" id="clock24" viewBox="0 0 220 220" role="img" aria-label="El dia en un rellotge: CO₂ de la xarxa a fora i què fa la bateria a dins"></svg>
-            <div class="now-stats">
-              <div><span>Compra a la xarxa</span><b class="num" data-grid>-</b></div>
-              <div><span>CO₂ de la xarxa</span><b class="num" data-co2>-</b></div>
-              <div><span>Preu</span><b class="num" data-price>-</b></div>
-              <div><span>Estalviat la setmana</span><b class="num good" data-saved>-</b></div>
-            </div>
-            <div class="now-why" data-why>-</div>
+            <section class="now-sec batt" id="batt">
+              <div class="sec-h"><h3>Bateria</h3><span class="batt-right"><span class="num batt-kwh"></span><b class="num" data-soc>-</b></span></div>
+              <div class="batt-body"><div class="batt-fill"></div></div>
+              <div class="batt-line"><span class="batt-state"></span></div>
+              <p class="batt-why" id="batt-why"></p>
+            </section>
+            <section class="now-sec">
+              <div class="sec-h"><h3>Ara</h3></div>
+              <div class="now-stats">
+                <div><span>Compra a la xarxa</span><b class="num" data-grid>-</b></div>
+                <div><span>Estalvi de la setmana</span><b class="num good" data-saved>-</b></div>
+                <div><span>CO₂ de la xarxa <em class="lvl" id="lvl-co2"></em></span><b class="num" data-co2>-</b></div>
+                <div><span>Preu <em class="lvl" id="lvl-price"></em></span><b class="num" data-price>-</b></div>
+              </div>
+            </section>
+            <section class="now-sec">
+              <div class="sec-h"><h3>El dia</h3></div>
+              <div class="day-row">
+                <svg class="clock24" id="clock24" viewBox="0 0 220 220" role="img" aria-label="El dia en un rellotge: CO₂ de la xarxa a fora i què fa la bateria a dins"></svg>
+                <ul class="clock-key">
+                  <li><i class="k-co2"></i>Anell: CO₂ de cada hora (clar net, fosc brut)</li>
+                  <li><i style="background:var(--dt-charge)"></i>Carrega</li>
+                  <li><i style="background:var(--dt-discharge)"></i>Descarrega</li>
+                  <li><i class="k-hand"></i>Agulla: hora actual</li>
+                </ul>
+              </div>
+            </section>
+            <section class="now-sec">
+              <div class="sec-h"><h3>Consums flexibles</h3></div>
+              <div class="signal" id="signal"><i></i><div><b></b><p></p></div></div>
+            </section>
           </aside>
           </div>
           <div class="player" data-player></div>

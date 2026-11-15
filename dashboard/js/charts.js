@@ -123,7 +123,7 @@
     axisX(g, x, ih, s => d3.axisBottom(s).ticks(5).tickFormat(v => v + " t"));
     g.selectAll("text.n").data(rows).join("text").attr("x", -12).attr("y", r => y(r.strategy) + y.bandwidth() / 2 + 4)
       .attr("text-anchor", "end").style("font-size", "12.5px").style("fill", r => (r.strategy.startsWith("MPC") ? C.text : C.muted))
-      .text(r => ({ "Regles per hores": "Horari fix", "MPC + programació lineal": "Control predictiu" })[r.strategy] || r.strategy);   // noms per a UPC Sostenible
+      .text(r => ({ "Regles per hores": "Horari fix", "MPC + programació lineal": "Control predictiu" })[r.strategy] || r.strategy);   // noms entenedors
     g.selectAll("rect").data(rows).join("rect").attr("y", r => y(r.strategy) + (y.bandwidth() - bh) / 2).attr("height", bh).attr("rx", bh / 2)
       .attr("fill", r => (r.strategy.startsWith("MPC") ? C.accent : C.ref)).attr("width", 0)
       .transition().duration(T).ease(ease).delay((_, i) => i * 90).attr("width", r => (tons(r) < 0.01 ? 0 : Math.max(bh, x(tons(r)))));

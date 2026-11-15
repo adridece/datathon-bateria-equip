@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="color-scheme" content="light only">
-<title>Informe UPC Sostenible | Bateria del Campus Nord</title>
+<title>Informe | Bateria del Campus Nord</title>
 <link rel="icon" type="image/png" href="static/logo-datathon.png">
 <style>
   @font-face { font-family: "Plex Sans"; src: url(fonts/IBMPlexSans-Regular.woff2) format("woff2"); font-weight: 400; }
@@ -75,7 +75,7 @@
   const keep = 100 * rob[rob.length - 1].score / rob[0].score;
   const today = new Date().toLocaleDateString("ca-ES", { day: "numeric", month: "long", year: "numeric" });
   const header = n => `<header><img src="static/logo-datathon.png" alt=""><div><div class="team">UPC SOSTENIBLE</div><div>Bateria del Campus Nord</div></div>
-      <div class="meta">Informe per a UPC Sostenible<br>${today}<span class="page">${n} / 2</span></div></header>`;
+      <div class="meta">Informe de la bateria<br>${today}<span class="page">${n} / 2</span></div></header>`;
   const decisions = [
     ["Operar la bateria amb control predictiu", `Evita ${f(tons(st[2]))} t de CO₂ i ${eur(yr.eur_year)} l'any, el ${f(100 * st[2].co2_pct / st[3].co2_pct)} % del que s'evitaria coneixent el futur. Un horari fix només n'evita ${f(tons(st[1]))} t.`],
     ["Carregar a les hores de sol, descarregar al matí i al vespre", `Carrega sobretot a les ${chargeH.join(", ")} h, les de menys CO₂, i descarrega a les ${dischargeH.join(", ")} h, les de més CO₂ i preu.`],
@@ -96,7 +96,7 @@
       <div class="kpi"><b>${f(Math.min(100, d3.mean(W, w => w.of_best_pct)))} %</b>del màxim possible coneixent el futur</div>
       <div class="kpi"><b>${f(W.length)} de ${f(W.length)}</b>setmanes amb estalvi</div>
     </div>
-    <h2>Decisions per a UPC Sostenible</h2>
+    <h2>Decisions</h2>
     <div class="recs">${decisions.map((d, i) => `<div class="rec"><div class="n">${String(i + 1).padStart(2, "0")}</div><b>${d[0]}</b><p>${d[1]}</p></div>`).join("")}</div>
     <div class="charts">
       <div class="chart"><h2>Quan carrega i quan descarrega</h2><div class="s">Potència mitjana per hora del dia (barres, kW) i CO₂ de la xarxa (línia, g/kWh)</div><div id="c1"></div></div>

@@ -75,6 +75,16 @@ function show(i, fromPlayer) {
   $("chip-time").textContent = `${DAYS[t.getDay()]} ${t.getDate()}/${t.getMonth() + 1}, ${H.t[k].slice(11, 16)} h`;
   setAll("[data-mode]", e => (e.innerHTML = `<i style="width:8px;height:8px;border-radius:50%;background:${mode[1]}"></i>${mode[0]} <span class="num">${b > 1 ? "+" : ""}${f(b)} kW</span>`));
   setAll("[data-why]", e => (e.textContent = H.why[k]));
+  if ($("batt-why")) $("batt-why").textContent = "Per què: " + H.why[k].replace(/^[^:]*:\s*/, "");
+  // nivell de l'hora respecte de les 24 h seguents (el que fa servir el control per decidir)
+  const level = (arr, i) => {
+    const ahead = arr.slice(i, Math.min(i + 24, week.end)), r = ahead.filter(v => v < arr[i]).length / ahead.length;
+    return r < 0.33 ? ["baix", "lo"] : r < 0.67 ? ["mitjà", "mid"] : ["alt", "hi"];
+  };
+  [["lvl-co2", H.co2], ["lvl-price", H.price]].forEach(([id, arr]) => {
+    const el = $(id); if (!el) return;
+    const [txt, cls] = level(arr, k); el.textContent = txt; el.className = "lvl " + cls;
+  });
   liveNumbers(fromPlayer ? clock : k);
   drawClock();
   signal();
@@ -400,7 +410,7 @@ function battery(c) {
   const soc = socAt(c), b = hourly("bat", c), eta = Math.sqrt(0.9);
   el.querySelector(".batt-fill").style.width = (100 * soc).toFixed(1) + "%";
   el.querySelector(".batt-fill").className = "batt-fill" + (b > 1 ? " charging" : b < -1 ? " discharging" : "");
-  el.querySelector(".batt-kwh").textContent = `${f(2000 * soc)} de 2.000 kWh`;
+  el.querySelector(".batt-kwh").textContent = `${f(2000 * soc)} kWh`;
   let state = "En espera";
   if (b > 1) {
     const hrs = (1 - soc) * 2000 / (b * eta);
@@ -464,10 +474,10 @@ function signal() {
   const rank = ahead.filter(v => v < H.co2[k]).length / ahead.length;
   const best = k + d3.minIndex(ahead), less = 100 * (1 - H.co2[best] / H.co2[k]);
   const [cls, title, text] = rank <= 0.25
-    ? ["go", "Bon moment per consumir", "Ara la xarxa és de les més netes de les properes 24 h."]
+    ? ["go", "Bon moment", "Ara la xarxa és de les més netes de les properes 24 h."]
     : rank >= 0.6
-      ? ["stop", "Millor esperar si es pot", `A les ${H.t[best].slice(11, 13)} h la xarxa serà un ${f(less)} % més neta.`]
-      : ["wait", "Moment normal", `L'hora més neta de les properes 24 h és a les ${H.t[best].slice(11, 13)} h.`];
+      ? ["stop", "Millor esperar", `A les ${H.t[best].slice(11, 13)} h la xarxa serà un ${f(less)} % més neta.`]
+      : ["wait", "Moment normal", `La millor hora de les properes 24 h és a les ${H.t[best].slice(11, 13)} h.`];
   el.className = "signal " + cls;
   el.querySelector("b").textContent = title;
   el.querySelector("p").textContent = text;

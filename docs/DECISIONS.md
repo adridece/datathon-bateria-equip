@@ -381,3 +381,11 @@ gestiona l'energia del campus, ordenada per l'ús que en farà i pensada per pre
 - **Revisió:** cap botó en dues línies (comprovat a totes les seccions), cap targeta ni gràfic que surti del seu lloc,
   dos avisos nous per omplir la targeta d'avisos (hora més cara i comptador sense canvis). Els valors en directe queden
   sempre dins de la setmana triada (evita un error si es canvia de setmana a mitja reproducció).
+
+### D-047 · 15/11 · Adrià — Panell "Ara mateix" en blocs i to d'eina pròpia
+- El panell del costat del 3D no s'entenia: caixes sense títol, el semàfor abans que la bateria, el rellotge sense explicar
+  i el motiu lluny de la bateria. Ara té quatre blocs amb títol, en ordre de lectura: **Bateria** (percentatge, kWh, què fa
+  i per què), **Ara** (compra, estalvi de la setmana, CO₂ i preu amb una etiqueta baix/mitjà/alt respecte de les 24 h
+  següents), **El dia** (rellotge amb llegenda) i **Consums flexibles** (semàfor).
+- El dashboard és l'eina que fa servir l'equip d'UPC Sostenible, no una presentació "per a ells": fora "Decisions per a
+  UPC Sostenible" i "Informe per a UPC Sostenible"; els títols diuen el que hi ha ("Decisions", "Informe de la bateria").
