@@ -341,7 +341,7 @@ usa `quantile=2` (15% de marge) i pes `0.4` del model directe de CO₂. Respecte
 18,877 → 18,912, F1 17,422 → 17,441 i F2 reservat 17,915 → 17,934, sempre amb 0 infraccions. No s'ha ajustat
 amb dades del leaderboard ni amb cap font externa durant l'avaluació.
 
-### D-040 · 15/11 · Adrià — Dues idees més provades i descartades
+### D-041 · 15/11 · Adrià — Dues idees més provades i descartades
 - **Temperatura de panell i vent** (la web les dona a `obs`): el vent val 0 a totes les dades (el sensor no funciona) i la
   temperatura del panell es correlaciona 0,98 amb la irradiància, que ja fèiem servir. Afegida al model de la solar de l'hora
   actual, l'error passa de 83,2 a 82,6 kW (validació creuada per mesos): no compensa la complexitat.
@@ -349,6 +349,34 @@ amb dades del leaderboard ni amb cap font externa durant l'avaluació.
   previsions fetes sense veure aquelles setmanes): l'error de l'acció només baixa d'un 1 % (200 → 198 kW i 183 → 181 kW) i
   el score empitjora a les dues (F0 18,88 → 18,83–18,86; F1 17,42 → 17,38–17,41). Confirma el que va trobar l'Ivan per
   una altra via: la diferència amb l'òptim depèn del futur i no es pot predir amb el que sap l'agent.
+
+### D-042 · 15/11 · Adrià — Preu amb l'historial públic de REE (2024-2025)
+Els organitzadors ens han confirmat que podem entrenar amb dades públiques de REE d'altres períodes (mai dels dies de test).
+- **Que les dades coincideixin:** el PVPC de l'API pública de REE (`apidatos.ree.es`) dona exactament el nostre
+  `precio_pvpc.csv` (diferència 0,00 €/MWh comprovada hora a hora). El CO₂ no: el nostre és 0,37 × la part de generació
+  amb emissions, i la font pública de generació que hem trobat s'hi desvia un ~5 %. Per això el CO₂ extern **no** el fem servir.
+- **Període:** gener 2024 – agost 2025 (14.614 h), tot abans del 1/9/2025 on comença el repte; abans de 2024 el PVPC es
+  calculava d'una altra manera. Guardat a `data/external/pvpc_2024_2025.csv`.
+- **Model:** un model directe de preu a +3..+12 h (com el de CO₂), barrejat meitat i meitat. Sense l'historial extern no
+  generalitza (F2 empitjora: 17,86); amb l'historial millora les tres validacions creuades respecte de la versió
+  calibrada de D-040: F0 18,91 → 18,94 · F1 17,44 → 17,47 · F2 17,93 → 18,00 (+0,03 / +0,03 / +0,07). 0 infraccions.
+  Nota: el DIARI diu que el calibratge de D-040 es va buscar sobre F0/F1/F2; si és així, F2 ja no és del tot reservada.
+- La validació creuada és temporal (F0, F1, F2 = una setmana diferent de cada mes, sense barrejar hores veïnes); ajustem amb
+  F0 i F1 i F2 només confirma.
+
+### D-043 · 15/11 · Adrià — Molt més historial públic: què ajuda i què no
+Hem baixat tot l'historial públic de REE d'abans del repte que hem pogut (`scripts/download_ree.py`) i l'hem provat amb la
+validació creuada temporal (F0/F1/F2), quedant-nos només amb el que millora:
+- **CO₂ 2019–2025 reconstruït** amb la generació per tecnologia de REE (cada 5 min). Calibrat amb la meitat dels dies del
+  train i comprovat amb l'altra meitat: error mitjà 1,75 %, correlació 0,999 (abans, sense calibrar, un 5 %).
+- **Preu:** el PVPC de juny 2021 a 2023 **empitjora** (F1 17,47 → 17,47, F2 18,00 → 17,98): l'any 2022 de crisi energètica
+  es comporta diferent. Ens quedem amb 2024–2025. Abans de juny de 2021 REE no publica aquest PVPC.
+- **CO₂:** amb l'historial des de 2024 F1 empitjora; **des de juny de 2021 millora les tres**: F0 18,944 → 18,960,
+  F1 17,471 → 17,472, F2 18,002 → 18,033. Guany petit però consistent.
+- **Horitzó del model de CO₂ fins a +16 h** amb aquest historial: F0 empitjora (18,944) → es queda a +12 h.
+Lliçó: més dades no sempre és millor; només val la pena si són del mateix règim. 0 infraccions, checker vàlid.
+Aquesta branca inclou també els canvis pendents de la sessió de calibratge (D-040) a `src/data.py`,
+`scripts/train_dificil_marges.py` i `tests/evaluate_dificil.py`: sense ells l'agent no es pot reentrenar des del repo.
 
 ### D-044 · 15/11 · Adrià — El dashboard és l'eina d'UPC Sostenible, no la nostra presentació
 El dashboard parlava de nosaltres ("Què n'hem après i què li recomanem", "pla de l'agent"). Ara és una eina feta per a qui
@@ -403,3 +431,26 @@ A pantalla completa el panell de baix a l'esquerra té ara, en dues files compac
 el selector de dalt), rellotge, tornar a començar la setmana, reproduir i velocitats; i una barra de temps per anar a
 qualsevol hora (si s'estava reproduint, continua des d'allà). El botó "–" amaga les xifres i deixa només els controls,
 perquè es vegi gairebé tot el campus.
+
+### D-050 · 15/11 · Ivan — `agents/dificil_co2_ree`: model directe de CO₂ amb l'històric públic de REE (2023-2025)
+On perdem més punts és el CO₂ de les hores +3..+12, i amb el train només tenim ~3 setmanes per mes.
+- **Font:** la web de demanda en temps real de REE (`demanda.ree.es`) dona la generació de cada tecnologia cada 5 minuts
+  i el factor d'emissió de cadascuna (el cicle combinat, 0,37). Emissions / generació, ajustat amb dies del train:
+  `co2 = 1,114 × emissions/generació − 0,0055` (correlació 0,988, error mitjà 5 g/kWh).
+- **Període:** gener 2023 – agost 2025 (23.374 h), tot abans que comenci el repte. Mai dies de test.
+  Guardat a `data/external/ree_generacio_2023_2025.csv`.
+- **Model:** `dificil_marges` + un model directe de CO₂ (+3..+12 h) entrenat amb el train i REE (les nostres dades pesen ×3),
+  barrejat meitat i meitat. Error del model directe a +3..+12 h: F0 10,2 → 10,0 g/kWh, F1 12,0 → 10,6.
+  Score (mateixos models base, F0 / F1): 20,71 → 20,79 · 17,54 → 17,57. 0 infraccions, ~17 s per 1.848 h, zip de 8 MB.
+**Decisió:** candidat per enviar al Mode Dificil. Es reentrena amb `python scripts/train_dificil_co2_ree.py`.
+
+### D-051 · 15/11 · equip — Les dues entregues finals i neteja del repositori
+Per al jurat triem l'agent que millor generalitza de cada mode:
+- **Estàndard: `estandard_robust`.** És a l'òptim a la validació (6,08) i el més estable a la prova de generalització (D-029),
+  sobretot si hi ha talls del comptador. No depèn de cap dada del test (a diferència de `estandard_robust_pesos_test`).
+- **Difícil: `dificil_marges` (22,96).** El públic és l'altra meitat de les mateixes setmanes que el privat, i aquí és el
+  millor dels nostres: les versions amb dades de REE milloraven a la validació local però a la web van treure menys
+  (`dificil_co2_ree` 22,83, `dificil_co2_irradiancia` 22,70–22,76).
+Al repositori només hi deixem aquests dos agents i el que cal per entrenar-los i validar-los. La resta d'agents, scripts i
+dades externes de REE són a l'historial de git (fins a la branca `agent` del 15/11 al matí).
+

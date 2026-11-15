@@ -1,7 +1,7 @@
 """
 Avaluacio local del Mode Dificil (solar x12, bateria 6.000 kWh / 1.500 kW, 3 h de mercat).
 Des de l'arrel del projecte:
-    python tests/evaluate_dificil.py                 (avalua agents/dificil_previsio_simple)
+    python tests/evaluate_dificil.py                 (avalua agents/dificil_marges)
     python tests/evaluate_dificil.py agents/altre    (avalua una altra carpeta)
 
 Fa servir el simulador oficial i nomes hi afegeix el que diu la pestanya Mode Dificil de la web:
@@ -27,7 +27,7 @@ MARKET_HOURS = 3
 
 class HardEnv(CampusBatteryEnv):
     def __init__(self, data):
-        self.meteo = data[["irr_wm2", "temp_c"]].fillna(0.0).reset_index(drop=True)
+        self.meteo = data[["irr_wm2", "temp_c", "panel_c", "wind_ms"]].fillna(0.0).reset_index(drop=True)
         super().__init__(data[BASE_COLS], spec=SPEC)
 
     def _get_obs(self):
@@ -39,6 +39,8 @@ class HardEnv(CampusBatteryEnv):
         k = max(self.t - 1, 0)
         obs["noves_dades_5min"]["irradiancia_wm2"] = float(self.meteo.irr_wm2.iloc[k])
         obs["noves_dades_5min"]["temp_ambient_c"] = float(self.meteo.temp_c.iloc[k])
+        obs["noves_dades_5min"]["temp_panel_c"] = float(self.meteo.panel_c.iloc[k])
+        obs["noves_dades_5min"]["vent_ms"] = float(self.meteo.wind_ms.iloc[k])
         obs["cap_max_kwh"], obs["power_max_kw"] = SPEC["capacity_kwh"], SPEC["power_kw"]
         return obs
 
@@ -65,6 +67,6 @@ def run_hard(agent, data):
 
 
 if __name__ == "__main__":
-    folder = sys.argv[1] if len(sys.argv) > 1 else "agents/dificil_previsio_simple"
+    folder = sys.argv[1] if len(sys.argv) > 1 else "agents/dificil_marges"
     data = hard_data()
     print(f"Mode Dificil, validacio ({len(data)} h): {run_hard(load_agent(ROOT / folder), data)}")

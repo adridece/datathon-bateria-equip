@@ -3,7 +3,7 @@ Repeteix una simulacio amb el simulador oficial i en guarda TOT hora a hora
 (el que fa servir el dashboard per animar-ho).
 
     from src.replay import replay
-    df = replay("agents/estandard_lp", dades)      # DataFrame amb una fila per hora
+    df = replay("agents/estandard_robust", dades)      # DataFrame amb una fila per hora
 """
 import numpy as np
 import pandas as pd

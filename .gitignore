@@ -13,3 +13,5 @@ submissions/*.zip
 .vscode/
 .claude/
 docs/SKILLS_INSTAL*.md
+
+data/external/*.npy

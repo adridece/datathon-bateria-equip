@@ -1,7 +1,7 @@
 """
 Proves de l'agent robust. Des de l'arrel del projecte:
     python tests/test_agent.py                    (prova agents/estandard_robust)
-    python tests/test_agent.py estandard_robust_pesos_test   (prova una altra carpeta d'agents/)
+    python tests/test_agent.py estandard_robust   (proves del Mode Estandard; el Dificil es prova amb tests/evaluate_dificil.py)
     python -m pytest tests              (si teniu pytest)
 """
 import math
