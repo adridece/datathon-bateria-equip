@@ -464,7 +464,7 @@ superior per canviar entre els dos agents de l'entrega:
 - **Mida de la bateria:** cap valor fix de 2.000 kWh o 500 kW al JavaScript. Tot llegeix `window.MODE` (bateria, planificador,
   acord del pla, cicles, gràfics, informe PDF). El planificador del navegador també té en compte l'excedent solar i, amb la
   bateria gran, fa servir nivells de 30 kWh perquè vagi igual de ràpid.
-- **Com es canvia:** el mode és a l'adreça (`?mode=dificil`) i el botó recarrega la pàgina. Així cada vista es dibuixa amb
+- **Com es canvia:** el mode és a l'adreça (`#dificil`) i el botó recarrega la pàgina. Així cada vista es dibuixa amb
   les dades bones des del principi, l'informe surt del mateix mode i l'enllaç es pot compartir.
 - **Xifres (validació, 7 dies per mes):** Estàndard 6,08 (òptim 6,08). Difícil 20,85, òptim 22,34, 0 infraccions. Al Difícil
   els models s'han entrenat amb tot el train, inclosos aquests dies: el valor honest és el del banc (D-051).
