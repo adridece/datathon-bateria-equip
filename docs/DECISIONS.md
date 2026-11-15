@@ -469,3 +469,12 @@ superior per canviar entre els dos agents de l'entrega:
 - **Xifres (validació, 7 dies per mes):** Estàndard 6,08 (òptim 6,08). Difícil 20,85, òptim 22,34, 0 infraccions. Al Difícil
   els models s'han entrenat amb tot el train, inclosos aquests dies: el valor honest és el del banc (D-051).
 
+
+### D-053 · 15/11 · Adrià — Escena 3D: tres bateries al Mode Difícil
+Al Mode Difícil la bateria és de 6.000 kWh. A l'escena 3D es veuen tres mòduls de 2.000 kWh en lloc d'un:
+- El nombre de mòduls surt de `MODE.cap_kwh / 2000`. Al Mode Estàndard en surt un i tot queda com abans.
+- Els tres mòduls estan en fila, de costat, separats uns 10 m, amb el número (1, 2, 3) pintat a terra davant de cadascun.
+  Són una mica més petits (×0,8) perquè hi càpiguen.
+- Van en una esplanada a l'est de l'escomesa principal, a més de 30 m de qualsevol edifici i lluny de l'anell soterrat.
+  A més, des d'on mira la càmera, no hi ha cap edifici al davant que els tapi.
+- Tots tres s'omplen i es buiden junts, amb l'estat de càrrega de la bateria sencera. L'etiqueta va a la dreta de l'últim mòdul.

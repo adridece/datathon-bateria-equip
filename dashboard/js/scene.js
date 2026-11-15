@@ -152,12 +152,12 @@ export function createScene(container, campus, colors) {
     }
     return best;
   };
-  const freeSpot = ([x, y, z]) => {
-    if (clearance(x, z) >= 10) return [x, y, z];
-    for (let rad = 5; rad <= 80; rad += 5)
+  const freeSpot = ([x, y, z], min = 10) => {
+    if (clearance(x, z) >= min) return [x, y, z];
+    for (let rad = 5; rad <= 120; rad += 5)
       for (let k = 0; k < 24; k++) {
         const a = k / 24 * Math.PI * 2, nx = x + Math.cos(a) * rad, nz = z + Math.sin(a) * rad;
-        if (clearance(nx, nz) >= 10) return [nx, y, nz];
+        if (clearance(nx, nz) >= min) return [nx, y, nz];
       }
     return [x, y, z];
   };
@@ -169,25 +169,67 @@ export function createScene(container, campus, colors) {
   // i les plaques i els centres de transformació queden al nord. Així els cables no es creuen.
   const mainCT = at(A.grid_connection.pos);
   const node = mainCT.clone().setY(0.3);
-  const fromMain = (dx, dz) => at(freeSpot([A.grid_connection.pos[0] + dx, 0, A.grid_connection.pos[2] + dz]));
+  const fromMain = (dx, dz, min) => at(freeSpot([A.grid_connection.pos[0] + dx, 0, A.grid_connection.pos[2] + dz], min));
+  // un mòdul de bateria per cada 2000 kWh: al Mode Difícil (6000 kWh) en surten tres en fila
+  const units = Math.max(1, Math.round((window.MODE ? window.MODE.cap_kwh : 2000) / 2000));
+  const SIZE = units > 1 ? 0.8 : 1;    // amb diversos mòduls, cadascun una mica més petit
+  const GAP = 2.0;                     // distància entre mòduls (1 unitat = 10 m)
   const gridPos = fromMain(6, 42);     // la xarxa entra pel carrer, al sud
-  const batPos = fromMain(44, 8);      // la bateria, a l'est, en un espai lliure
+  // la bateria, a l'est; amb tres mòduls cal una esplanada més gran, lluny d'edificis i cables
+  // i sense cap edifici al davant des d'on mira la càmera
+  const batPos = units > 1 ? fromMain(40, -40, 30) : fromMain(44, 8);
   const loadPos = at(A.campus_load_anchor.pos);
 
+  // cada mòdul: base, carcassa transparent i el farciment que puja i baixa amb la càrrega
   const battery = new THREE.Group();
   const shellGeo = new THREE.BoxGeometry(2.8, 1.3, 1.2);
-  const shell = new THREE.Mesh(shellGeo, new THREE.MeshStandardMaterial({ color: "#FFFFFF", transparent: true, opacity: 0.35, roughness: 0.2 }));
-  shell.position.y = 0.65;
-  const fill = new THREE.Mesh(new THREE.BoxGeometry(2.55, 1.1, 0.95), new THREE.MeshStandardMaterial({ color: colors.accent, roughness: 0.5 }));
-  const outline = new THREE.LineSegments(new THREE.EdgesGeometry(shellGeo), new THREE.LineBasicMaterial({ color: "#5E5A54" }));
-  outline.position.y = 0.65;
-  const pad = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.12, 1.6), new THREE.MeshStandardMaterial({ color: "#C9C3B7" }));
-  battery.add(pad, fill, shell, outline);
+  const shellMat = new THREE.MeshStandardMaterial({ color: "#FFFFFF", transparent: true, opacity: 0.35, roughness: 0.2 });
+  const fillMat = new THREE.MeshStandardMaterial({ color: colors.accent, roughness: 0.5 });
+  const padMat = new THREE.MeshStandardMaterial({ color: "#C9C3B7" });
+  const edgeMat = new THREE.LineBasicMaterial({ color: "#5E5A54" });
+  const fills = [];
+  for (let u = 0; u < units; u++) {
+    const x = (u - (units - 1) / 2) * GAP;
+    const unit = new THREE.Group();
+    const shell = new THREE.Mesh(shellGeo, shellMat);
+    shell.position.y = 0.65;
+    const fill = new THREE.Mesh(new THREE.BoxGeometry(2.55, 1.1, 0.95), fillMat);
+    const outline = new THREE.LineSegments(new THREE.EdgesGeometry(shellGeo), edgeMat);
+    outline.position.y = 0.65;
+    const pad = new THREE.Mesh(new THREE.BoxGeometry(3.2, 0.12, 1.6), padMat);
+    unit.add(pad, fill, shell, outline);
+    if (units > 1) unit.add(unitNumber(u + 1));
+    unit.position.x = x;
+    unit.scale.setScalar(SIZE);
+    if (units > 1) unit.rotation.y = Math.PI / 2;   // en fila, de costat, perquè es vegin els tres
+    battery.add(unit);
+    shell.userData = { kind: "battery" };
+    pickables.push(shell);
+    fills.push(fill);
+  }
   battery.position.copy(batPos);
   battery.traverse(o => { o.castShadow = true; });
-  shell.userData = { kind: "battery" };
   scene.add(battery);
-  pickables.push(shell);
+
+  // número de cada mòdul pintat a terra, davant seu, perquè es distingeixin
+  function unitNumber(n) {
+    const c = document.createElement("canvas");
+    c.width = c.height = 64;
+    const g = c.getContext("2d");
+    g.fillStyle = "#5E5A54";
+    g.beginPath();
+    g.arc(32, 32, 28, 0, Math.PI * 2);
+    g.fill();
+    g.fillStyle = "#FFFFFF";
+    g.font = "bold 38px sans-serif";
+    g.textAlign = "center";
+    g.textBaseline = "middle";
+    g.fillText(n, 32, 34);
+    const m = new THREE.Mesh(new THREE.PlaneGeometry(1, 1), new THREE.MeshBasicMaterial({ map: new THREE.CanvasTexture(c), transparent: true }));
+    m.rotation.x = -Math.PI / 2;
+    m.position.set(-2.2, 0.03, 0);
+    return m;
+  }
 
   const steel = new THREE.MeshStandardMaterial({ color: "#7D776E", roughness: 0.6 });
   const tower = new THREE.Group();
@@ -361,7 +403,8 @@ export function createScene(container, campus, colors) {
     el.className = "tag";
     tags[name] = { el, pos, dx, dy };
   }
-  addTag("battery", lift(batPos, 1.6), 70, 30);
+  // l'etiqueta va a la dreta de l'últim mòdul, perquè no en tapi cap
+  addTag("battery", lift(batPos, 1.6).setX(batPos.x + (units - 1) / 2 * GAP), 70, 30);
   addTag("grid", lift(gridPos, 3.8), 90, 20);
   addTag("load", lift(loadPos, loadPos.y + 1.6), 50, -18);
   addTag("solar", at(A.pv_inverters[0].pos).setY(17.5 * S * VX + 1.6), -50, -18);
@@ -482,8 +525,10 @@ export function createScene(container, campus, colors) {
       controls.update();
     }
     socShown += (socTarget - socShown) * Math.min(1, dt * 5);
-    fill.scale.y = Math.max(0.02, socShown);
-    fill.position.y = 0.1 + 0.55 * fill.scale.y;
+    fills.forEach(fill => {
+      fill.scale.y = Math.max(0.02, socShown);
+      fill.position.y = 0.1 + 0.55 * fill.scale.y;
+    });
     stepStreams(dt);
     placeTags();
     renderer.render(scene, camera);
