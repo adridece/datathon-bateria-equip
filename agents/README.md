@@ -19,5 +19,5 @@ Els finals són els marcats en negreta. La columna "Abans" és el nom que tenia 
 | **`dificil_co2_irradiancia`** | `hard_v3` | L'anterior + model directe de CO₂ (+3..+12 h), detecció de la irradiància de l'hora actual, dades meteorològiques completes i marge calibrat fora de mostra. |
 | `dificil_co2_ree` | – | `dificil_marges` + model directe de CO₂ (+3..+12 h) entrenat amb l'històric públic de REE 2023-2025. |
 
-Entrenar: `python scripts/train_dificil_marges.py` i `python scripts/train_dificil_co2_irradiancia.py`.
+Entrenar: `python scripts/train_dificil_marges.py`, `python scripts/train_dificil_co2_irradiancia.py` i `python scripts/train_dificil_co2_ree.py`.
 Validar: `python tests/bench_dificil.py 0,1,2` (Difícil) i `python -m src.evaluate agents/estandard_robust` (Estàndard).
