@@ -397,3 +397,9 @@ gestiona l'energia del campus, ordenada per l'ús que en farà i pensada per pre
 - Animacions coherents: canvi de color suau a tots els botons, petit efecte en prémer, ombra al botó principal,
   selectors amb transició, llista de setmanes que s'obre amb animació, canvi de secció amb fos i targetes de decisió que
   responen al ratolí. "Reproduir" i "Pausa" ocupen el mateix i el botó no salta. Es respecta "reduir moviment".
+
+### D-049 · 15/11 · Adrià — Controls complets al 3D en gran
+A pantalla completa el panell de baix a l'esquerra té ara, en dues files compactes: canvi de setmana (‹ ›, sincronitzat amb
+el selector de dalt), rellotge, tornar a començar la setmana, reproduir i velocitats; i una barra de temps per anar a
+qualsevol hora (si s'estava reproduint, continua des d'allà). El botó "–" amaga les xifres i deixa només els controls,
+perquè es vegi gairebé tot el campus.

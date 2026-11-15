@@ -92,6 +92,10 @@ function show(i, fromPlayer) {
   setAll("[data-saved]", e => (e.innerHTML = `${f(sv.co2)} kg CO₂<br>${f(sv.eur)} €`));
   setAll("[data-clock]", e => (e.textContent = $("chip-time").textContent));
   setAll("[data-pos]", e => (e.textContent = `hora ${k - week.start + 1} de ${week.end - week.start}`));
+  // controls del 3D en gran: setmana, barra de temps
+  setAll("[data-wklabel]", e => (e.textContent = week.label.slice(0, 5)));
+  setAll("[data-scrub]", e => { e.max = week.end - week.start - 1; e.value = k - week.start; });
+  setAll("[data-scrub-label]", e => (e.textContent = `${k - week.start + 1} / ${week.end - week.start} h`));
   setAll("[data-cycles]", e => (e.textContent = f(weekCycles(), 1)));
   sceneAt(k);
   window.Explorer.setNow(k);
@@ -137,6 +141,14 @@ function setWeek(i) {
   show(week.start);
 }
 $("week").onchange = e => { stop(); setWeek(+e.target.value); };
+// barra de temps del 3D en gran: moure-la va a aquella hora (sense aturar si s'estava reproduint)
+document.addEventListener("input", e => {
+  if (!e.target.matches("[data-scrub]")) return;
+  const playing = !!timer;
+  if (playing) stop();
+  show(week.start + +e.target.value);
+  if (playing) start();
+});
 
 // ---------------------------------------------------------------- selector de setmanes propi
 // el <select> natiu es veu diferent a cada sistema; aquest es veu igual a Mac, Windows i Linux
@@ -541,6 +553,12 @@ document.addEventListener("click", e => {
   if (act === "zoom-in") scene.zoom(1.25);
   if (act === "zoom-out") scene.zoom(0.8);
   if (act === "full") toggleExpand(b.closest(".stage"));
+  if (act === "restart") { stop(); show(week.start); }
+  if (act === "wk-prev" || act === "wk-next") {
+    const i = D.weeks.indexOf(week) + (act === "wk-next" ? 1 : -1);
+    if (i >= 0 && i < D.weeks.length) { const playing = !!timer; stop(); setWeek(i); if (playing) start(); }
+  }
+  if (act === "hud-min") { b.closest(".hud-live").classList.toggle("mini"); b.textContent = b.closest(".hud-live").classList.contains("mini") ? "+" : "–"; }
   if (act === "csv") downloadPlan();
   if (act === "open-explorer") { window.Explorer.open(["grid", "base", "co2", "savedco2"], k); go("trust"); }
   if (act === "csv-weeks") window.Charts.downloadWeeks();
