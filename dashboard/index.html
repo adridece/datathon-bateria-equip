@@ -153,7 +153,6 @@
       <!-- planificador -->
       <section class="view" id="v-planner">
         <div class="grid">
-          <div class="card s12 answer-card"><div class="q">QUÈ PASSARIA SI...?</div><p class="answer" id="a-planner"></p></div>
           <div class="card s4">
             <div class="head"><div><h2>Escenari</h2><div class="sub">Canvia les condicions de les properes 24 hores</div></div>
               <button id="pl-reset">Restablir</button></div>
@@ -168,7 +167,7 @@
             <h2>Pla de l'escenari comparat amb el pla actual</h2>
             <div class="sub">Barres plenes: pla amb l'escenari. Contorn discontinu: pla actual de la bateria. A sota, la càrrega (verd: escenari, gris: actual).</div>
             <div class="plan-sum" id="pl-kpis"></div>
-            <div class="chart" id="c-planner"></div>
+            <div class="chart" id="c-planner"></div><p class="take" id="a-planner"></p>
           </div>
         </div>
       </section>
@@ -176,7 +175,6 @@
       <!-- 4. mida -->
       <section class="view" id="v-sizing">
         <div class="grid">
-          <div class="card s12 answer-card"><div class="q">QUINA BATERIA US CONVÉ?</div><p class="answer" id="a-size"></p></div>
           <div class="card s4">
             <h2>Configuració</h2><div class="sub">Tria i mira com canvia tot</div>
             <div class="ctrl"><div class="l">Capacitat (kWh)</div><div class="seg" id="b-cap"></div></div>
@@ -185,7 +183,7 @@
               <input type="range" id="cost" min="150" max="600" step="25" value="350"></div>
             <div class="rows" id="size-kpis"></div>
           </div>
-          <div class="card s8"><h2>Més capacitat ajuda fins a unes 4 hores de potència</h2><div class="sub">CO₂ evitat per any segons la capacitat; cada línia és una potència</div><div class="chart" id="c-size"></div></div>
+          <div class="card s8"><h2>Més capacitat ajuda fins a unes 4 hores de potència</h2><div class="sub">CO₂ evitat per any segons la capacitat; cada línia és una potència</div><div class="chart" id="c-size"></div><p class="take" id="a-size"></p></div>
           <div class="card s12"><h2>Inversió i retorn</h2><div class="sub">Amb la potència triada, vida útil suposada de 15 anys</div><table class="t" id="t-size"></table></div>
         </div>
       </section>
