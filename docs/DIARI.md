@@ -111,3 +111,7 @@
 - **Correlació preu–CO₂ de 0,58:** els dos objectius van en la mateixa direcció però no són idèntics; formular-los com a funció objectiu lineal ponderada (70 % CO₂, 30 % cost) captura el compromís òptim.
 - **Qualitat de dades i robustesa:** el comptador presenta consum nocturn pla (0–5 h) i talls puntuals a 0 kW (p. ex. 17/06/2026), fet que justifica el límit de descàrrega `max_dis_now` de `estandard_robust`.
 - **Empat amb l'òptim teòric:** `estandard_robust` obté **6,08** a la validació (igual que l'Oracle, amb 0 infraccions) i **6,43** al test públic oficial.
+
+## Conclusions actualitzades (Mode Estàndard i Mode Difícil — 3 bateries)
+- **Canvi de règim amb 3 bateries i solar ×12:** al Mode Estàndard (500 kW) el consum net supera el límit el 99,5 % de les hores; al Mode Difícil (1.500 kW, 6.000 kWh, solar ×12) apareixen excedents solars (< 0 kW) i hores per sota de 1.500 kW, fet que obliga a predir consum i solar i a incloure la xarxa dins del LP.
+- **Lideratge als dos modes:** `estandard_robust` obté **6,08** en validació (empat amb l'Oracle) i **6,43** al test públic; `dificil_marges` assoleix **20,75** (F0, 93 % de l'Oracle) i **22,96** al leaderboard públic oficial, amb **0 infraccions** en tots dos casos.
