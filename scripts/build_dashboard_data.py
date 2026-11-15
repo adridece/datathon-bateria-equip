@@ -13,7 +13,7 @@ ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(ROOT))
 
 from dashboard import analysis as an  # noqa: E402
-from src.data import contiguous_blocks  # noqa: E402
+from src.data import contiguous_blocks, load_hourly  # noqa: E402
 
 OUT = ROOT / "dashboard" / "data" / "data.js"
 
@@ -108,6 +108,12 @@ def main():
         "profile": an.hourly_profile(d).to_dict("records"),
     }
     data["weekly"] = weekly(d, rules, weeks, an.oracle_continuous(an.valid_data())["weeks"])
+    # les dades amb que s'ha fet el model (tot el train), per poder-les analitzar al dashboard
+    tr = load_hourly()
+    data["train"] = {"t": [x.strftime("%Y-%m-%d %H:00") for x in tr.index],
+                     "load": tr.load_kw.round(1).tolist(), "pv": tr.pv_kw.round(1).tolist(),
+                     "price": tr.precio_eur_per_kwh.round(4).tolist(), "co2": tr.co2_kg_per_kwh.round(4).tolist(),
+                     "irr": tr.irr_wm2.round(1).tolist(), "temp": tr.temp_c.round(1).tolist()}
     data["history"] = save_history(data)
     OUT.parent.mkdir(parents=True, exist_ok=True)
     OUT.write_text("window.DATA = " + json.dumps(data, ensure_ascii=False, separators=(",", ":")) + ";\n",

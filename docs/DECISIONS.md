@@ -349,3 +349,57 @@ amb dades del leaderboard ni amb cap font externa durant l'avaluació.
   previsions fetes sense veure aquelles setmanes): l'error de l'acció només baixa d'un 1 % (200 → 198 kW i 183 → 181 kW) i
   el score empitjora a les dues (F0 18,88 → 18,83–18,86; F1 17,42 → 17,38–17,41). Confirma el que va trobar l'Ivan per
   una altra via: la diferència amb l'òptim depèn del futur i no es pot predir amb el que sap l'agent.
+
+### D-044 · 15/11 · Adrià — El dashboard és l'eina d'UPC Sostenible, no la nostra presentació
+El dashboard parlava de nosaltres ("Què n'hem après i què li recomanem", "pla de l'agent"). Ara és una eina feta per a qui
+gestiona l'energia del campus, ordenada per l'ús que en farà i pensada per prendre decisions (criteri de la Tukey):
+- **En directe** (què fa la bateria ara i per què) → **Decisions** (què convé fer, l'impacte en t/€ i l'evidència)
+  → **Històric** (setmana a setmana, amb/sense bateria, calendari, fiabilitat, historial i qualitat de les dades)
+  → **Anàlisi** (quan i per què carregar) → **Simulador** (què passaria si...) → **Inversió** (quanta bateria convé).
+- Decisions noves, calculades amb les dades: programar els consums flexibles a les hores netes (~7,8 t CO₂/any per cada
+  100 kW moguts 3 h al dia) i revisar el comptador, que de nit repeteix el mateix valor (86 % de les hores de nit).
+- Sense paraules nostres: "agent" passa a "pla actual de la bateria"; l'informe diu "Decisions per a UPC Sostenible".
+
+### D-045 · 15/11 · Adrià — Dashboard viu: explorador de dades, gràfic en directe i decisions com a indicadors
+- **Fora els comentaris**: les caixes de text sota els gràfics i les franges de dalt passen a ser indicadors (etiqueta i
+  xifra) calculats amb les dades. Fora l'interruptor "Sense bateria" del 3D.
+- **Explorador de dades** (Històric): totes les hores de les 11 setmanes; es tria què es veu (10 sèries), per dies o per
+  hores, i amb una franja es tria el període. Mostra les estadístiques del període (CO₂ i € estalviats, compra amb i sense
+  bateria, preu i CO₂ mitjans, hores de càrrega, cicles). Un clic al gràfic obre aquella hora al 3D.
+- **Gràfic en directe** (En directe): les últimes 48 h i el pla de les 24 següents, que avança amb la reproducció.
+- **El 3D serveix per analitzar**: clicar la bateria, la xarxa, les plaques o un edifici canvia què mostra el gràfic en directe.
+- **Decisions com a indicadors vius**: 6 targetes (control, quan carregar, consums flexibles, mida, comptador, fiabilitat)
+  calculades per a la setmana triada, amb un estat (correcte / cal revisar-lo), un gràfic de les 11 setmanes i un botó que
+  obre les dades a l'explorador. Canvien quan es canvia de setmana.
+
+### D-046 · 15/11 · Adrià — Dades del model, reproducció a tot arreu i revisió de tot el dashboard
+- **Dades amb què s'ha fet el model:** l'explorador té un selector "Simulació" / "Dades d'entrenament". Les dades
+  d'entrenament són tot el train (5.993 h, setembre 2025 – agost 2026): consum, solar, consum net, CO₂, preu,
+  irradiància i temperatura, amb les seves estadístiques (incloses les hores amb el comptador repetit).
+- **Reproduir des de qualsevol secció:** botó a la barra de dalt; tot el que depèn de l'hora (3D, gràfic en directe,
+  línia d'"ara" de l'explorador) avança igual. Quan s'arriba al final de la setmana, tornar a prémer comença de nou.
+- **Revisió:** cap botó en dues línies (comprovat a totes les seccions), cap targeta ni gràfic que surti del seu lloc,
+  dos avisos nous per omplir la targeta d'avisos (hora més cara i comptador sense canvis). Els valors en directe queden
+  sempre dins de la setmana triada (evita un error si es canvia de setmana a mitja reproducció).
+
+### D-047 · 15/11 · Adrià — Panell "Ara mateix" en blocs i to d'eina pròpia
+- El panell del costat del 3D no s'entenia: caixes sense títol, el semàfor abans que la bateria, el rellotge sense explicar
+  i el motiu lluny de la bateria. Ara té quatre blocs amb títol, en ordre de lectura: **Bateria** (percentatge, kWh, què fa
+  i per què), **Ara** (compra, estalvi de la setmana, CO₂ i preu amb una etiqueta baix/mitjà/alt respecte de les 24 h
+  següents), **El dia** (rellotge amb llegenda) i **Consums flexibles** (semàfor).
+- El dashboard és l'eina que fa servir l'equip d'UPC Sostenible, no una presentació "per a ells": fora "Decisions per a
+  UPC Sostenible" i "Informe per a UPC Sostenible"; els títols diuen el que hi ha ("Decisions", "Informe de la bateria").
+
+### D-048 · 15/11 · Adrià — Cap gràfic tallat i animacions iguals a tots els botons
+- Comprovació automàtica de tots els textos dels gràfics a les sis seccions (i a l'explorador amb totes les sèries, amb
+  la simulació i amb les dades d'entrenament), a amplada normal i a ~1.150 px: quatre textos sortien del gràfic (les
+  unitats de l'explorador i del gràfic en directe, i dues etiquetes d'Anàlisi). Ara cap.
+- Animacions coherents: canvi de color suau a tots els botons, petit efecte en prémer, ombra al botó principal,
+  selectors amb transició, llista de setmanes que s'obre amb animació, canvi de secció amb fos i targetes de decisió que
+  responen al ratolí. "Reproduir" i "Pausa" ocupen el mateix i el botó no salta. Es respecta "reduir moviment".
+
+### D-049 · 15/11 · Adrià — Controls complets al 3D en gran
+A pantalla completa el panell de baix a l'esquerra té ara, en dues files compactes: canvi de setmana (‹ ›, sincronitzat amb
+el selector de dalt), rellotge, tornar a començar la setmana, reproduir i velocitats; i una barra de temps per anar a
+qualsevol hora (si s'estava reproduint, continua des d'allà). El botó "–" amaga les xifres i deixa només els controls,
+perquè es vegi gairebé tot el campus.

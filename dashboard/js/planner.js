@@ -73,18 +73,12 @@
     if (agentOk && cost(agentPlan) <= cost(res.plan)) res = { plan: agentPlan, socs: agentSocs };
     const mine = evaluate(idx, res.plan, co2, price, H), agent = evaluate(idx, agentPlan, co2, price, H);
 
-    const changed = JSON.stringify(state) !== JSON.stringify(DEFAULTS);
     const d = mine.kg - agent.kg;
-    $("a-planner").innerHTML = changed
-      ? `Amb aquest escenari, el millor pla evitaria <b>${f(mine.kg)} kg de CO₂</b> i <b>${f(mine.eur)} €</b> en 24 h. ` +
-        (Math.abs(d) < 1 ? "És pràcticament el mateix que ja fa l'agent." :
-         d > 0 ? `Si l'agent no replanifiqués, en perdria ${f(d)} kg: per això torna a planificar cada hora.` :
-                 `És ${f(-d)} kg menys que el pla de l'agent, perquè l'escenari li treu marge (reserva o potència).`)
-      : `Mou els controls per provar un escenari. Ara mateix el millor pla evita <b>${f(mine.kg)} kg de CO₂</b> i <b>${f(mine.eur)} €</b> en les properes 24 h.`;
     $("pl-kpis").innerHTML =
-      `<div><b class="good">${f(mine.kg)} kg</b>CO₂ evitat amb el pla nou</div>` +
-      `<div><b>${f(agent.kg)} kg</b>amb el pla de l'agent</div>` +
-      `<div><b class="good">${f(mine.eur)} €</b>estalviats amb el pla nou</div>` +
+      `<div><b class="good">${f(mine.kg)} kg</b>CO₂ evitat amb l'escenari</div>` +
+      `<div><b>${f(agent.kg)} kg</b>amb el pla actual</div>` +
+      `<div><b class="good">${f(mine.eur)} €</b>estalviats amb l'escenari</div>` +
+      `<div><b>${d >= 0 ? "+" : "−"}${f(Math.abs(d))} kg</b>diferència amb el pla actual</div>` +
       `<div><b>${f(Math.max(...res.socs.map(s => s * 100)) - Math.min(...res.socs.map(s => s * 100)))} %</b>de bateria fet servir</div>`;
 
     // gràfic: pla nou (color) i pla de l'agent (contorn), i càrrega de la bateria
