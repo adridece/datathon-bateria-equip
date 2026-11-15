@@ -363,3 +363,16 @@ Els organitzadors ens han confirmat que podem entrenar amb dades públiques de R
   Nota: el DIARI diu que el calibratge de D-040 es va buscar sobre F0/F1/F2; si és així, F2 ja no és del tot reservada.
 - La validació creuada és temporal (F0, F1, F2 = una setmana diferent de cada mes, sense barrejar hores veïnes); ajustem amb
   F0 i F1 i F2 només confirma.
+
+### D-043 · 15/11 · Ivan — `agents/dificil_co2_ree`: model directe de CO₂ amb l'històric públic de REE (2023-2025)
+On perdem més punts és el CO₂ de les hores +3..+12, i amb el train només tenim ~3 setmanes per mes.
+- **Font:** la web de demanda en temps real de REE (`demanda.ree.es`) dona la generació de cada tecnologia cada 5 minuts
+  i el factor d'emissió de cadascuna (el cicle combinat, 0,37). Emissions / generació, ajustat amb dies del train:
+  `co2 = 1,114 × emissions/generació − 0,0055` (correlació 0,988, error mitjà 5 g/kWh).
+- **Període:** gener 2023 – agost 2025 (23.374 h), tot abans que comenci el repte. Mai dies de test.
+  Guardat a `data/external/ree_generacio_2023_2025.csv`.
+- **Model:** `dificil_marges` + un model directe de CO₂ (+3..+12 h) entrenat amb el train i REE (les nostres dades pesen ×3),
+  barrejat meitat i meitat. Error del model directe a +3..+12 h: F0 10,2 → 10,0 g/kWh, F1 12,0 → 10,6.
+  Score (mateixos models base, F0 / F1): 20,71 → 20,79 · 17,54 → 17,57. 0 infraccions, ~17 s per 1.848 h, zip de 8 MB.
+**Decisió:** candidat per enviar al Mode Dificil. Es reentrena amb `python scripts/train_dificil_co2_ree.py`.
+

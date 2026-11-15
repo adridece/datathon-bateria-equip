@@ -17,6 +17,7 @@ Els finals són els marcats en negreta. La columna "Abans" és el nom que tenia 
 | `dificil_lightgbm` | `hard_ml` | L'anterior amb models LightGBM que corregeixen les previsions de les hores properes. |
 | `dificil_marges` | `hard_final` | Versió validada de l'Ivan: marges per hora, historial del train, excedent solar. 22,96 a la web. |
 | **`dificil_co2_irradiancia`** | `hard_v3` | L'anterior + model directe de CO₂ (+3..+12 h), detecció de la irradiància de l'hora actual, dades meteorològiques completes i marge calibrat fora de mostra. |
+| `dificil_co2_ree` | – | `dificil_marges` + model directe de CO₂ (+3..+12 h) entrenat amb l'històric públic de REE 2023-2025. |
 
 Entrenar: `python scripts/train_dificil_marges.py` i `python scripts/train_dificil_co2_irradiancia.py`.
 Validar: `python tests/bench_dificil.py 0,1,2` (Difícil) i `python -m src.evaluate agents/estandard_robust` (Estàndard).

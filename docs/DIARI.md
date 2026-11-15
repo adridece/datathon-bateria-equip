@@ -96,6 +96,12 @@
   - Web: cap dada nova útil en temps real (vent = 0 sempre; senyals de maquinària no arriben a l'agent).
   **Conclusió:** l'agent és al límit d'informació. Amb previsions perfectes faria 22,15 (validació); tot el que falta és error de
   previsió irreductible amb dades horàries. Ens quedem amb `dificil_marges` v2.
+- **15/11 matí** — Diagnosi de la web amb la Validació Ràpida (agent que no mou la bateria i ensenya el que rep): la
+  irradiància d'`obs` és la de l'hora passada (la mateixa hora que `ultima_solar_kw`), el mercat és de 3 h i el test comença
+  l'hora després del train (24/09 00:00). El nostre simulador local reprodueix la web.
+  Historial de la web (Mode Dificil): La Datoneta 22,02 · **22,96** (`dificil_marges`) · 22,75 · 22,76 (`dificil_co2_irradiancia`).
+- **15/11 matí** — `dificil_co2_ree` (D-043): model directe de CO₂ amb 2,5 anys de REE. F0 20,71 → 20,79, F1 17,54 → 17,57.
+  Provat i descartat: pla amb escenaris en dues etapes (+0,01 / +0,04, més lent).
 
 ## Conclusions de l'anàlisi exploratòria (`notebooks/01_eda.ipynb`)
 - **Consum net gairebé sempre > 500 kW (99,5 %):** el campus consumeix una mitjana de ~1.120 kW i la generació solar arriba com a màxim a ~145 kW. La bateria mai no exporta excedents a la xarxa i no cal predir el consum futur.
