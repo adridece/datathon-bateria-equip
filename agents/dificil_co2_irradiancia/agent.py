@@ -12,6 +12,8 @@ Decisions amb incertesa (errors de previsio mesurats fora de mostra, per hora de
   - a l'hora actual no descarreguem mes del que el campus segur que consumira,
   - amb excedent solar carreguem pensant en el cas de mes sol (carregar de menys perd energia gratis).
 El primer dia de cada setmana fem servir els ultims dies del train com a historial.
+El preu de les hores +3..+12 es barreja igual amb un model directe entrenat tambe amb el PVPC public de REE
+de gener de 2024 a agost de 2025 (abans del periode del repte; mateixa font i mateixos valors que el train).
 v3: el CO2 de les hores +3..+12 es barreja meitat i meitat amb un model directe que mira la corba sencera de les
 ultimes 48 h (scripts/train_dificil_co2_irradiancia.py). Millora les tres validacions independents (docs/DIARI.md).
 A mes, l'agent comprova sol si la irradiancia que rep es de l'hora actual o de la passada (compara-la amb la solar
@@ -184,12 +186,13 @@ def load_rows(load, temp, hour, dow, month, profile):
     return rows
 
 
-def pv_rows(pv, irr, temp, hour, month, clear, typical=None):
+def pv_rows(pv, irr, temp, panel, hour, month, clear, typical=None):
     """Una fila per hora (+0..+23) per predir la solar. clear = solar maxima del mes per hora (dia clar)."""
     n = len(pv)
     day_max = max([x for x in pv[-24:] if x == x], default=NAN)
     base = pv_base(pv, hour, typical)
     last, irr_last = at(pv, n - 1), at(irr, len(irr) - 1)
+    panel_last = at(panel, len(panel) - 1)
     clear_last = clear[(hour - 1) % 24] if clear else NAN
     rows = []
     for j in range(HORIZON):
@@ -197,8 +200,9 @@ def pv_rows(pv, irr, temp, hour, month, clear, typical=None):
         clear_h = clear[h] if clear else NAN
         # si l'ultima hora ha fet el 60 % d'un dia clar, suposem que la seguent tambe
         like_clear = last * clear_h / clear_last if clear_last == clear_last and clear_last > 20.0 else NAN
-        rows.append([j, h, month, last, at(pv, n - 2), irr_last, at(irr, len(irr) - 2), at(pv, n + j - 24),
-                     at(pv, n - 25), day_max, clear_h, clear_last, like_clear, at(temp, len(temp) - 1), base[j]])
+        rows.append([j, h, month, last, at(pv, n - 2), irr_last, at(irr, len(irr) - 2), panel_last,
+                     at(panel, len(panel) - 2), at(pv, n + j - 24), at(pv, n - 25), day_max, clear_h,
+                     clear_last, like_clear, at(temp, len(temp) - 1), base[j]])
     return rows
 
 
@@ -208,6 +212,13 @@ def co2_direct_rows(co2_past, price_past, co2_known, price_known, hour, dow, mon
     lvl, pl = co2_known[2], price_known[2]
     base = [x / lvl for x in co2_past] + [x / lvl for x in co2_known[:3]] + [x / pl for x in price_past] + \
            [x / pl for x in price_known[:3]] + [hour, dow, month, irr1, irr25, lvl, sum(co2_past[-24:]) / 24 / lvl]
+    return [base + [j] for j in hours]
+
+
+def price_direct_rows(price_past, price_known, hour, dow, month, hours):
+    """Variables del model directe de preu: les ultimes 48 h i les 3 hores conegudes, relatives a l'ultima coneguda."""
+    lvl = price_known[2]
+    base = [x / lvl for x in price_past] + [x / lvl for x in price_known[:3]] + [hour, dow, month, lvl, sum(price_past[-24:]) / 24 / lvl]
     return [base + [j] for j in hours]
 
 
@@ -255,6 +266,10 @@ class BatteryAgent:
         self.co2_direct_hours = list(range(direct.get("first", 3), direct.get("last", 12) + 1))
         self.co2_direct_weight = direct.get("weight", 0.5)
         self.co2_direct = load_model("co2d", direct.get("seeds", 1)) if direct else None
+        price_direct = params.get("price_direct") or {}
+        self.price_direct_hours = list(range(price_direct.get("first", 3), price_direct.get("last", 12) + 1))
+        self.price_direct_weight = price_direct.get("weight", 0.5)
+        self.price_direct = load_model("priced", price_direct.get("seeds", 1)) if price_direct else None
         # irradiancia de l'hora actual: es detecta durant la simulacio (veure check_irradiance)
         self.pv_per_irr = params.get("pv_per_irr", 1.63)
         self.margin_irr_now = params.get("margin_irr_now", 0.7)
@@ -264,7 +279,7 @@ class BatteryAgent:
         # fins a quina hora (+j) corregim amb cada model; mes enlla, previsio senzilla
         self.near_hours = params.get("near_hours", {"price": 8, "co2": 8, "load": 2, "pv": 2})
         # historic de la simulacio (un valor per hora)
-        self.price, self.co2, self.load, self.pv, self.irr, self.temp = [], [], [], [], [], []
+        self.price, self.co2, self.load, self.pv, self.irr, self.temp, self.panel = [], [], [], [], [], [], []
         self.prev_time = None
         self.started = False
 
@@ -279,10 +294,11 @@ class BatteryAgent:
         self.price, self.co2 = clean(h["price"]), clean(h["co2"])
         self.load, self.pv = clean(h["load"]), clean(h["pv"])
         self.irr, self.temp = clean(h["irr"]), clean(h["temp"])
+        self.panel = clean(h.get("panel", [NAN] * len(self.temp)))
         return True
 
     def reset_history(self):
-        self.price, self.co2, self.load, self.pv, self.irr, self.temp = [], [], [], [], [], []
+        self.price, self.co2, self.load, self.pv, self.irr, self.temp, self.panel = [], [], [], [], [], [], []
 
     # ------------------------------------------------------------ previsions
     def predict(self, name, rows):
@@ -315,6 +331,26 @@ class BatteryAgent:
         out = np.concatenate([known, pred])
         if name == "co2":
             out = self.blend_co2_direct(out, hist, other_hist, known, other_known, hour, dow, month)
+        else:
+            out = self.blend_price_direct(out, hist, known, hour, dow, month)
+        return out
+
+    def blend_price_direct(self, out, price_hist, price_known, hour, dow, month):
+        """Barreja el preu de les hores +3..+12 amb el model directe, entrenat tambe amb el PVPC public de 2024-2025."""
+        if not self.price_direct or len(price_hist) < 48 or len(price_known) < 3 or price_known[2] <= 0:
+            return out
+        past = list(price_hist[-48:])
+        if any(x != x for x in past):
+            return out
+        try:
+            rows = np.array(price_direct_rows(past, list(price_known), hour, dow, month, self.price_direct_hours), dtype=float)
+            pred = np.mean([m.predict(rows) for m in self.price_direct], axis=0) * price_known[2]
+        except Exception:
+            return out
+        out = np.array(out, dtype=float)
+        for j, v in zip(self.price_direct_hours, pred):
+            if j < len(out) and v > 0:
+                out[j] = self.price_direct_weight * v + (1.0 - self.price_direct_weight) * out[j]
         return out
 
     def blend_co2_direct(self, out, co2_hist, price_hist, co2_known, price_known, hour, dow, month):
@@ -340,7 +376,8 @@ class BatteryAgent:
 
     def forecast_net(self, hour, dow, month):
         load = self.predict("load", load_rows(self.load, self.temp, hour, dow, month, self.load_profile))
-        pv = self.predict("pv", pv_rows(self.pv, self.irr, self.temp, hour, month, self.pv_clear.get(str(month)),
+        pv = self.predict("pv", pv_rows(self.pv, self.irr, self.temp, self.panel, hour, month,
+                                        self.pv_clear.get(str(month)),
                                          self.pv_mean.get(str(month))))
         if self.irr_now is not None:
             pv[0] = self.pv_per_irr * self.irr_now      # la irradiancia d'ara diu quanta solar hi ha ara
@@ -413,12 +450,12 @@ class BatteryAgent:
         jump = gap > 3 * 3600   # entre setmanes de test hi ha dies de salt
         if 5400 < gap <= 3 * 3600:
             # falta una hora (canvi d'hora de marc): la repetim perque "ahir a la mateixa hora" segueixi alineat
-            for series in (self.price, self.co2, self.load, self.pv, self.irr, self.temp):
+            for series in (self.price, self.co2, self.load, self.pv, self.irr, self.temp, self.panel):
                 if series:
                     series.append(series[-1])
         elif self.started and now is not None and self.prev_time is not None and gap < 1800:
             # la mateixa hora dues vegades (canvi d'hora d'octubre): substituim el valor en lloc d'afegir-ne un
-            for series in (self.price, self.co2, self.load, self.pv, self.irr, self.temp):
+            for series in (self.price, self.co2, self.load, self.pv, self.irr, self.temp, self.panel):
                 if series:
                     series.pop()
         if jump or not self.started:
@@ -433,6 +470,7 @@ class BatteryAgent:
             self.pv.append(max(to_float(last.get("ultima_solar_kw"), NAN), 0.0))
             self.irr.append(to_float(last.get("irradiancia_wm2"), NAN))
             self.temp.append(to_float(last.get("temp_ambient_c"), NAN))
+            self.panel.append(to_float(last.get("temp_panel_c"), NAN))
         self.started, self.prev_time = True, now
         self.check_irradiance(obs.get("noves_dades_5min") or {}, jump)
         irr_last = at(self.irr, len(self.irr) - 1)
